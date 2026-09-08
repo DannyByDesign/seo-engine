@@ -257,3 +257,51 @@ def test_prune_reports_per_family(tmp_repo):
         assert f"maintenance-2026-01-{i:02d}.json" not in remaining
     assert {"foo-20260101-120000.json", "foo-20260102-120000.json"} <= remaining
     assert "bar-2026-01-01.json" not in remaining
+
+
+# ---------------------------------------------------------------------------
+# Interrupted crawls (no .meta.json sidecar): new_crawl writes the sidecar only
+# after crawl_to_file returns, so a missing sidecar means a partial site.
+
+
+def write_fragment(cfg, stamp, *, pages=3, age_hours=0.0):
+    """A .jsonl with NO sidecar — what a killed crawl leaves behind."""
+    jsonl = snapshots.crawl_dir(cfg) / f"crawl-{stamp}.jsonl"
+    jsonl.parent.mkdir(parents=True, exist_ok=True)
+    jsonl.write_text(
+        "".join(json.dumps({"url": f"{SITE}/{i}"}) + "\n" for i in range(pages)),
+        encoding="utf-8",
+    )
+    if age_hours:
+        old = time.time() - age_hours * 3600
+        os.utime(jsonl, (old, old))
+    return jsonl
+
+
+def test_fragment_without_sidecar_is_not_a_snapshot(tmp_repo):
+    cfg = site_cfg(tmp_repo)
+    frag = write_fragment(cfg, "20260101T000000Z")
+    assert snapshots._load_snapshot(frag) is None
+    assert snapshots.all_snapshots(cfg) == []
+
+
+def test_latest_ignores_newer_fragment_and_returns_complete_snapshot(tmp_repo):
+    """The regression: a killed crawl's fragment has empty meta, so it sorts
+    newest (mtime fallback) and passes every guard — it must not win latest()."""
+    cfg = site_cfg(tmp_repo)
+    write_snap(cfg, "20260101T000000Z", finished_at=NOW - timedelta(hours=1), pages=333)
+    write_fragment(cfg, "20260101T010000Z", pages=118)  # newer, partial
+    got = snapshots.latest(cfg, max_age_hours=24)
+    assert got is not None
+    assert got.pages_crawled == 333
+    assert got.path.name == "crawl-20260101T000000Z.jsonl"
+
+
+def test_prune_sweeps_stale_fragments_but_spares_in_flight(tmp_repo):
+    cfg = site_cfg(tmp_repo)
+    stale = write_fragment(cfg, "20260101T000000Z",
+                           age_hours=snapshots.FRAGMENT_SWEEP_AFTER_HOURS + 1)
+    in_flight = write_fragment(cfg, "20260101T010000Z", age_hours=0)
+    snapshots.prune(cfg)
+    assert not stale.exists()
+    assert in_flight.exists()

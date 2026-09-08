@@ -20,6 +20,7 @@ crawl became another skill's 500-page "1500 pages disappeared" baseline.
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -29,6 +30,12 @@ from .config import Config
 
 SCHEMA_VERSION = 2
 CRAWL_PREFIX = "crawl-"
+
+
+#: An interrupted crawl leaves a .jsonl with no sidecar. Sweep such
+#: fragments only after this many hours, so a crawl still in flight
+#: (also sidecar-less) is never deleted out from under itself.
+FRAGMENT_SWEEP_AFTER_HOURS = 6
 
 
 @dataclass
@@ -76,12 +83,20 @@ def _load_snapshot(jsonl_path: Path) -> Optional[Snapshot]:
     meta_path = jsonl_path.with_name(jsonl_path.stem + ".meta.json")
     if not jsonl_path.is_file():
         return None
+    if not meta_path.is_file():
+        # new_crawl writes the sidecar only after crawl_to_file returns, so a
+        # missing sidecar means the crawl was interrupted (Ctrl-C, timeout,
+        # OOM) and the .jsonl holds a partial site. Without this guard such a
+        # fragment still loads with empty meta -- pages_crawled 0, truncated
+        # False, finished_at falling back to mtime -- so it sorts NEWEST and
+        # wins latest(), silently serving every downstream skill a truncated
+        # view of the site. Not a reusable snapshot.
+        return None
     meta: dict[str, Any] = {}
-    if meta_path.is_file():
-        try:
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            meta = {}
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        meta = {}
     return Snapshot(path=jsonl_path, meta=meta)
 
 
@@ -222,6 +237,20 @@ def prune(
     import re
 
     removed = {"crawls": 0, "reports": 0}
+
+    # Sidecar-less fragments left by interrupted crawls are invisible to
+    # all_snapshots (see _load_snapshot), so they'd never be pruned. Sweep
+    # them here, but only once they're older than an in-flight crawl could
+    # plausibly be -- a crawl still running has no sidecar either.
+    frag_cutoff = time.time() - FRAGMENT_SWEEP_AFTER_HOURS * 3600
+    for jsonl_path in crawl_dir(cfg).glob(f"{CRAWL_PREFIX}*.jsonl"):
+        meta_path = jsonl_path.with_name(jsonl_path.stem + ".meta.json")
+        try:
+            if not meta_path.is_file() and jsonl_path.stat().st_mtime < frag_cutoff:
+                jsonl_path.unlink()
+                removed["crawls"] += 1
+        except OSError:
+            pass
 
     snaps = all_snapshots(cfg)
     cutoff = datetime.now(timezone.utc) - timedelta(days=keep_days)
