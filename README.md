@@ -9,6 +9,12 @@ search-engine visibility (Google, Bing) and AI-answer-engine visibility (ChatGPT
 Claude, Gemini, Copilot, Google AI Overviews/AI Mode) — grounded in a research-verified
 knowledge base, not SEO folklore.
 
+It also builds and runs **independent publications**: topic-focused sites with their own
+bylines, sections, cadence, and evidence pipeline, whose articles earn search traffic and
+AI-assistant citations and mention the operator's product only where it is the honest answer.
+That is the "phantom blog" model a category of vendors sells; the nine `pub-*` skills reproduce
+it from measured live examples (the teardown lives in [`research/`](research/)).
+
 ## What makes this different from "an SEO checklist"
 
 1. **Every strategy is sourced.** [seo-playbook.md](skills/seo-references/seo-playbook.md) and
@@ -21,15 +27,16 @@ knowledge base, not SEO folklore.
    JavaScript (§11) — which makes server-rendering your content the highest-leverage technical
    GEO intervention there is.
 2. **Long-term only, by design.** [red-flags.md](skills/seo-references/red-flags.md) is a veto
-   layer every content-touching skill consults before acting — no scaled content generation, no
-   freshness-faking, no doorway pages, no link schemes, no cloaking (including AI-crawler
-   cloaking). Nothing in this system trades a short-term ranking bump for a policy risk down the
-   line.
-3. **It's real, tested software — not a prompt.** Fifteen task skills (plus a shared
-   `seo-references` knowledge skill), each with a `SKILL.md` and working Python scripts that
-   call real APIs (Google Search Console, PageSpeed Insights/CrUX, Ahrefs, DataForSEO, Semrush,
-   Bing Webmaster Tools, IndexNow, Firecrawl, OpenAI/Anthropic/Perplexity/Gemini) or crawl the
-   live site directly. The shared library ships with an offline pytest suite, a documentation
+   layer every content-touching skill consults before acting — no scaled *thin* content, no
+   fabricated evidence, no freshness-faking, no doorway pages, no link schemes, no cloaking
+   (including AI-crawler cloaking). Nothing in this system trades a short-term ranking bump for
+   a policy risk down the line.
+3. **It's real, tested software — not a prompt.** Twenty-four task skills (fifteen for a
+   first-party site, nine `pub-*` skills for publications, plus a shared `seo-references`
+   knowledge skill), each with a `SKILL.md` and working Python scripts that call real APIs
+   (Google Search Console, PageSpeed Insights/CrUX, Ahrefs, DataForSEO, Semrush, Bing Webmaster
+   Tools, IndexNow, Firecrawl, SociaVault, GitHub, Notion, OpenAI/Anthropic/Perplexity/Gemini)
+   or crawl the live site directly. The shared library ships with an offline pytest suite, a documentation
    linter (`scripts/dev/check_docs.py` — every documented flag and state file is verified
    against the code), and an opt-in live smoke harness (`scripts/dev/smoke.py`) that exercises
    each configured integration against the real endpoints. Every integration is optional and
@@ -41,14 +48,28 @@ knowledge base, not SEO folklore.
    and anything a script can't verify lands in an explicit `not_checked` section instead of
    silently vanishing.
 
-## What this system deliberately does not do
+## Where the lines are
 
-- **No off-site actions.** The strongest measured AI-visibility correlates (brand mentions,
-  community presence, Wikipedia) live on other people's sites. This system monitors those
-  outcomes but will not manufacture them — see geo-playbook §6 for why that boundary exists.
-  On-site work is necessary but not sufficient; the playbooks say so rather than overselling.
-- **No content-volume automation.** Nothing here publishes content on a cadence or fills
-  keyword gaps for their own sake (red-flags §1, scaled content abuse).
+Two families of skills, one veto layer. The `seo-*`/`geo-*` skills maintain a first-party
+site. The `pub-*` skills build and run publications the operator owns — the charter in
+[publication-playbook.md](skills/seo-references/publication-playbook.md) §1 — because the
+strongest measured AI-visibility correlates (brand mentions, third-party coverage) live off the
+first-party site, and a publication is the one off-site lever an operator can run honestly.
+Both families are bound by [red-flags.md](skills/seo-references/red-flags.md):
+
+- **Substance is the floor; volume is never the metric.** Publishing on a cadence is allowed
+  (the planner defaults to six posts a week). Publishing thin content is not: every article
+  goes through research against fetched sources, a number verifier, and a gate that refuses
+  drafts under the word and source floors (red-flags §1, §7).
+- **No fabricated evidence.** Every statistic is anchored to a source the pipeline actually
+  read; a number it cannot verify is dropped, never invented.
+- **Honest mentions.** A publication names and links its client only within the configured
+  mention degree and rate, at most one client link per article, and only where the client is
+  the accurate answer (playbook §6). Sponsorship disclosure is off by default and switchable
+  per publication.
+- **No cloaking, no freshness-faking, no doorway pages, no link schemes.** Publications never
+  interlink, external citations are `nofollow`, `published_at` is set exactly once, and
+  refreshes are real rewrites.
 - **No link building.** `seo-backlinks` is monitoring-only, by design.
 
 ## Install
@@ -65,7 +86,7 @@ cd /path/to/your-website-repo/seo-engine
 python3 -m pip install -r requirements.txt
 ```
 
-`install.sh` symlinks each `skills/*` directory (the 15 task skills plus `seo-references`)
+`install.sh` symlinks each `skills/*` directory (the 24 task skills plus `seo-references`)
 into `<your-repo>/.claude/skills/`, writes an inert stub `.env` (never placeholder values —
 add only keys you actually have), and makes sure `.env` and `.seo-engine/` are gitignored in
 the target repo. Scripts self-locate the engine through the symlinks; if you copy skills
@@ -87,7 +108,12 @@ In an agent session inside your website repo:
 2. Invoke **`seo-maintain`** any time you want a checkup — it refreshes a crawl snapshot,
    flags regressions first (broken links, accidental noindex, indexing issues), ranks
    opportunities, and tells you which specific skill to invoke for each item.
-3. Invoke any of the 13 specific skills directly when you know what you want to work on.
+3. Invoke any of the other skills directly when you know what you want to work on.
+4. To run a publication: **`pub-site`** scaffolds, builds and validates it; **`pub-strategy`**
+   records positioning; **`pub-curate`** builds the topic map and the queue; **`pub-publish`**
+   runs the pipeline on a cadence; **`pub-monitor`** and **`geo-monitor`** report whether it is
+   working. The [publication-playbook](skills/seo-references/publication-playbook.md) explains
+   the model and the measured anatomy the skills reproduce.
 
 ## Configuration
 
@@ -100,7 +126,9 @@ In an agent session inside your website repo:
   snapshot store (with provenance sidecars so skills reuse each other's crawls safely),
   per-skill history, and dated reports. Retention is pruned automatically.
 
-## The 15 task skills
+## The 24 task skills
+
+### First-party site (`seo-*`, `geo-*`)
 
 | Skill | What it does |
 |---|---|
@@ -118,13 +146,30 @@ In an agent session inside your website repo:
 | [`seo-redirects`](skills/seo-redirects/SKILL.md) | Config-level redirect audit, honest loop detection, migration-safety validation |
 | [`seo-rank-tracking`](skills/seo-rank-tracking/SKILL.md) | GSC position history with stdev-gated drop alerts, optional live SERP checks |
 | [`geo-optimize`](skills/geo-optimize/SKILL.md) | AI-crawler robots.txt audit (per-vendor, RFC 9309-correct), cloaking check, free JS-visibility check, narrowly-scoped llms.txt |
-| [`geo-monitor`](skills/geo-monitor/SKILL.md) | AI-citation probing (multi-sample, flap-damped) via OpenAI/Anthropic/Perplexity/Gemini APIs, log/GA4 signals |
+| [`geo-monitor`](skills/geo-monitor/SKILL.md) | AI-citation probing (multi-sample, flap-damped) via OpenAI/Anthropic/Perplexity/Gemini APIs, brand-mention tracking (mention rate, share of voice, Wilson intervals), log/GA4 signals |
+
+### Publications (`pub-*`)
+
+| Skill | What it does |
+|---|---|
+| [`pub-site`](skills/pub-site/SKILL.md) | Scaffold a publication (theme, sections, generated personas), build the static site (posts, sections, authors, RSS, `llms.txt`, sitemap, JSON-LD) for Vercel, validate it against the measured anatomy |
+| [`pub-strategy`](skills/pub-strategy/SKILL.md) | Positioning — client, direction, priority topics, stances, ranking targets, landings, competitors — plus competitor catalogue scraping |
+| [`pub-curate`](skills/pub-curate/SKILL.md) | Topic map (pillars → spokes), scored suggestions (competitor, GEO gap, SEO volume, cluster, authority, social conversations via SociaVault), seers (news, regulation, social trends, GitHub, specs, Notion) |
+| [`pub-research`](skills/pub-research/SKILL.md) | Plan → search → read → synthesize → verify: an outline whose every point cites a fetched source, with an optional direction gate |
+| [`pub-write`](skills/pub-write/SKILL.md) | Long-read drafting under a voice kernel with candidate judging, the mention decision, and the Shredder (sentence-level voice diversity across providers) |
+| [`pub-enhance`](skills/pub-enhance/SKILL.md) | Internal links, Sources list, numeric anchors, diagram placement, number verifier, metadata; retro-relink of older posts |
+| [`pub-visuals`](skills/pub-visuals/SKILL.md) | Diagram renderer (stat callout, flow, funnel, comparison, timeline) and cover generation (OpenAI or Gemini, SVG fallback) |
+| [`pub-publish`](skills/pub-publish/SKILL.md) | Planner (cadence, sourcing, approval posture), the quality gate, and the one-command article pipeline |
+| [`pub-monitor`](skills/pub-monitor/SKILL.md) | Per-publication Search Console rollups, awaiting/receiving indexing proxy, refresh triggers, GEO-gap sync from brand-mention runs |
 
 ## Reference knowledge base
 
 Lives in [`skills/seo-references/`](skills/seo-references/SKILL.md) (installed alongside the
-task skills): `seo-playbook.md`, `geo-playbook.md`, `red-flags.md` (the veto layer),
-`api-reference.md`, and `common-setup.md` (paths, config, and the snapshot contract).
+task skills): `seo-playbook.md`, `geo-playbook.md`, `publication-playbook.md` (the measured
+publication model the `pub-*` skills reproduce), `red-flags.md` (the veto layer),
+`api-reference.md`, and `common-setup.md` (paths, config, snapshot and publication contracts).
+The research behind the publication playbook — a teardown of a live vendor's phantom
+publications and its open-source monitor — is in [`research/`](research/).
 
 ## Testing
 
@@ -152,6 +197,8 @@ Re-verify on this cadence, and run `python3 scripts/dev/check_docs.py` after any
 | llms.txt non-effect | geo-playbook §1 | Semi-annually |
 | Spam-policy enforcement mechanics | red-flags.md preamble/§1 | Quarterly |
 | API endpoints/quotas/pricing | api-reference.md | On any new 4xx pattern, or via `smoke.py` |
+| Publication anatomy (routes, schema, article shape, cadence) | publication-playbook §2–§4 | Quarterly — re-measure the live examples listed in its Sources |
+| LLM / image model ids | `scripts/lib/llm.py`, `scripts/lib/images.py` (env-overridable) | On any deprecation notice |
 | CWV thresholds | seo-playbook §3 | Annually |
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the full system design, directory layout, and the

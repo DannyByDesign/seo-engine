@@ -55,6 +55,23 @@ def map_urls(cfg: Config, url: str, limit: int = 5000) -> list[str]:
     return urls
 
 
+def search(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = None) -> list[dict[str, Any]]:
+    """Web search (v2 /search). `tbs` is Google's time filter ("qdr:d" day,
+    "qdr:w" week, "qdr:m" month). Returns [{url, title, description}]."""
+    body: dict[str, Any] = {"query": query, "limit": limit}
+    if tbs:
+        body["tbs"] = tbs
+    resp = http_util.post(
+        f"{BASE_URL}/search", headers=_headers(cfg), json_body=body,
+        min_interval=0.5, timeout=120.0, check=True,
+    )
+    data = resp.json().get("data", [])
+    if isinstance(data, dict):  # v2 may group results by type
+        data = data.get("web", []) or []
+    return [{"url": d.get("url"), "title": d.get("title"), "description": d.get("description")}
+            for d in data if isinstance(d, dict) and d.get("url")]
+
+
 def start_crawl(cfg: Config, url: str, limit: int = 100) -> str:
     """Kicks off an async recursive crawl; returns a job id for get_crawl_status()."""
     resp = http_util.post(

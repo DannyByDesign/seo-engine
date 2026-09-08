@@ -1,0 +1,38 @@
+# Content template: the measured phantom long read (publication-playbook §3).
+# A template constrains the SHAPE of a post; the research decides the content,
+# the kernel the prose. Blocks in article order. kind: formatted = fixed
+# shape the writer must produce; open = the writer decides; optional = drop
+# when the research does not earn it.
+key: long-read
+name: Long read
+angle: A reported, source-dense long read of 2,200-2,600 words with a framework spine.
+target_words: 2400
+sections: {min: 6, max: 8}
+blocks:
+  - id: opening
+    kind: formatted
+    text: |
+      Two or three paragraphs. The first sentence contains the opening statistic, anchored on
+      the exact figure, with its source named in the sentence. The second paragraph states the
+      thesis and names the framework the article will use. The third says what the piece will
+      work through. No heading above this block.
+  - id: body
+    kind: open
+    text: |
+      The outline's sections in order, each under an H2 that is a full declarative sentence
+      (8-14 words). Every factual point in a section is expressed in prose with its number
+      anchored to its source. At most one list per two sections; no H3s; no tables unless the
+      research contains tabular data.
+  - id: closing
+    kind: formatted
+    text: |
+      Final H2 phrased as the reader's question ("What should <reader> do before <horizon>?").
+      Sequenced advice ("If X is the gap, do Y"), one short paragraph per item, then a last
+      paragraph that returns to the opening number.
+  - id: sources
+    kind: formatted
+    optional: false
+    text: |
+      Not written by the kernel: the Sources list is rendered by the site builder from the
+      frontmatter `sources`, which pub-enhance assembles from the paper trail and the links
+      actually used in the body.

@@ -21,10 +21,11 @@ or scraping — whose **primary purpose is manipulating search rankings** rather
 and which provides **minimal value**. The policy is explicitly method-agnostic: "no matter how it's
 created." This is the single highest-risk category for an AI-agent-operated content system.
 
-**Guardrail for this system:** never generate content in batches sized or scheduled to maximize
-publishing *volume*. Every piece of content a skill proposes must have a specific, articulable
-reason a real reader benefits, not just "fills a keyword gap." If a skill can't state that reason
-in one sentence, don't publish.
+**Guardrail for this system:** publishing on a cadence is allowed (the `pub-*` skills exist to do
+it), but volume is never the goal and never the metric. Every piece a skill queues carries a
+one-sentence reason a real reader benefits (the topic-map `brief`), is research-backed with named
+sources, and clears the length/structure floor `validate_site.py` checks. The measured ceiling that
+works is one to two long reads per publication per day, never batch dumps — see §7.
 
 ### Site reputation abuse ("parasite SEO")
 Third-party content published on a host site specifically to exploit the host's *own* established
@@ -84,15 +85,17 @@ acquisition tool.
 ## 3. AI-content-specific pitfalls
 
 - **There is no "AI content penalty."** Google does not penalize content for being AI-generated;
-  it penalizes scaled, low-value content regardless of production method (§1). Do not build
-  "humanizer" or "AI-detector-evasion" logic — that effort is solving a problem that doesn't exist
-  and is itself closer to a manipulation tactic than the thing it's trying to avoid.
+  it penalizes scaled, low-value content regardless of production method (§1). The Shredder pass
+  in `pub-write` (sentence-level rewriting across several model providers) is a *voice-diversity*
+  tool for a multi-author masthead, not a detector-evasion tool — run it for that reason or not at
+  all; nothing in Google's or the AI vendors' policies rewards it.
 - **Do not freshness-fake.** Updating a timestamp or making a cosmetic edit without substantive
   content improvement is a form of the manipulation Google's helpful-content guidance targets
   directly, and it's brittle — readers notice a stale article with a suspiciously new date.
-- **Do not let automation increase publishing cadence as an end in itself.** "Publish N articles
-  per week" is a volume target, not a value target, and edges directly toward scaled content abuse
-  if not every single item clears the "genuinely useful to a specific reader" bar.
+- **Cadence is a schedule, not a target.** The planner publishes N per week because a real
+  publication does, but every slot is filled from a scored topic map with a stated reader benefit;
+  an empty slot stays empty. The moment "hit the number" overrides "clear the bar", the system is
+  producing scaled content abuse by another name.
 
 ## 4. Technical mistakes that silently tank a site
 
@@ -152,6 +155,37 @@ improvement, or an attempt to game their system?"** If the honest answer is ambi
 human review rather than auto-apply. This system is designed to compound trust over years, not to
 extract a short-term ranking bump that a future policy update (or manual review) claws back with
 interest.
+
+## 7. Third-party publications (the `pub-*` skills): where the lines are
+
+The owner decision behind this repo is to run independent editorial publications ("phantom"
+sites) that build authority around a client's category and cite the client where it is the
+genuine source. These are the rules that keep that on the right side of every policy above:
+
+- **Fresh domains only, never expired ones.** Authority is built, not bought (§1 expired domain
+  abuse). The client registers and owns every domain.
+- **Own domains, own editorial standards.** A publication is a first-party property of the owner
+  with its own masthead, not content rented onto someone else's authority — so site reputation
+  abuse (§1) does not apply; keep it that way by never syndicating publication content onto
+  third-party hosts for their ranking signals.
+- **Substance floor is enforced, not aspirational.** Research-backed long reads with named,
+  linked sources, a Sources list, one to two per day per site. `validate_site.py` fails a build
+  that drifts below the structural floor; `pub-enhance`'s verifier fails an article whose numbers
+  do not match their sources. Template shape may repeat; substance may not (§1 doorway pages).
+- **Mentions stay honest.** The client is cited as a source for a fact it actually published,
+  anchored on the fact, at most once per article, only where the topic is genuinely about what the
+  client builds; degree and rate are configured per publication ([publication-playbook.md](publication-playbook.md) §6).
+  Competitors are named fairly or not at all (`block_from_mentions` is a "not at all", never a
+  license to disparage).
+- **No footprints, no cloaking.** Publications never interlink, never link to the vendor or the
+  engine, serve identical HTML to every crawler, and never block a citation crawler.
+- **Disclosure and personas are owner switches, documented.** Disclosure defaults off and personas
+  default to the vendor's backdated model because the owner chose so; both are one flag away from
+  the conservative setting (`--disclosure`, `--author-tenure real`), and the exposure is written
+  down in the teardown report rather than hidden. Regulated categories (health, finance, legal)
+  should flip both before the first post.
+- **Freshness is earned.** `relink` bumps `dateModified` only when links or text actually change;
+  never touch a date without a change (§3).
 
 ## Sources
 

@@ -15,12 +15,20 @@ website; the agent gains skills to audit, fix, improve, and monitor organic
 search and AI-search visibility — using only long-term, sustainable,
 policy-compliant strategies.
 
+It also runs the operator's own **publications** (the `pub-*` skills): a
+Next.js-free static site per publication, personas, a topic map, an evidence
+pipeline (research → write → enhance → visuals → publish), a planner, and
+monitoring — the model documented in
+[publication-playbook.md](skills/seo-references/publication-playbook.md).
+
 ## Design principles
 
 1. **Sustainable only.** Every skill encodes Google spam-policy and AI-content
    guardrails. No cloaking, no scaled thin content, no link schemes, no
    freshness-faking. A shared `red-flags.md` is the veto layer every
-   content-touching skill must consult.
+   content-touching skill must consult. The `pub-*` skills publish on a
+   cadence by design; their guardrail is a substance floor and a verified
+   paper trail per article (red-flags §1, §7), never a volume cap.
 2. **Framework-agnostic.** Skills detect the stack (Next.js, Astro, Nuxt,
    SvelteKit, Hugo, plain HTML, ...) — including which directory deploys
    verbatim vs. which is wiped by builds — and adapt: fix at the source-code
@@ -67,7 +75,8 @@ seo-engine/
 │   │   ├── seo-playbook.md    #   sustainable classic-SEO strategy
 │   │   ├── geo-playbook.md    #   AI-search evidence (incl. §10 Bing→ChatGPT,
 │   │   │                      #   §11 AI crawlers don't render JS)
-│   │   ├── red-flags.md       #   spam policies, penalties — the veto layer
+│   │   ├── publication-playbook.md # the measured publication model (pub-* skills)
+│   │   ├── red-flags.md       #   spam policies, penalties — the veto layer (§7: publications)
 │   │   ├── api-reference.md   #   endpoints, auth, quotas per integration
 │   │   └── common-setup.md    #   paths/config/snapshot contracts (agent-operational)
 │   ├── seo-setup/             # onboarding: detect stack, write config, key status
@@ -86,7 +95,18 @@ seo-engine/
 │   ├── seo-rank-tracking/     # GSC positions, stdev-gated drop alerts
 │   ├── geo-optimize/          # AI-crawler access, cloaking check, JS-visibility
 │   │                          #   check, narrowly-scoped llms.txt
-│   └── geo-monitor/           # AI-citation probing (multi-sample), log/GA4 signals
+│   ├── geo-monitor/           # AI-citation probing (multi-sample), brand-mention
+│   │                          #   tracking (Wilson intervals), log/GA4 signals
+│   ├── pub-site/              # publication scaffold, static build, anatomy validator
+│   ├── pub-strategy/          # positioning + competitor catalogue scraping
+│   ├── pub-curate/            # topic map, scored suggestions, seers
+│   ├── pub-research/          # plan → search → read → synthesize → verify outline
+│   ├── pub-write/             # kernels/, templates/, write_article.py, shred.py
+│   ├── pub-enhance/           # links, sources, anchors, diagrams, verify, meta, relink
+│   ├── pub-visuals/           # SVG diagrams, covers (OpenAI / Gemini / SVG fallback)
+│   ├── pub-publish/           # planner, gate + approval, run_pipeline
+│   └── pub-monitor/           # per-publication GSC rollups, refresh triggers, GEO sync
+├── research/                  # the vendor teardown the pub-* skills were built from
 ├── scripts/
 │   ├── lib/                   # shared library (imported by every skill script)
 │   │   ├── config.py          # env + .seo-engine/config resolution; INTEGRATION_ENV_VARS
@@ -109,11 +129,20 @@ seo-engine/
 │   │   ├── indexnow.py        # IndexNow (host-validated)
 │   │   ├── firecrawl.py       # Firecrawl v2 (rendered-diff)
 │   │   ├── schema_validate.py # tiered JSON-LD validation (required/recommended/info)
-│   │   └── ai_visibility.py   # LLM citation probing (error-state aware)
+│   │   ├── ai_visibility.py   # LLM citation probing (error-state aware)
+│   │   ├── llm.py             # BYOK text generation: Anthropic / OpenAI / Gemini
+│   │   ├── images.py          # cover generation: OpenAI gpt-image / Gemini image
+│   │   ├── sociavault.py      # SociaVault social-conversation search
+│   │   ├── mentions.py        # deterministic brand-mention detection
+│   │   ├── stats.py           # Wilson intervals for small-sample rates
+│   │   ├── publication.py     # publication model, markdown → HTML, static renderer
+│   │   ├── pubstate.py        # strategy / topic-map / pub-* state helpers
+│   │   └── article.py         # markdown article ops: anchors, links, nothing-lost guard
 │   └── dev/
 │       ├── smoke.py           # opt-in LIVE per-integration harness (never in CI)
 │       └── check_docs.py      # docs-vs-code contract linter (runs in CI)
 ├── tests/                     # offline pytest suite (fake transport, no network)
+│   └── fixtures/              #   incl. a real measured publication article
 └── .github/workflows/ci.yml   # pytest + check_docs on 3.9/3.12
 ```
 
@@ -127,6 +156,16 @@ seo-engine/
 │   ├── http-cache/   # transient response cache
 │   └── <skill>-*.json# per-skill histories (each written & read by that skill only)
 └── reports/          # dated reports, auto-pruned
+
+publications/         # one folder per owned publication (committed)
+└── <slug>/
+    ├── site.yml      # name, url, theme, sections, authors, disclosure, planner
+    ├── strategy.yml  # client, direction, topics, stances, targets, landings, mention policy
+    ├── topic-map.yml # pillars → spokes with status open|queued|covered|dismissed
+    ├── seers.yml     # trigger sources (news, regulation, social, GitHub, specs, Notion)
+    ├── competitors/  # scraped competitor catalogues
+    ├── drafts/ posts/ assets/<slug>/   # article lifecycle + diagrams/covers
+    └── dist/         # built static site (deploy to Vercel)
 ```
 
 ## The continuous loop (`seo-maintain`)
@@ -142,6 +181,23 @@ seo-engine/
    under that skill's own auto-apply/human-review gates.
 5. Write a dated report; the snapshot store gives the next run its baseline.
 
+## The publication loop (`pub-*`)
+
+1. `pub-site` scaffolds a publication (name never contains the client's name,
+   generated personas, theme) and `pub-strategy` records positioning.
+2. `pub-curate` builds the topic map from positioning and competitor
+   catalogues, scores suggestions (competitor coverage, GEO gaps from
+   `geo-monitor`, search volume, cluster fit, authority, social conversations),
+   and polls seers for time-sensitive triggers.
+3. `pub-publish`'s planner materializes de-robotized slots and fills them from
+   the queue; `run_pipeline.py` runs `pub-research` (every point cites a fetched
+   source) → `pub-write` (kernel voice, candidate judging, mention decision) →
+   `pub-enhance` (links, sources, anchors, verifier) → `pub-visuals` → the
+   gate → publish → relink → build.
+4. `pub-monitor` rolls up Search Console per publication and flags refresh
+   candidates; `geo-monitor`'s brand-mention tracker measures whether
+   assistants now name the client, and feeds gaps back to step 2.
+
 ## Environment variables (operational)
 
 - `SEO_REPO_ROOT` — pins the target repo (recommended for cron/CI; otherwise
@@ -150,3 +206,8 @@ seo-engine/
   than symlinked (scripts otherwise self-locate through their own path).
 - `SEO_SITE_URL` — fallback for `site_url` when `.seo-engine/config.yml`
   doesn't exist yet.
+- `LLM_PROVIDER`, `LLM_MODEL_<PROVIDER>`, `LLM_CHEAP_MODEL_<PROVIDER>`,
+  `LLM_EFFORT` — which configured text provider the `pub-*` skills prefer and
+  which model ids they use (defaults in `scripts/lib/llm.py`).
+- `IMAGE_PROVIDER`, `IMAGE_MODEL_OPENAI`, `IMAGE_MODEL_GEMINI` — cover
+  generation provider and model ids (defaults in `scripts/lib/images.py`).

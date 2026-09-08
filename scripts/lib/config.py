@@ -48,6 +48,9 @@ INTEGRATION_ENV_VARS: dict[str, dict[str, list[str]]] = {
     "gemini": {"all": ["GOOGLE_GEMINI_API_KEY"]},
     "profound": {"all": ["PROFOUND_API_KEY"]},
     "otterly": {"all": ["OTTERLY_API_KEY"]},
+    "sociavault": {"all": ["SOCIAVAULT_API_KEY"]},
+    "github": {"all": ["GITHUB_TOKEN"]},
+    "notion": {"all": ["NOTION_TOKEN"]},
 }
 
 #: Values that mean "the user never filled this in". Checked as

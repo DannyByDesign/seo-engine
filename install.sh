@@ -105,3 +105,5 @@ echo "  2. Add whichever API keys you have to $TARGET_REPO/.env (all optional â€
 echo "  3. In an agent session in $TARGET_REPO, invoke the 'seo-setup' skill to detect your"
 echo "     stack and write .seo-engine/config.yml"
 echo "  4. Invoke 'seo-maintain' any time you want a prioritized SEO+GEO checkup"
+echo "  5. To run an owned publication, invoke 'pub-site' to scaffold it, then 'pub-strategy',"
+echo "     'pub-curate' and 'pub-publish' (model + guardrails: skills/seo-references/publication-playbook.md)"

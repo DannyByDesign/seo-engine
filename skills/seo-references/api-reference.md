@@ -286,6 +286,11 @@ JS-dependent content that may be invisible to some crawlers.
 
 **Env var:** `FIRECRAWL_API_KEY`
 
+The `pub-*` skills also use Firecrawl's **search** endpoint (`POST /v2/search`, `query`, `limit`,
+optional `tbs` recency filter) as the web-search step of `pub-research` and for `news_trend`
+seers, and its scrape endpoint to read sources and competitor catalogues. Without the key,
+research falls back to the URLs it is given (`--source-url`, landings, cached research).
+
 ## AI-visibility tracking (commercial landscape)
 
 This category is overwhelmingly **dashboard-first** in 2026 — most vendors gate API access behind
@@ -308,7 +313,7 @@ real, somewhat-accessible APIs:
 degrade gracefully to "not configured" if absent, since the DIY-via-vendor-APIs approach is the
 primary mechanism.
 
-## LLM provider APIs (used for GEO citation-probing, not content generation)
+## LLM provider APIs — GEO citation-probing
 
 | Provider | Feature | Auth | Notes |
 |---|---|---|---|
@@ -316,6 +321,80 @@ primary mechanism.
 | Anthropic | Claude API `web_search` tool (`web_search_20250305`) | `ANTHROPIC_API_KEY` | Citations inline per text block; supports `allowed_domains`/`blocked_domains` |
 | Perplexity | Sonar API | `PERPLEXITY_API_KEY` | `citations` + `search_results` in every response |
 | Google | Gemini API grounding | `GOOGLE_GEMINI_API_KEY` | `groundingMetadata` — this is the Gemini API's own grounding, not the same system as AI Mode/AI Overviews in Search, which have no public API |
+
+`geo-monitor`'s brand-mention tracker (`track_brand_mentions.py`) uses the same four with web
+search forced on, then detects mentions deterministically (name + aliases, links blanked, never
+the domain label) and scores sentiment/recommendation with the cheap tier below.
+
+## LLM provider APIs — content generation (the `pub-*` skills)
+
+Bring-your-own-key text generation in `scripts/lib/llm.py`. The first configured provider in
+the order Anthropic → OpenAI → Gemini is used unless `LLM_PROVIDER` names another configured one;
+every call goes through `http_util` with the JSON body and a single retry on malformed JSON.
+
+| Provider | Endpoint | Quality model (default) | Cheap model (default) | Override |
+|---|---|---|---|---|
+| Anthropic | `POST https://api.anthropic.com/v1/messages` (`anthropic-version: 2023-06-01`; `output_config.effort` when `LLM_EFFORT` is set, never on Haiku) | `claude-opus-5` | `claude-haiku-4-5` | `LLM_MODEL_ANTHROPIC`, `LLM_CHEAP_MODEL_ANTHROPIC` |
+| OpenAI | `POST https://api.openai.com/v1/responses` (`instructions` + `input`; `text.format json_object` for JSON) | `gpt-5` | `gpt-5-mini` | `LLM_MODEL_OPENAI`, `LLM_CHEAP_MODEL_OPENAI` |
+| Google | `POST https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent` (`systemInstruction`; `responseMimeType application/json`) | `gemini-2.5-pro` | `gemini-2.5-flash` | `LLM_MODEL_GEMINI`, `LLM_CHEAP_MODEL_GEMINI` |
+
+Who uses which tier: research synthesis, article candidates, the judge and the voice pass use
+the quality tier; topic-map expansion, keyword suggestions, mention sentiment and seer summaries
+use the cheap tier. The Shredder rotates providers on purpose (one voice per sentence run is
+the point). A `refusal` stop reason or an empty body is surfaced as `LlmError`, never retried
+blindly. Perplexity is probing-only (no content generation).
+
+## Image generation APIs (`pub-visuals gen_cover.py`)
+
+| Provider | Endpoint | Default model | Override | Output |
+|---|---|---|---|---|
+| OpenAI | `POST https://api.openai.com/v1/images/generations` | `gpt-image-1` | `IMAGE_MODEL_OPENAI` | base64 JPEG, `size` 1536×1024 |
+| Google | `POST …/models/<model>:generateContent` with image response modality | `gemini-2.5-flash-image` | `IMAGE_MODEL_GEMINI` | `inlineData` (base64) |
+
+`IMAGE_PROVIDER` (`openai` | `gemini`) picks when both keys exist; with neither key the skill
+renders a deterministic SVG cover so the pipeline never blocks on art. Diagrams are pure SVG
+(no API) rendered from the research outline's `diagrams` specs.
+
+## SociaVault (social-conversation search)
+
+Consumer-social scraping API used by `pub-curate` for the **social** signal (what younger
+audiences are actually asking on Reddit, X, TikTok, YouTube, Instagram) and the `social_trend`
+seer. Docs: docs.sociavault.com.
+
+- **Base URL:** `https://api.sociavault.com/v1`; **auth:** `X-API-Key` header; **billing:**
+  credit packs, 1 credit per request (`GET /credits` returns the balance). A failed scrape
+  returns `success: false` with a message and still costs a credit.
+- **Endpoints used:** `GET /scrape/reddit/search` (`query`, `sort`, `timeframe`, `trim`),
+  `GET /scrape/twitter/search` (`query`, `type` Top|Latest), `GET /scrape/tiktok/search/keyword`
+  (`query`, `date_posted`, `sort_by`, `region`), `GET /scrape/youtube/search` (`query`,
+  `uploadDate`, `sortBy`), `GET /scrape/tiktok/trending` (`region`). Instagram hashtag search and
+  transcripts exist but are not wired in.
+- **Quirks:** collections often come back as index-keyed objects (`{"0": {…}, "1": {…}}`)
+  rather than arrays — `scripts/lib/sociavault.py` normalizes both; per-platform failures are
+  reported in `errors[]` without failing the whole search.
+- **Scope rule:** read-only listening for topic discovery. Nothing in this system posts,
+  replies, or creates social accounts (red-flags §7).
+
+**Env var:** `SOCIAVAULT_API_KEY`
+
+## GitHub REST API (seers)
+
+`github_release` and `github_pr` seers read `GET https://api.github.com/repos/{owner}/{repo}/releases`
+and `/pulls` (public repos only). Unauthenticated calls share a 60 requests/hour IP quota;
+`GITHUB_TOKEN` (a fine-grained token with public-repo read scope, or none) lifts it to 5,000/hour
+and is sent as `Authorization: Bearer`. Nothing is written.
+
+**Env var:** `GITHUB_TOKEN` (optional)
+
+## Notion API (seers)
+
+`notion_activity` polls `POST https://api.notion.com/v1/search` (`Notion-Version: 2022-06-28`,
+filtered to pages, sorted by `last_edited_time`) for pages a Notion **internal integration** has
+been shared with — the client's own roadmap or research workspace, used as a "something changed,
+consider an article" trigger. Create the integration in Notion's developer settings and share
+only the pages that should be visible. Nothing is written.
+
+**Env var:** `NOTION_TOKEN`
 
 ## Env var summary
 

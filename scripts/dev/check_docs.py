@@ -47,9 +47,9 @@ CANONICAL_HEADINGS = [
 
 FLAG_ALLOWLIST = {"--help"}
 YEAR_RE = re.compile(r"\b20\d{2}\b")
-SECTION_REF_RE = re.compile(r"(geo-playbook|seo-playbook|red-flags)(?:\.md)?\s*§\s*(\d+)")
+SECTION_REF_RE = re.compile(r"(geo-playbook|seo-playbook|red-flags|publication-playbook)(?:\.md)?\s*§\s*(\d+)")
 MOJIBAKE_RE = re.compile(r"\bSS\d|�")
-BACKTICK_SKILL_RE = re.compile(r"`((?:seo|geo)-[a-z][a-z-]*)`")
+BACKTICK_SKILL_RE = re.compile(r"`((?:seo|geo|pub)-[a-z][a-z-]*)`")
 
 errors: list[str] = []
 
@@ -135,6 +135,7 @@ def main() -> int:
         "geo-playbook": section_headings(REFERENCES_DIR / "geo-playbook.md"),
         "seo-playbook": section_headings(REFERENCES_DIR / "seo-playbook.md"),
         "red-flags": section_headings(REFERENCES_DIR / "red-flags.md"),
+        "publication-playbook": section_headings(REFERENCES_DIR / "publication-playbook.md"),
     }
     common_setup_text = (REFERENCES_DIR / "common-setup.md").read_text(encoding="utf-8")
 

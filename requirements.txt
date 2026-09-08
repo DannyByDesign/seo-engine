@@ -7,3 +7,4 @@ PyYAML>=6.0
 google-auth>=2.28        # service-account auth for Google Search Console / Indexing APIs
 google-api-python-client>=2.100  # Search Console API client
 extruct>=0.18            # offline JSON-LD/Microdata extraction for schema validation
+Markdown>=3.5            # markdown -> HTML for pub-site's static publication builder

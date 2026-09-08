@@ -1,6 +1,6 @@
 ---
 name: geo-monitor
-description: Measures actual AI-search visibility — whether/how often the target domain gets cited by ChatGPT, Claude, Perplexity, and Gemini for tracked prompts (N samples each, majority-voted, flap-damped loss detection), plus free crawler-log and dashboard signals. Invoke when a user asks "are we showing up in ChatGPT/AI search," "track our AI visibility," "did we lose a citation," or on seo-maintain's scheduled GEO step. Never invoke to increase citations directly — geo-optimize/seo-content-optimize do that; this skill only measures and diffs.
+description: Measures actual AI-search visibility: whether the target domain gets cited by ChatGPT, Claude, Perplexity and Gemini for tracked prompts (N samples, majority-voted, flap-damped loss detection), and how often the brand and its competitors are NAMED in answers (mention rate, share of voice, prominence, sentiment, owned-citation rate, Wilson intervals), per publication or for the main site. Invoke for "are we showing up in AI search" or the scheduled GEO step. It only measures; geo-optimize and the pub-* skills act.
 ---
 
 # geo-monitor
@@ -118,6 +118,36 @@ zero `PerplexityBot` count specifically does not guarantee zero Perplexity crawl
 Cloudflare has documented undeclared stealth crawlers evading robots.txt (`geo-playbook.md` §4,
 "corroborated but disputed").
 
+### 4. `scripts/track_brand_mentions.py` — named, not just cited (Lettertrace method)
+
+Citation probing asks "was our URL among the sources"; this asks "was our brand *named*, and
+were the competitors" — the two are separate currencies and uncorrelated in the measured data
+(`publication-playbook.md` §7). For a publication (`--publication`) the subject comes from
+`strategy.yml` (client name/aliases/domain, competitors, ranking-target phrases as topics,
+publication domains as owned); otherwise from `--brand`/`--alias`/`--domain`/`--competitor`/
+`--topic` or `geo_topics` in `.seo-engine/config.yml`.
+
+`--generate` turns each topic into `--variations` prompts (default 8, max 20) with the one
+rule that measured anything in the vendor's pilots: two thirds must explicitly demand named
+companies ("List the top 5 … by name"; never "a shortlist", never how-to), each labeled
+`general | mid | niche`. Each prompt runs on every configured provider `--replicates` times
+(1-10); the answer text is scanned with deterministic detection (`scripts/lib/mentions.py`:
+name + aliases, never the domain label, link targets blanked, longest alias first); detected
+entities get a cheap-model `sentiment`/`recommended` (skip with `--no-enrich`); citations carry
+an `owned` flag. Output per run: per-entity mention rate, share of voice, average prominence,
+recommend rate, sentiment score; owned-citation rate; informative rate; the five-state verdict
+`no-data | no-competitors | thin-sample | real-gap | healthy`; the prompts competitors win;
+the owned pages that get cited; the trend against the previous run; `first_mention_at`.
+`--dry-run` prints the prompt set and the exact number of billed calls; `--max-prompts` caps
+a run.
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --generate --dry-run
+python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --replicates 2
+python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --brand thrad --domain thrad.ai \
+  --competitor "Lapis=trylapis.com" --topic "LLM advertising platforms" --generate --providers openai,anthropic
+```
+
 ## Running it
 
 > All commands below run from the **target repo root** (the repo that contains the
@@ -132,7 +162,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/acc
 
 Flags: `track_ai_visibility.py --prompt` (repeatable), `--domain`, `--samples` (default 3, must
 be >= 1), `--skip-trackers`; `grep_ai_crawler_logs.py` positional `log_file`, `--sample-lines`
-(default 2), `--since-days`.
+(default 2), `--since-days`; `track_brand_mentions.py` `--publication`, `--brand`, `--alias`,
+`--domain`, `--competitor`, `--topic` (all repeatable where plural), `--variations`,
+`--generate`, `--replicates`, `--providers`, `--max-prompts`, `--no-enrich`, `--dry-run`,
+`--publications-dir`.
 
 ## Expected output
 
@@ -168,6 +201,8 @@ be >= 1), `--skip-trackers`; `grep_ai_crawler_logs.py` positional `log_file`, `-
 | `state/ai-visibility-history.jsonl` | append-only, one record per prompt per run (schema v2: prompt, target_domain, run_id, per-provider state/cited_count/citation_urls) | `track_ai_visibility.py` | `track_ai_visibility.py` (flap-damped diffing) |
 | `reports/ai-visibility-<stamp>.json` | dated run report | `track_ai_visibility.py` | calling agent |
 | `reports/ai-crawler-log-scan-<stamp>.json` | dated scan report (best-effort) | `grep_ai_crawler_logs.py` | calling agent |
+| `state/pub-mentions-<slug>.json` (`main` for the first-party site) | prompt set, up to 52 runs of mention/citation metrics, `first_mention_at` | `track_brand_mentions.py` | `track_brand_mentions.py` (trend), `pub-monitor` GEO sync |
+| `reports/pub-mentions-<slug>-<stamp>.json` | dated brand-mention report | `track_brand_mentions.py` | calling agent |
 
 ## How to interpret results
 
@@ -191,6 +226,11 @@ be >= 1), `--skip-trackers`; `grep_ai_crawler_logs.py` positional `log_file`, `-
   system's write-scope — report that plainly rather than proposing another round of on-site tactics.
 - **Do not treat correlation with a recent site change as proof of causation** — this skill has no
   controlled-experiment design.
+- **A `thin-sample` verdict means the prompts, not the brand, failed**: answers did not name
+  anyone. Regenerate prompts (`--generate`) in the named-companies shape before reading a 0%
+  mention rate as a gap; `real-gap` is the honest zero.
+- **Named and cited move independently.** A rising owned-citation rate with a flat mention
+  rate is the normal early trajectory for a young publication; expect months.
 
 ## Safe to auto-apply vs. human review
 

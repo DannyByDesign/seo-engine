@@ -92,6 +92,35 @@ def search_volume(cfg: Config, keywords: list[str], location_code: int = 2840) -
     }], timeout=120.0)
 
 
+def keyword_difficulty(cfg: Config, keywords: list[str], location_code: int = 2840,
+                       language_code: str = "en") -> dict[str, Any]:
+    """DataForSEO Labs bulk keyword difficulty (0-100) — max 1,000 keywords."""
+    return _post(cfg, "/dataforseo_labs/google/bulk_keyword_difficulty/live", [{
+        "keywords": keywords[:1000], "location_code": location_code, "language_code": language_code,
+    }], timeout=120.0)
+
+
+def volume_and_difficulty(cfg: Config, keywords: list[str]) -> dict[str, dict[str, Any]]:
+    """{keyword: {msv, kd}} from search_volume + keyword_difficulty; a failure of
+    one call leaves that field None rather than failing the whole lookup."""
+    out: dict[str, dict[str, Any]] = {k: {"msv": None, "kd": None} for k in keywords}
+    if not keywords:
+        return out
+    try:
+        for item in (search_volume(cfg, keywords)["tasks"][0].get("result") or []):
+            if item.get("keyword") in out:
+                out[item["keyword"]]["msv"] = item.get("search_volume")
+    except Exception:  # noqa: BLE001 — partial enrichment beats none
+        pass
+    try:
+        for item in (keyword_difficulty(cfg, keywords)["tasks"][0].get("result") or []):
+            if item.get("keyword") in out:
+                out[item["keyword"]]["kd"] = item.get("keyword_difficulty")
+    except Exception:  # noqa: BLE001
+        pass
+    return out
+
+
 # ---------- Backlinks (live-only) ----------
 
 def backlinks_summary(cfg: Config, target: str) -> dict[str, Any]:

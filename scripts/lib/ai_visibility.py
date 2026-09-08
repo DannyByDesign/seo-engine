@@ -230,6 +230,31 @@ def probe_all(cfg: Config, prompt: str, target_domain: str) -> dict[str, Any]:
     return {"prompt": prompt, "target_domain": target_domain, "providers": results}
 
 
+
+# ---------- answer text (for mention detection, not just citations) ----------
+
+def answer_text(provider: str, raw: dict[str, Any]) -> str:
+    """The assistant's answer as plain text, per provider payload shape."""
+    raw = raw or {}
+    if provider == "openai":
+        parts = []
+        for item in raw.get("output", []) or []:
+            if item.get("type") == "message":
+                for c in item.get("content", []) or []:
+                    if c.get("type") == "output_text":
+                        parts.append(c.get("text", ""))
+        return "".join(parts)
+    if provider == "anthropic":
+        return "".join(b.get("text", "") for b in raw.get("content", []) or [] if b.get("type") == "text")
+    if provider == "perplexity":
+        choices = raw.get("choices") or [{}]
+        return str((choices[0].get("message") or {}).get("content") or "")
+    if provider == "gemini":
+        cands = raw.get("candidates") or [{}]
+        return "".join(p.get("text", "") for p in ((cands[0].get("content") or {}).get("parts") or []))
+    return ""
+
+
 # ---------- Commercial trackers (optional, thin adapters) ----------
 # Endpoint shapes are from vendor marketing/docs pages and are NOT
 # independently verified — exercise via scripts/dev/smoke.py before relying

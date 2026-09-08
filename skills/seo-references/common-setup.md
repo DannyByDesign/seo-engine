@@ -88,6 +88,37 @@ A crawl summary always carries `robots_status` and `all_blocked` — an empty
 crawl states WHY (e.g. a WAF 403 on robots.txt) instead of producing a
 silently-empty report.
 
+## Publications (the `pub-*` skills)
+
+A publication is content, so it lives in the target repo, committable, at
+`<publications_dir>/<slug>/` (config key `publications_dir`, default `publications/`):
+
+```
+publications/<slug>/
+├── site.yml          # masthead, sections, author bank, theme, disclosure, client (pub-site)
+├── strategy.yml      # positioning, ranking targets, landings, competitors, mention policy (pub-strategy)
+├── topic-map.yml     # pillars + spokes with statuses (pub-curate)
+├── seers.yml         # event monitors (pub-curate)
+├── competitors/      # scraped competitor inventories, one JSON per domain (pub-strategy)
+├── drafts/*.md       # in-flight articles: frontmatter carries research/outline/paper trail
+├── posts/*.md        # published articles (frontmatter: published_at set once, updated_at on change)
+├── assets/<post>/    # cover + diagrams referenced by relative path from the post
+├── static/           # copied verbatim into dist/ (verification files, og image)
+└── dist/             # build output — deploy this directory (gitignored)
+```
+
+`.seo-engine/config.yml → publications` is the registry (`[{slug, site_url, name}]`) the
+validator uses as the sibling set. Per-publication machine state is transient and lives under
+`.seo-engine/state/` with a `pub-<name>-<slug>.json` naming family:
+`pub-suggestions-<slug>.json` (headline queue), `pub-seers-<slug>.json` (seer cursors),
+`pub-social-cache-<slug>.json` (SociaVault signal cache), `pub-geo-opportunities-<slug>.json`
+(GEO gaps from monitoring), `pub-planner-<slug>.json` (publish slots), `pub-shred-<slug>.json`
+(shredder telemetry), `pub-mentions-<slug>.json` (GEO mention history),
+`pub-performance-<slug>.json` (Search Console history), `pub-refresh-<slug>.json` (refresh
+checks), plus
+`pub-research/<slug>/<article>/` (cached source texts). Reports use
+`.seo-engine/reports/pub-<name>-<slug>-<stamp>.json`.
+
 ## Graceful degradation (report, don't gate)
 
 Zero API keys is a supported configuration. A missing integration never crashes
