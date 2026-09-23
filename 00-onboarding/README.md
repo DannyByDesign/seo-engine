@@ -17,6 +17,10 @@ The agent establishes the website, goals and constraints, saves a brand brief, c
 selected integrations, and hands off the first useful task to the ongoing workflow.
 It resumes incomplete setup and reuses completed onboarding on later sessions.
 
+For selected free APIs, the agent uses its available browser/computer-use tools to obtain
+credentials and configure them, interrupting only when user action is required (such as login).
+For paid APIs, it pauses that integration and guides you to obtain the key securely.
+
 Per-website progress and knowledge stay in the workspace's ignored `.seo-engine/` directory;
 credentials stay in its ignored `.env`. This directory contains reusable onboarding logic,
 not any customer's answers. See the root [.env.example](../.env.example) for the variable

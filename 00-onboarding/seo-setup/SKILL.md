@@ -108,18 +108,37 @@ extra LLM subscription. Scripted text generation currently supports OpenAI, Anth
 Gemini, not arbitrary model endpoints. The agent can use another model for host-written work;
 do not claim an unsupported API works. No need to configure all providers.
 
-The agent writes configuration and runs checks. The user supplies only account access that
-cannot be obtained on their behalf: signing in, granting property permissions, downloading a
-credential file, or pasting a key into a **hidden, user-controlled terminal/host secret input**.
-Explain the exact action and its purpose one service at a time. Use current provider instructions
-when dashboard details matter. Never ask for secrets through ordinary chat/question tools.
+Choose the setup path from the selected service's current account terms, not a permanent
+free/paid vendor label. Reuse suitable credentials already configured for this website.
+
+- **Paid APIs:** pause that integration and give the user the provider's setup link, the key
+  type/scopes needed and a secure way to supply it. The user obtains the key and handles billing;
+  resume when it is available, or record a deferral. Do not subscribe, buy credits or start a
+  paid trial. Continue independent free setup while waiting.
+- **Free APIs:** perform setup yourself using the host agent's available native browser or
+  computer-use tools and its authenticated session. Follow current provider instructions to
+  create/retrieve the needed key or download credentials, apply the minimum permissions for
+  this website, and configure them locally. Don't hand routine dashboard work to the user or
+  ask for confirmation at every step. Generate local credentials such as IndexNow keys locally.
+- **Interrupt only for a real blocker:** login, MFA/CAPTCHA, missing account/admin access,
+  required human consent, unavailable browser/secure credential transfer, or a billing step.
+  State the exact action needed, let the user complete it, then resume from that point. Never
+  ask for passwords or MFA codes in chat. If a free tier needs a payment method, permits billed
+  overages or has unclear charges, use the paid setup path instead.
+
+These instructions apply to any host, including Codex and Claude Code; discover the tools
+actually available rather than assuming a particular browser API exists. Account access and
+host-tool permissions still apply. Keep successful free setup quiet until the onboarding recap.
 
 Use `onboard.py --action credential --key KEY` in a terminal the user can interact with, or
-`--from-file PATH` for a credential file they explicitly select. The helper writes only that
-key, preserves unrelated `.env` lines, hides values and sets restrictive permissions. For Google,
-prefer an absolute `GOOGLE_APPLICATION_CREDENTIALS` path to the user-selected service-account
-file, or import JSON with `GSC_SERVICE_ACCOUNT_JSON`. Never print the file. Do not source `.env`
-as shell code. Non-secret settings (property ID, provider/model choices) can be edited directly.
+`--from-file PATH` for a credential file supplied by the user or obtained during authorized
+free setup. Use a host-supported secure transfer or private download without echoing secrets
+into chat, logs or command arguments; if unavailable, use hidden user-controlled entry.
+The helper writes only that key, preserves unrelated `.env` lines and sets restrictive permissions.
+For Google, prefer an absolute `GOOGLE_APPLICATION_CREDENTIALS` path to the downloaded
+service-account file kept in ignored `credentials/` with restrictive permissions, or import JSON
+with `GSC_SERVICE_ACCOUNT_JSON`. Never print the file. Do not source `.env` as shell code.
+Non-secret settings (property ID, provider/model choices) can be edited directly.
 If the host has no secure entry surface, accept a local credential file path or defer; don't
 pretend credentials were connected. A ChatGPT/Claude subscription isn't an API credential.
 
@@ -156,7 +175,7 @@ python3 "$SKILL_DIR/scripts/onboard.py" --action credential --key GOOGLE_APPLICA
 python3 "$SKILL_DIR/scripts/onboard.py" --action complete
 ```
 
-`--from-file` reads a user-selected credential file instead of hidden terminal entry. `--file`
+`--from-file` reads a supplied or securely downloaded credential file instead of hidden terminal entry. `--file`
 is only for non-secret onboarding JSON. Example shape (agent authors actual values):
 
 ```json

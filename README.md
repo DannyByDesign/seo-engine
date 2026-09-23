@@ -71,8 +71,9 @@ The prompt above starts onboarding for you. If you installed manually, say:
 > Use seo-setup to set up SEO Engine for this website.
 
 The agent asks about your goals, sets up its Python environment, saves a brand brief, and
-guides only the integrations you need. No manual environment-file editing. Start without
-API keys; some optional services cost money.
+sets up free integrations through its available browser tools, asking for help only when blocked.
+For paid APIs, it guides you to obtain the keys. No manual environment-file editing;
+you can also start without API keys.
 
 Then ask naturally:
 
