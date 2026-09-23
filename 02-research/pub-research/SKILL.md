@@ -90,7 +90,7 @@ Flags: `--publication`, `--slug`, `--topic`, `--spoke-id`, `--source-url` (repea
   "plan": { "queries": ["..."], "must_cover": ["..."] }, "notes": [] }
 ```
 With `--direction-gate`: `status: awaiting_direction`, `direction_options[]`, `recommended`,
-and a `next_step`. Exit 1 when no LLM key is configured or no source could be read.
+and a `next_step`. Exit 1 when no `OPENROUTER_API_KEY` is configured or no source could be read.
 
 ## State files
 
@@ -139,6 +139,6 @@ and a `next_step`. Exit 1 when no LLM key is configured or no source could be re
 
 ## Graceful degradation
 
-Requires one LLM key. Without a search provider it reads only `--source-url` seeds and matching
+Requires `OPENROUTER_API_KEY`. Without a search provider it reads only `--source-url` seeds and matching
 landings (`--no-search` makes that explicit); without Firecrawl, thin JavaScript pages may be
 dropped for lack of text. Every skipped capability is named in `notes`.

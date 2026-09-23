@@ -65,19 +65,19 @@ def test_onboarding_does_not_claim_missing_credentials_ready(tmp_path):
 
 def test_credential_store_preserves_unrelated_data_and_hides_values(tmp_path):
     path = tmp_path / '.env'
-    path.write_text('# Existing app\nAPP_SETTING=keep\nexport OPENAI_API_KEY=old\nOPENAI_API_KEY=duplicate\n')
+    path.write_text('# Existing app\nAPP_SETTING=keep\nexport OPENROUTER_API_KEY=old\nOPENROUTER_API_KEY=duplicate\n')
     secret = 'secret-with-$() # spaces and "quotes"'
-    result = onboard.store_credential(tmp_path, 'OPENAI_API_KEY', secret)
+    result = onboard.store_credential(tmp_path, 'OPENROUTER_API_KEY', secret)
     assert secret not in json.dumps(result)
     values = _parse_env_file(path)
-    assert values == {'APP_SETTING': 'keep', 'OPENAI_API_KEY': secret}
-    assert path.read_text().count('OPENAI_API_KEY=') == 1
+    assert values == {'APP_SETTING': 'keep', 'OPENROUTER_API_KEY': secret}
+    assert path.read_text().count('OPENROUTER_API_KEY=') == 1
     assert path.stat().st_mode & 0o777 == 0o600
     assert '.env' in (tmp_path / '.gitignore').read_text().splitlines()
     onboard.store_credential(tmp_path, 'GSC_SERVICE_ACCOUNT_JSON', '{\n "type": "service_account"\n}')
     assert json.loads(_parse_env_file(path)['GSC_SERVICE_ACCOUNT_JSON'])['type'] == 'service_account'
     with pytest.raises(ValueError):
-        onboard.store_credential(tmp_path, 'OPENAI_API_KEY', 'x\nEVIL=value')
+        onboard.store_credential(tmp_path, 'OPENROUTER_API_KEY', 'x\nEVIL=value')
     with pytest.raises(ValueError):
         onboard.store_credential(tmp_path, 'UNSUPPORTED', secret)
 
@@ -88,12 +88,12 @@ def test_credential_refuses_tracked_or_shared_env(tmp_path):
     path.write_text('APP_SETTING=keep\n')
     subprocess.run(['git', '-C', str(tmp_path), 'add', '.env'], check=True)
     with pytest.raises(ValueError, match='tracked'):
-        onboard.store_credential(tmp_path, 'OPENAI_API_KEY', 'secret')
+        onboard.store_credential(tmp_path, 'OPENROUTER_API_KEY', 'secret')
     assert path.read_text() == 'APP_SETTING=keep\n'
     path.unlink()
     path.symlink_to(tmp_path / 'elsewhere')
     with pytest.raises(ValueError, match='symlink'):
-        onboard.store_credential(tmp_path, 'OPENAI_API_KEY', 'secret')
+        onboard.store_credential(tmp_path, 'OPENROUTER_API_KEY', 'secret')
 
 
 def test_default_install_targets_clone_and_optional_links_survive_rename(tmp_path):
@@ -124,8 +124,8 @@ def test_credential_file_cli_does_not_emit_secret(tmp_path):
     secret = 'test-token-for-local-fixture'
     credential_file = tmp_path / 'token'
     credential_file.write_text(secret)
-    result = subprocess.run([sys.executable, str(SCRIPT), '--action', 'credential', '--key', 'OPENAI_API_KEY',
+    result = subprocess.run([sys.executable, str(SCRIPT), '--action', 'credential', '--key', 'OPENROUTER_API_KEY',
                              '--from-file', str(credential_file)], cwd=tmp_path,
                             env={**os.environ, 'SEO_REPO_ROOT': str(tmp_path)}, capture_output=True, text=True, check=True)
     assert secret not in result.stdout + result.stderr
-    assert _parse_env_file(tmp_path / '.env')['OPENAI_API_KEY'] == secret
+    assert _parse_env_file(tmp_path / '.env')['OPENROUTER_API_KEY'] == secret

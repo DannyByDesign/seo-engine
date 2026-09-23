@@ -77,7 +77,7 @@ def test_render_all_diagram_types(tmp_path, monkeypatch, capsys):
 def test_cover_svg_fallback_and_providers(tmp_path, monkeypatch, capsys, fake_transport):
     cfg, root = _repo(tmp_path)
     blocked = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece"], monkeypatch, capsys)
-    assert blocked['_exit'] == 1 and 'No image provider' in blocked['error']
+    assert blocked['_exit'] == 1 and 'OPENROUTER_API_KEY' in blocked['error']
     out = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece", '--provider', 'svg'], monkeypatch, capsys)
     assert out["_exit"] == 0 and out["cover"]["generator"] == "svg-fallback"
     meta, _ = publication.read_post(root / "drafts" / "piece.md")
@@ -87,37 +87,45 @@ def test_cover_svg_fallback_and_providers(tmp_path, monkeypatch, capsys, fake_tr
     skipped = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece"], monkeypatch, capsys)
     assert skipped["skipped"] is True
 
-    cfg2 = Config(repo_root=tmp_path, env={"OPENAI_API_KEY": "sk"}, site={"publications_dir": "publications"})
-    fake_transport.route("POST", "https://api.openai.com/v1/images/generations",
+    cfg2 = Config(repo_root=tmp_path, env={"OPENROUTER_API_KEY": "sk"}, site={"publications_dir": "publications"})
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/images",
                          {"body": json.dumps({"data": [{"b64_json": base64.b64encode(PNG_1X1).decode()}]})})
     out2 = _run(cover_mod, cfg2, ["--publication", "pl", "--slug", "piece", "--force"], monkeypatch, capsys)
-    assert out2["cover"]["generator"].startswith("openai/") and out2["cover"]["width"] == 1536 and out2["cover"]["src"] == "cover.jpg"
+    assert out2["cover"]["generator"].startswith("openrouter/") and out2["cover"]["width"] == 1536 and out2["cover"]["src"] == "cover.png"
     body = fake_transport.calls[-1][2]["json"]
-    assert body["size"] == "1536x1024" and "A branching path" in body["prompt"] and "#ff4d1c" in body["prompt"]
+    assert body["aspect_ratio"] == "16:9" and "A branching path" in body["prompt"] and "#ff4d1c" in body["prompt"]
     meta, _ = publication.read_post(root / 'drafts/piece.md')
     assert 'alt' not in meta['cover']  # The host must inspect before describing generated pixels.
-    assert meta['image_assets']['cover.jpg']['source_type'] == 'generated'
+    assert meta['image_assets']['cover.png']['source_type'] == 'generated'
 
-    cfg3 = Config(repo_root=tmp_path, env={"GOOGLE_GEMINI_API_KEY": "g"}, site={"publications_dir": "publications"})
-    fake_transport.route("POST", "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
-                         {"body": json.dumps({"candidates": [{"content": {"parts": [{"inlineData": {"mimeType": "image/png", "data": base64.b64encode(PNG_1X1).decode()}}]}}]})})
-    gen = images.generate_image(cfg3, "x")
-    assert gen["provider"] == "gemini" and gen["mime"] == "image/png" and gen["bytes"] == PNG_1X1
+    gen = images.generate_image(cfg2, "x", model="openai/gpt-image-1", aspect_ratio="1:1")
+    assert gen["provider"] == "openrouter" and gen["mime"] == "image/png" and gen["bytes"] == PNG_1X1
+    assert fake_transport.calls[-1][2]["json"]["model"] == "openai/gpt-image-1"
+    assert fake_transport.calls[-1][2]["json"]["aspect_ratio"] == "1:1"
     with pytest.raises(images.ImageError):
         images.generate_image(Config(repo_root=tmp_path, env={}, site={}), "x")
 
 
-def test_cover_honors_selected_provider_and_does_not_generate_factual_assets(tmp_path, monkeypatch, capsys, fake_transport):
-    cfg, root = _repo(tmp_path, OPENAI_API_KEY='openai-key', GOOGLE_GEMINI_API_KEY='gemini-key', IMAGE_PROVIDER='gemini')
-    fake_transport.route('POST', 'https://generativelanguage.googleapis.com/', {'body': json.dumps({
-        'candidates': [{'content': {'parts': [{'inlineData': {'mimeType': 'image/png', 'data': base64.b64encode(PNG_1X1).decode()}}]}}]})})
+def test_cover_honors_selected_model_and_does_not_generate_factual_assets(tmp_path, monkeypatch, capsys, fake_transport):
+    cfg, root = _repo(tmp_path, OPENROUTER_API_KEY='key', IMAGE_MODEL='openai/gpt-image-1')
+    fake_transport.route('POST', 'https://openrouter.ai/api/v1/images', {'body': json.dumps({
+        'data': [{'b64_json': base64.b64encode(PNG_1X1).decode(), 'media_type': 'image/png'}]})})
     out = _run(cover_mod, cfg, ['--publication', 'pl', '--slug', 'piece'], monkeypatch, capsys)
-    assert out['cover']['generator'].startswith('gemini/')
-    assert len(fake_transport.calls) == 1 and 'googleapis.com' in fake_transport.calls[0][1]
+    assert out['cover']['generator'] == 'openrouter/openai/gpt-image-1'
+    assert len(fake_transport.calls) == 1 and 'openrouter.ai' in fake_transport.calls[0][1]
     meta, body = publication.read_post(root / 'drafts/piece.md')
     meta['visual_plan']['cover']['kind'] = 'screenshot'
     publication.write_post(root / 'drafts/piece.md', meta, body)
     refused = _run(cover_mod, cfg, ['--publication', 'pl', '--slug', 'piece', '--force'], monkeypatch, capsys)
     assert refused['_exit'] == 1 and len(fake_transport.calls) == 1
-    with pytest.raises(images.ImageError, match='no configured key'):
+    with pytest.raises(images.ImageError, match='OPENROUTER_API_KEY'):
         images.pick_image_provider(Config(repo_root=tmp_path, env={'OPENAI_API_KEY': 'x', 'IMAGE_PROVIDER': 'gemini'}))
+
+
+@pytest.mark.parametrize('data', [[], [{'b64_json': 'broken base64'}],
+                                  [{'b64_json': base64.b64encode(b'not an image').decode()}]])
+def test_image_gateway_rejects_missing_or_invalid_bytes(tmp_path, fake_transport, data):
+    cfg = Config(repo_root=tmp_path, env={'OPENROUTER_API_KEY': 'key'}, site={})
+    fake_transport.route('POST', 'https://openrouter.ai/api/v1/images', {'body': json.dumps({'data': data})})
+    with pytest.raises(images.ImageError):
+        images.generate_image(cfg, 'illustration')

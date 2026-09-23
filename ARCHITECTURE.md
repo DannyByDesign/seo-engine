@@ -158,11 +158,12 @@ publications/
   than symlinked (scripts otherwise self-locate through their own path).
 - `SEO_SITE_URL` — fallback for `site_url` when `.seo-engine/config.yml`
   doesn't exist yet.
-- `LLM_PROVIDER`, `LLM_MODEL_<PROVIDER>`, `LLM_CHEAP_MODEL_<PROVIDER>`,
-  `LLM_EFFORT` — which configured text provider the `pub-*` skills prefer and
-  which model ids they use (defaults in `scripts/lib/llm.py`).
-- `IMAGE_PROVIDER`, `IMAGE_MODEL_OPENAI`, `IMAGE_MODEL_GEMINI` — cover
-  generation provider and model ids (defaults in `scripts/lib/images.py`).
+- `OPENROUTER_API_KEY` — single gateway for scripted text, images and model probes.
+- `LLM_MODEL`, `LLM_CHEAP_MODEL`, `LLM_REWRITE_MODELS`, `LLM_EFFORT` — OpenRouter
+  model slugs for writing, cheap tasks and optional rewriting; optional supported reasoning effort.
+- `IMAGE_MODEL` — OpenRouter image model. Native host image tools remain available.
+- `AI_VISIBILITY_MODELS` — comma-separated models sampled with Exa search through OpenRouter;
+  results do not measure consumer chat apps. See `.env.example` and `api-reference.md` for migration.
 
 ## First-party growth experiments
 

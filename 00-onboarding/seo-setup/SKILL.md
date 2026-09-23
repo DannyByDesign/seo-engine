@@ -101,18 +101,21 @@ it costs money. Do not present every missing key as a task or require a paid ser
 |---|---|---|
 | Improve an existing site | Source access, live crawl; GSC if already available | PSI/CrUX, GA4 or PostHog for outcomes, IndexNow for submission |
 | Research and write | Host browsing + human corpus + topic interview | DataForSEO for Google SERPs/volume, Ahrefs or Semrush for additional demand/backlinks; Brave/Firecrawl for discovery/rendering; LanguageTool for proofreading |
-| Measure growth | Existing GSC plus GA4/PostHog or attributable exports | A chosen AI-citation API for visibility questions |
-| Run scripted publication generation | Select one supported text API and explicit LLM_PROVIDER | Image API; social/editorial sources only if useful |
+| Measure growth | Existing GSC plus GA4/PostHog or attributable exports | OpenRouter model probes for visibility questions |
+| Run scripted publication generation | One OpenRouter key and chosen model slugs | Image model on the same account; social/editorial sources only if useful |
 
 For PostHog, follow [API setup](../../shared/seo-references/api-reference.md#posthog).
 Use host-assisted queries or attributable exports; the automated traffic collector does not
 support PostHog yet. Reuse existing instrumentation and establish the conversion events with
 the operator; credentials alone do not authorize adding tracking or changing event capture.
 
-Host-agent writing uses the current agent, whatever its model; it needs no Anthropic key or
-extra LLM subscription. Scripted text generation currently supports OpenAI, Anthropic and
-Gemini, not arbitrary model endpoints. The agent can use another model for host-written work;
-do not claim an unsupported API works. No need to configure all providers.
+Host-agent writing uses the current agent and needs no extra model account. All scripted
+text, optional sentence rewriting, generated covers and model probes use **OpenRouter**.
+Do not ask users to sign up with individual model vendors. Configure `LLM_MODEL`,
+`LLM_CHEAP_MODEL`, `LLM_REWRITE_MODELS`, `IMAGE_MODEL` and `AI_VISIBILITY_MODELS` only for
+selected workflows; inspect current model capabilities/pricing and keep probe lists small.
+Use the paid setup flow for `OPENROUTER_API_KEY`; a chat subscription does not cover API usage.
+Existing direct-vendor settings need migration; see [API setup](../../shared/seo-references/api-reference.md#openrouter--scripted-ai).
 
 Choose the setup path from the selected service's current account terms, not a permanent
 free/paid vendor label. Reuse suitable credentials already configured for this website.

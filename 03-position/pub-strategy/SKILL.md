@@ -121,12 +121,12 @@ inferred_keyword, keyword_priority, msv, kd}` per article.
 - [red-flags.md](../../shared/seo-references/red-flags.md) §7 (mentions stay honest; competitors named
   fairly or not at all).
 - [api-reference.md](../../shared/seo-references/api-reference.md) — DataForSEO volume/difficulty,
-  LLM providers.
+  OpenRouter model configuration.
 - [common-setup.md](../../shared/seo-references/common-setup.md) — paths, config, publications layout.
 
 ## Graceful degradation
 
 No key: explicit sets, `--measure-brand`, `--validate`, and competitor scraping with heuristic
-keywords all work. An LLM key unlocks `--suggest` and keyword inference; DataForSEO adds
+keywords all work. `OPENROUTER_API_KEY` unlocks `--suggest` and keyword inference; DataForSEO adds
 volume/difficulty. A competitor without a sitemap yields an empty inventory with a note rather
 than a crawl.

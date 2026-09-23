@@ -68,7 +68,6 @@ from urllib.parse import urlparse
 from scripts.lib import ai_visibility, http_util, llm, mentions, publication, pubstate, stats
 from scripts.lib.config import Config
 
-PROVIDER_ORDER = ["openai", "anthropic", "perplexity", "gemini"]
 DEFAULT_VARIATIONS = 8
 LOW_INFORMATIVE_RATE = 0.5
 
@@ -281,7 +280,7 @@ def main() -> int:
     parser.add_argument("--variations", type=int, default=DEFAULT_VARIATIONS, help=f"Prompts per topic (default {DEFAULT_VARIATIONS}, max 20)")
     parser.add_argument("--generate", action="store_true", help="(Re)generate prompt variations for the topics")
     parser.add_argument("--replicates", type=int, default=1, help="Independent samples per prompt x provider (1-10)")
-    parser.add_argument("--providers", help="Comma list to restrict providers (default: every configured)")
+    parser.add_argument("--providers", help="Comma-separated OpenRouter model slugs or full probe identities (default: configured models)")
     parser.add_argument("--max-prompts", type=int, default=40, help="Cap on prompts per run (cost guard)")
     parser.add_argument("--no-enrich", action="store_true", help="Skip sentiment/recommended enrichment")
     parser.add_argument("--dry-run", action="store_true", help="Show prompts, providers and cost; make no probe calls")
@@ -297,10 +296,10 @@ def main() -> int:
     if not subject["brand"]:
         print(json.dumps({"checked": False, "error": "no brand to track — pass --brand or --publication"}, indent=2))
         return 1
-    providers = [p for p in PROVIDER_ORDER if ai_visibility._provider_configured(cfg, p)]
+    providers = [p for p in ai_visibility.probe_names(cfg) if ai_visibility._provider_configured(cfg, p)]
     if args.providers:
         wanted = {p.strip() for p in args.providers.split(",")}
-        providers = [p for p in providers if p in wanted]
+        providers = [p for p in providers if p in wanted or p.removeprefix("openrouter:").removesuffix(":search=exa") in wanted]
     state_path = pubstate.state_path(cfg, "mentions", subject["slug"])
     state = pubstate.load_json(state_path, {"prompts": [], "runs": []})
     notes: list[str] = []
@@ -310,7 +309,7 @@ def main() -> int:
             print(json.dumps({"checked": False, "error": "no topics — pass --topic, set ranking_targets in strategy.yml, or geo_topics in config.yml"}, indent=2))
             return 1
         if not llm.configured_providers(cfg):
-            print(json.dumps({"checked": False, "error": "prompt generation needs an LLM key (or write prompts into the state file by hand)"}, indent=2))
+            print(json.dumps({"checked": False, "error": "prompt generation needs OPENROUTER_API_KEY (or write prompts into the state file by hand)"}, indent=2))
             return 1
         prompts = []
         for topic in subject["topics"]:
@@ -332,7 +331,7 @@ def main() -> int:
     if args.dry_run or not providers:
         plan["prompt_list"] = prompts
         if not providers:
-            plan["notes"].append("no probe provider configured (OPENAI_API_KEY / ANTHROPIC_API_KEY / PERPLEXITY_API_KEY / GOOGLE_GEMINI_API_KEY)")
+            plan["notes"].append("no OpenRouter key configured (OPENROUTER_API_KEY)")
         pubstate.save_json(state_path, state)
         print(json.dumps(plan, indent=2, ensure_ascii=False))
         return 0
@@ -344,7 +343,7 @@ def main() -> int:
         for name in providers:
             for _ in range(args.replicates):
                 try:
-                    outcome = ai_visibility.PROBERS[name](cfg, p["text"])
+                    outcome = ai_visibility.probe(cfg, p["text"], name)
                 except Exception as exc:
                     errors += 1
                     responses.append({"prompt": p["text"], "topic": p["topic"], "specificity": p.get("specificity"), "provider": name,
@@ -364,7 +363,7 @@ def main() -> int:
               'entities': entity_terms, 'owned': owned,
               'implementation': hashlib.sha256(Path(ai_visibility.__file__).read_bytes()).hexdigest()}
     signature = hashlib.sha256(json.dumps(design, sort_keys=True).encode()).hexdigest()
-    run = {"measurement_kind": "api_probe_not_consumer_traffic", "design_signature": signature, "run_id": run_id, "at": pubstate.now_iso(), "providers": providers, "replicates": args.replicates, "prompts": len(prompts),
+    run = {"measurement_kind": "openrouter_search_api_sample", "design_signature": signature, "run_id": run_id, "at": pubstate.now_iso(), "providers": providers, "replicates": args.replicates, "prompts": len(prompts),
            "responses": len(valid), "errors": errors, "summary": summary, "per_prompt": per_prompt(valid, entity_names),
            "per_page": per_page(valid, owned)}
     previous = state["runs"][-1] if state.get("runs") else None

@@ -10,58 +10,60 @@ def _cfg(tmp_path, **env):
     return Config(repo_root=tmp_path, env=env, site={})
 
 
-def test_pick_provider_orders_and_errors(tmp_path):
-    with pytest.raises(llm.LlmError):
-        llm.pick_provider(_cfg(tmp_path))
-    cfg = _cfg(tmp_path, OPENAI_API_KEY="sk-x", GOOGLE_GEMINI_API_KEY="g")
-    with pytest.raises(llm.LlmError, match="Multiple LLM providers"):
-        llm.pick_provider(cfg)
-    assert llm.pick_provider(cfg, "openai") == "openai"
-    assert llm.pick_provider(_cfg(tmp_path, LLM_PROVIDER="openai", OPENAI_API_KEY="sk-x", ANTHROPIC_API_KEY="ant-x")) == "openai"
-    assert llm.pick_provider(cfg, "gemini") == "gemini"
-    with pytest.raises(llm.LlmError):
-        llm.pick_provider(cfg, "anthropic")
-    assert llm.model_for(_cfg(tmp_path, LLM_MODEL_OPENAI="gpt-next"), "openai") == "gpt-next"
-    assert llm.model_for(cfg, "anthropic", "cheap") == "claude-haiku-4-5"
+def test_single_gateway_and_model_configuration(tmp_path):
+    with pytest.raises(llm.LlmError, match="OPENROUTER_API_KEY"):
+        llm.pick_provider(_cfg(tmp_path, OPENAI_API_KEY="old-key"))
+    cfg = _cfg(tmp_path, OPENROUTER_API_KEY="sk-x", LLM_MODEL="vendor/writer", LLM_CHEAP_MODEL="vendor/cheap")
+    assert llm.pick_provider(cfg) == "openrouter"
+    assert llm.configured_providers(cfg) == ["openrouter"]
+    assert llm.model_for(cfg) == "vendor/writer"
+    assert llm.model_for(cfg, tier="cheap") == "vendor/cheap"
+    with pytest.raises(llm.LlmError, match="OpenRouter"):
+        llm.pick_provider(cfg, "openai")
 
 
-def test_anthropic_adapter_shapes_request_and_parses(tmp_path, fake_transport):
-    cfg = _cfg(tmp_path, ANTHROPIC_API_KEY="sk-ant-test")
-    fake_transport.route(
-        "POST", "https://api.anthropic.com/v1/messages",
-        {"body": json.dumps({"content": [{"type": "text", "text": "hello"}], "stop_reason": "end_turn",
-                             "usage": {"input_tokens": 3, "output_tokens": 1}})},
-        {"body": json.dumps({"content": [], "stop_reason": "refusal", "stop_details": {"category": "cyber"}})},
-    )
-    out = llm.complete(cfg, "sys", "user", effort="medium")
-    assert out["text"] == "hello" and out["model"] == "claude-opus-5"
-    _, _, kwargs = fake_transport.calls[-1]
+def test_openrouter_request_and_response(tmp_path, fake_transport):
+    cfg = _cfg(tmp_path, OPENROUTER_API_KEY="sk-test", LLM_MODEL="vendor/writer")
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/chat/completions", {
+        "body": json.dumps({"model": "vendor/writer", "choices": [{"message": {"content": '{"a": 1}'},
+                            "finish_reason": "stop"}], "usage": {"prompt_tokens": 3, "completion_tokens": 4, "cost": 0.001}})})
+    result = llm.complete(cfg, "sys", "user", json_mode=True, effort="medium")
+    assert result["provider"] == "openrouter" and result["model"] == "vendor/writer"
+    assert result["usage"] == {"input_tokens": 3, "output_tokens": 4, "cost": 0.001}
+    kwargs = fake_transport.calls[-1][2]
+    assert kwargs["headers"]["Authorization"] == "Bearer sk-test"
     body = kwargs["json"]
-    assert body["system"] == "sys" and body["output_config"] == {"effort": "medium"}
-    assert "thinking" not in body and "temperature" not in body
-    assert kwargs["headers"]["x-api-key"] == "sk-ant-test"
+    assert body["messages"] == [{"role": "system", "content": "sys"}, {"role": "user", "content": "user"}]
+    assert body["response_format"] == {"type": "json_object"}
+    assert body["reasoning"] == {"effort": "medium"}
+    assert body["provider"] == {"require_parameters": True}
+    assert llm.complete_json(cfg, "s", "u", model="other/model") == {"a": 1}
+    assert fake_transport.calls[-1][2]["json"]["model"] == "other/model"
 
-    with pytest.raises(llm.LlmError):
-        llm.complete(cfg, "", "x", tier="cheap", effort="high")
-    assert "output_config" not in fake_transport.calls[-1][2]["json"]
+
+@pytest.mark.parametrize("response", [
+    {"error": {"message": "SECRET rejected"}},
+    {"choices": []},
+    {"choices": [{"message": {"content": ""}}]},
+    {"choices": [{"message": {"content": "partial"}, "finish_reason": "length"}]},
+    {"choices": [{"message": {"content": "no", "refusal": "reason"}}]},
+    {"choices": [{"message": {"content": "no"}, "finish_reason": "content_filter"}]},
+])
+def test_gateway_rejects_unusable_answers(tmp_path, fake_transport, response):
+    cfg = _cfg(tmp_path, OPENROUTER_API_KEY="SECRET")
+    fake_transport.route("POST", "https://openrouter.ai/", {"body": json.dumps(response)})
+    with pytest.raises(llm.LlmError) as error:
+        llm.complete(cfg, "", "x")
+    assert "SECRET" not in str(error.value)
 
 
-def test_openai_and_gemini_adapters(tmp_path, fake_transport):
-    cfg = _cfg(tmp_path, OPENAI_API_KEY="sk-o", GOOGLE_GEMINI_API_KEY="g-key")
-    fake_transport.route("POST", "https://api.openai.com/v1/responses", {
-        "body": json.dumps({"output": [{"type": "message", "content": [
-            {"type": "output_text", "text": "```json\n{\"a\": 1}\n```"}]}],
-            "usage": {"input_tokens": 5, "output_tokens": 4}})})
-    assert llm.complete_json(cfg, "s", "u", provider="openai") == {"a": 1}
-    body = fake_transport.calls[-1][2]["json"]
-    assert body["instructions"] == "s" and body["text"]["format"]["type"] == "json_object"
-
-    fake_transport.route("POST", "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent", {
-        "body": json.dumps({"candidates": [{"content": {"parts": [{"text": "prose [1, 2] tail"}]},
-                                            "finishReason": "STOP"}],
-                            "usageMetadata": {"promptTokenCount": 2, "candidatesTokenCount": 2}})})
-    assert llm.complete_json(cfg, "s", "u", provider="gemini") == [1, 2]
-    assert fake_transport.calls[-1][2]["headers"]["x-goog-api-key"] == "g-key"
+def test_json_retry_uses_same_model(tmp_path, fake_transport):
+    cfg = _cfg(tmp_path, OPENROUTER_API_KEY="key")
+    fake_transport.route("POST", "https://openrouter.ai/", *[
+        {"body": json.dumps({"choices": [{"message": {"content": reply}, "finish_reason": "stop"}]})}
+        for reply in ["not json", '{"ok": true}']])
+    assert llm.complete_json(cfg, "", "x", model="vendor/rewrite") == {"ok": True}
+    assert [c[2]["json"]["model"] for c in fake_transport.calls] == ["vendor/rewrite"] * 2
 
 
 def test_extract_json_edge_cases():
@@ -99,3 +101,12 @@ def test_sociavault_success_false_raises(tmp_path, fake_transport):
                            "author": {"unique_id": "u", "nickname": "N"}, "create_time": 1700000000}}
     n = sociavault.normalize("tiktok", item)
     assert n["url"] == "https://www.tiktok.com/@u/video/7" and n["views"] == 9 and n["author"] == "N"
+
+
+def test_gateway_redacts_credentials_from_transport_errors(tmp_path, fake_transport):
+    import requests
+    cfg = _cfg(tmp_path, OPENROUTER_API_KEY='sensitive-value')
+    fake_transport.route('POST', 'https://openrouter.ai/', requests.ConnectionError('failed: sensitive-value'))
+    with pytest.raises(llm.LlmError) as error:
+        llm.complete(cfg, '', 'x')
+    assert 'sensitive-value' not in str(error.value)

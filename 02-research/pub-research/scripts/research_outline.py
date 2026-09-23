@@ -299,7 +299,7 @@ def main() -> int:
     if len(args.source_url) > MAX_SOURCE_URLS or len(args.must_include) > MAX_MUST_INCLUDE:
         parser.error(f"at most {MAX_SOURCE_URLS} --source-url and {MAX_MUST_INCLUDE} --must-include")
     if not llm.configured_providers(cfg):
-        print(json.dumps({"checked": False, "error": "research needs an LLM key (ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_GEMINI_API_KEY)"}, indent=2))
+        print(json.dumps({"checked": False, "error": "research needs an LLM key (OPENROUTER_API_KEY)"}, indent=2))
         return 1
     root = publication.find_publication(cfg, args.publication)
     strategy = pubstate.load_strategy(root)

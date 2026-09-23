@@ -233,27 +233,14 @@ specific multiplier attached.
 
 ## 9. Measuring AI visibility without expensive tools
 
-The most sustainable, lowest-cost measurement approach uses the AI vendors' **own official APIs**
-directly — this is legitimate use of a documented product, unlike scraping a chat UI (which
-likely violates ToS and is explicitly not recommended):
+The engine samples configured models through **OpenRouter**, using one account and Exa web
+search. `AI_VISIBILITY_MODELS` selects the models; citations come from response annotations.
+These are API samples, not the consumer chat products or Google AI Overviews/AI Mode.
+The search engine and model are part of each measurement identity, so changing either starts
+a separate series. Do not splice previous direct-vendor results into the new series.
 
-- **OpenAI Responses API** — `web_search` tool; response `annotations` include `type: "url_citation"`
-  with `url`, `title`, and text-offset indices. [Web search guide](https://developers.openai.com/api/docs/guides/tools-web-search)
-- **Anthropic Claude API** — `web_search` tool (`web_search_20250305`); response includes
-  `web_search_tool_result` blocks and inline `citations` (`url`, `title`, `cited_text`).
-  Supports `allowed_domains`/`blocked_domains` filtering for competitive analysis.
-  [Web search tool docs](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)
-- **Perplexity Sonar API** — direct `citations` and `search_results` arrays in every response.
-- **Google Gemini API** — "grounding with Google Search" returns `groundingMetadata`
-  (`webSearchQueries`, `groundingChunks`, `groundingSupports`). Note this is the Gemini API's own
-  grounding feature, **not** literally the same system as Google AI Mode/AI Overviews in Search —
-  those have no public API and can only be observed via the actual Search UI.
-
-A practical `geo-monitor` skill runs a fixed, repeatable set of target-topic prompts through these
-APIs on a schedule, logs whether/how the domain is cited, and diffs results over time — this is
-the DIY equivalent of what commercial AI-visibility trackers sell, at API cost instead of a
-subscription (see [api-reference.md](api-reference.md) for the two commercial trackers — Profound
-and Otterly.AI — that do offer real self-serve APIs, useful as a supplementary/validation source).
+Use fixed, repeatable prompts and multiple samples. See [api-reference.md](api-reference.md)
+for setup and optional commercial trackers (Profound and Otterly.AI) as separate evidence.
 
 **Single probes are noise.** LLM answers are stochastic — sampling temperature, retrieval
 nondeterminism, and per-request index variance mean one probe per prompt/provider is a coin

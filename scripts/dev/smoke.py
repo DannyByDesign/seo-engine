@@ -130,14 +130,10 @@ def check_indexnow(cfg, site: str) -> str:
     return "key file reachable and content matches (no submission sent)"
 
 
-def _llm_check(provider: str) -> Callable:
-    def check(cfg, site: str) -> str:
-        from scripts.lib import ai_visibility
-
-        domain = urlnorm.host_key(site)
-        outcome = ai_visibility.PROBERS[provider](cfg, f"What is {domain}?")
-        return f"{len(outcome['citations'])} citations returned"
-    return check
+def check_openrouter(cfg, site: str) -> str:
+    from scripts.lib import llm
+    result = llm.complete(cfg, "", "Reply with OK.", tier="cheap", max_tokens=32)
+    return f"text completion via OpenRouter model {result['model']}"
 
 
 def check_profound(cfg, site: str) -> str:
@@ -187,10 +183,7 @@ CHECKS: dict[str, tuple[Optional[str], Callable]] = {
     "bing": ("bing_webmaster", check_bing),
     "firecrawl": ("firecrawl", check_firecrawl),
     "indexnow": ("indexnow", check_indexnow),
-    "openai": ("openai", _llm_check("openai")),
-    "anthropic": ("anthropic", _llm_check("anthropic")),
-    "perplexity": ("perplexity", _llm_check("perplexity")),
-    "gemini": ("gemini", _llm_check("gemini")),
+    "openrouter": ("openrouter", check_openrouter),
     "profound": ("profound", check_profound),
     "otterly": ("otterly", check_otterly),
 }

@@ -152,40 +152,16 @@ INTEGRATION_DETAILS = {
                    "de facto frozen; use IndexNow for URL submission instead).",
         "cost": "free",
     },
-    "openai": {
-        "label": "OpenAI (GEO citation-probing)",
-        "how": "platform.openai.com/api-keys",
-        "unlocks": "Probing ChatGPT's web-search citations via the Responses API "
-                   "(url_citation annotations) — used by geo-monitor to check whether/how "
-                   "this domain gets cited.",
-        "cost": "pay-as-you-go API pricing",
-    },
-    "anthropic": {
-        "label": "Anthropic (GEO citation-probing)",
-        "how": "console.anthropic.com",
-        "unlocks": "Probing Claude's web-search citations via the web_search tool — used by "
-                   "geo-monitor.",
-        "cost": "pay-as-you-go API pricing",
-    },
-    "perplexity": {
-        "label": "Perplexity Sonar (GEO citation-probing)",
-        "how": "perplexity.ai/settings/api",
-        "unlocks": "Probing Perplexity's citations/search_results directly — used by "
-                   "geo-monitor. Note geo-playbook.md §4 flags Perplexity's crawler-blocking "
-                   "behavior as a disputed, unresolved area independent of this API.",
-        "cost": "pay-as-you-go API pricing",
-    },
-    "gemini": {
-        "label": "Google Gemini grounding (GEO citation-probing)",
-        "how": "aistudio.google.com/apikey",
-        "unlocks": "Grounding-with-Google-Search citation metadata for geo-monitor. Note: this "
-                   "is the Gemini API's own grounding feature, not literally AI Mode/AI "
-                   "Overviews in Search (those have no public API).",
-        "cost": "pay-as-you-go API pricing",
+    "openrouter": {
+        "label": "OpenRouter (scripted text, images and model visibility probes)",
+        "how": "openrouter.ai/settings/keys — one account; add credits and choose model slugs",
+        "unlocks": "Article generation, cross-model rewriting, cover generation and search-model API samples. "
+                   "Model capabilities vary; these samples do not measure consumer chat apps.",
+        "cost": "paid usage: model tokens, generated images and optional web search",
     },
     "profound": {
         "label": "Profound (commercial AI-visibility tracker)",
-        "how": "tryprofound.com — optional, supplementary to the DIY vendor-API probes used "
+        "how": "tryprofound.com — optional, supplementary to the OpenRouter model-API probes used "
                "by geo-monitor.",
         "unlocks": "Cross-validation of geo-monitor's citation tracking against Profound's "
                    "commercial dashboard.",
@@ -193,7 +169,7 @@ INTEGRATION_DETAILS = {
     },
     "otterly": {
         "label": "Otterly.AI (commercial AI-visibility tracker)",
-        "how": "otterly.ai — optional, supplementary to the DIY vendor-API probes used by "
+        "how": "otterly.ai — optional, supplementary to the OpenRouter model-API probes used by "
                "geo-monitor.",
         "unlocks": "Cross-validation of geo-monitor's citation tracking against Otterly.AI's "
                    "commercial dashboard.",

@@ -1,8 +1,7 @@
 """pub-visuals: mint an article's cover image from its headline in the
 publication's house style, and record it in the frontmatter.
 
-Providers (scripts/lib/images.py): OpenAI Images or Gemini image models,
-BYOK. `--provider svg` explicitly requests a decorative draft fallback.
+Gateway (scripts/lib/images.py): OpenRouter Image API, one OPENROUTER_API_KEY. `--provider svg` explicitly requests a decorative draft fallback.
 Missing keys do not silently replace the planned image. Record actual dimensions;
 the host reviews and crops the generated output to the planned aspect ratio.
 
@@ -15,7 +14,7 @@ The host writes alt/caption after inspecting the image; no headline-derived alt.
 Usage:
     python3 gen_cover.py --publication llm-billboard --slug advertiser-readiness
     python3 gen_cover.py --publication llm-billboard --slug advertiser-readiness --provider svg
-    python3 gen_cover.py --publication llm-billboard --slug advertiser-readiness --posts --force --provider gemini
+    python3 gen_cover.py --publication llm-billboard --slug advertiser-readiness --force --provider openrouter --model google/gemini-2.5-flash-image
 """
 
 from __future__ import annotations
@@ -96,7 +95,7 @@ def main() -> int:
     parser.add_argument("--publication", help="Publication slug")
     parser.add_argument("--slug", required=True, help="Article slug")
     parser.add_argument("--posts", action="store_true", help="Article lives in posts/ (default drafts/)")
-    parser.add_argument("--provider", choices=["openai", "gemini", "svg"], help="Configured image provider; svg explicitly selects a draft fallback")
+    parser.add_argument("--provider", choices=["openrouter", "svg"], help="Configured image provider; svg explicitly selects a draft fallback")
     parser.add_argument("--model", help="Override the image model id")
     parser.add_argument("--force", action="store_true", help="Regenerate even if a cover exists")
     parser.add_argument("--publications-dir", help="Override the publications directory")
@@ -139,7 +138,7 @@ def main() -> int:
     else:
         prompt = house_prompt(pub, title, str(meta.get("dek") or ""), plan)
         try:
-            gen = images.generate_image(cfg, prompt, provider=provider, model=args.model)
+            gen = images.generate_image(cfg, prompt, provider=provider, model=args.model, aspect_ratio=plan.get("aspect_ratio") or "16:9")
         except images.ImageError as exc:
             print(json.dumps({"checked": False, "error": str(exc), "hint": "rerun with --provider svg for the offline fallback"}, indent=2))
             return 1

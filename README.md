@@ -98,7 +98,7 @@ brand brief, research and decisions; credentials stay in its `.env`. These files
 by Git, so back them up privately. Different websites never share this state.
 
 Host-agent writing uses your chosen model. Optional scripted publication generation supports
-OpenAI, Anthropic and Gemini APIs. Traffic growth has not yet been demonstrated in a live pilot.
+multiple text and image models through one OpenRouter account. Traffic growth has not yet been demonstrated in a live pilot.
 
 [Onboarding](00-onboarding/README.md) · [Workflow](workflow/README.md) ·
 [Integrations](.env.example) · [Architecture](ARCHITECTURE.md)

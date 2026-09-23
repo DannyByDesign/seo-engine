@@ -280,7 +280,7 @@ def main() -> int:
     proposal = None
     if args.suggest:
         if not llm.configured_providers(cfg):
-            result["notes"].append("no LLM key configured — cannot --suggest; set ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_GEMINI_API_KEY")
+            result["notes"].append("no LLM key configured — cannot --suggest; set OPENROUTER_API_KEY")
         else:
             proposal = suggest(cfg, root, pub, strategy, brand)
             result["proposal"] = proposal

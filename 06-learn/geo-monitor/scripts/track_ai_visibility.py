@@ -1,12 +1,7 @@
-"""AI-search visibility tracking: probe ChatGPT/Claude/Perplexity/Gemini's own
-official web-search APIs for a set of tracked prompts and record whether/how
-the target domain gets cited.
+"""AI-search visibility tracking through OpenRouter with Exa web search.
 
-This is the DIY measurement approach from references/geo-playbook.md section
-9 -- calling each vendor's own documented web-search/grounding tool directly
-(scripts.lib.ai_visibility.probe_all), never scraping a chat UI (which likely
-violates each provider's ToS; see api-reference.md's ai_visibility.py doc
-comment and geo-playbook.md section 9's opening framing).
+Measures configured model API samples, not consumer apps. Model/search identities
+are separate from historical direct-vendor series.
 
 Measurement honesty (geo-playbook.md section 9): a single LLM probe is a coin
 flip, not a measurement. This script therefore takes --samples N (default 3)
@@ -124,7 +119,6 @@ from scripts.lib.config import Config, MissingConfigError
 
 HISTORY_FILENAME = "ai-visibility-history.jsonl"
 HISTORY_SCHEMA_VERSION = 2
-PROVIDER_ORDER = ["openai", "anthropic", "perplexity", "gemini"]
 DEFAULT_SAMPLES = 3
 
 PROVIDER_STATES = ("cited", "not_cited", "mixed", "error", "not_configured")
@@ -353,7 +347,7 @@ def _diff_against_prior(
     diff["prior_generated_at"] = prior1.get("generated_at")
 
     per_provider: dict[str, Any] = {}
-    for provider in PROVIDER_ORDER:
+    for provider in (current.get("providers") or {}):
         cur_p = (current.get("providers") or {}).get(provider) or {}
         prior_p = (prior1.get("providers") or {}).get(provider) or {}
         prior2_p = ((prior2.get("providers") or {}).get(provider) or {}) if prior2 else {}
@@ -433,7 +427,7 @@ def _diff_against_prior(
 def _run_trackers(cfg: Config, skip_trackers: bool) -> dict[str, Any]:
     """Optional, account-level commercial-tracker cross-check. Called once
     per run (not per prompt) -- clearly labeled as third-party data, distinct
-    from the DIY vendor-API probing above."""
+    from the OpenRouter model-API probing above."""
     trackers: dict[str, Any] = {}
     if skip_trackers:
         trackers["skipped"] = "Skipped via --skip-trackers."
@@ -553,18 +547,10 @@ def main() -> None:
         print()
         sys.exit(0)
 
-    diy_env_keys = {
-        "openai": "OPENAI_API_KEY", "anthropic": "ANTHROPIC_API_KEY",
-        "perplexity": "PERPLEXITY_API_KEY", "gemini": "GOOGLE_GEMINI_API_KEY",
-    }
-    configured_providers = [name for name, key in diy_env_keys.items() if cfg.has(key)]
+    configured_providers = [n for n in ai_visibility.probe_names(cfg) if ai_visibility._provider_configured(cfg, n)]
     if not configured_providers:
-        setup_notes.append(
-            "No AI-provider API keys configured (OPENAI_API_KEY, ANTHROPIC_API_KEY, "
-            "PERPLEXITY_API_KEY, GOOGLE_GEMINI_API_KEY) -- probe_all() will run but every "
-            "provider will report state:not_configured. Set at least one to get real citation "
-            "data; see references/api-reference.md 'LLM provider APIs' section."
-        )
+        setup_notes.append("Set OPENROUTER_API_KEY for model citation probes; see api-reference.md.")
+    setup_notes.append("OpenRouter + Exa search-model samples are not consumer ChatGPT/Claude/Gemini visibility. Model/search identities start separate history series.")
 
     llm_calls = len(configured_providers) * len(prompts) * args.samples
     cost_note = (
@@ -583,7 +569,7 @@ def main() -> None:
 
     records: list[dict[str, Any]] = []
     prompt_reports: list[dict[str, Any]] = []
-    provider_names = PROVIDER_ORDER + [n for n in ai_visibility.PROBERS if n not in PROVIDER_ORDER]
+    provider_names = ai_visibility.probe_names(cfg)
 
     for prompt in prompts:
         provider_samples: dict[str, list[dict[str, Any]]] = {n: [] for n in provider_names}
@@ -605,6 +591,7 @@ def main() -> None:
 
         record = {
             "schema_version": HISTORY_SCHEMA_VERSION,
+            "measurement_kind": "openrouter_search_api_sample",
             "run_id": run_id,
             "generated_at": now_iso,
             "prompt": prompt,

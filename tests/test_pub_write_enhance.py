@@ -66,10 +66,10 @@ def _run(mod: ModuleType, cfg: Config, argv: list[str], monkeypatch, capsys) -> 
 
 
 def _llm(fake_transport, replies: list[dict]):
-    """Queue Anthropic replies in order (each a JSON-able object), replacing any earlier Anthropic route."""
-    fake_transport._routes = [r for r in fake_transport._routes if not r["prefix"].startswith("https://api.anthropic.com")]
-    fake_transport.route("POST", "https://api.anthropic.com/v1/messages", *[
-        {"body": json.dumps({"content": [{"type": "text", "text": json.dumps(r)}], "stop_reason": "end_turn", "usage": {}})} for r in replies])
+    """Queue OpenRouter replies in order (each a JSON-able object), replacing any earlier OpenRouter route."""
+    fake_transport._routes = [r for r in fake_transport._routes if not r["prefix"].startswith("https://openrouter.ai")]
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/chat/completions", *[
+        {"body": json.dumps({"choices": [{"message": {"content": json.dumps(r)}, "finish_reason": "stop"}], "usage": {}})} for r in replies])
 
 
 def test_article_helpers():
@@ -88,7 +88,7 @@ def test_article_helpers():
 
 
 def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_transport):
-    cfg, root = _repo(tmp_path, ANTHROPIC_API_KEY="sk", FIRECRAWL_API_KEY="fc")
+    cfg, root = _repo(tmp_path, OPENROUTER_API_KEY="sk", FIRECRAWL_API_KEY="fc")
     fake_transport.route("POST", "https://api.firecrawl.dev/v2/search", {"body": json.dumps({"data": [
         {"url": "https://www.emarketer.com/content/ai-search-ads", "title": "AI search ads surge"},
         {"url": "https://www.thrad.ai/content/other-page", "title": "thrad other"}]})})
@@ -144,7 +144,7 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
     assert body.count("## ") == 2 and "[$2.08 billion](https://www.emarketer.com/content/ai-search-ads)" in body
     assert body.count("thrad.ai") == 1 and meta["status"] == "written"
     assert len(meta['writing_example_ids']) == 6
-    calls = [c for c in fake_transport.calls if 'api.anthropic.com' in c[1]]
+    calls = [c for c in fake_transport.calls if 'openrouter.ai' in c[1]]
     assert any('FROZEN HUMAN WRITING REFERENCES' in json.dumps(c[2]) for c in calls)
 
     publication.write_post(root / "posts" / "keyword-to-prompt.md", {
@@ -206,16 +206,16 @@ def test_relink_bumps_only_changed_posts(tmp_path, monkeypatch, capsys):
 
 
 def test_shred_keeps_facts_and_structure(tmp_path, monkeypatch, capsys, fake_transport):
-    cfg, root = _repo(tmp_path, ANTHROPIC_API_KEY="sk", OPENAI_API_KEY="sk-o")
+    cfg, root = _repo(tmp_path, OPENROUTER_API_KEY="sk")
     body = ("## Heading stays\n\nSpending will reach $25.93 billion by 2029, per [eMarketer](https://e.com/x). Buyers should plan for that shift now. "
             "A third sentence describes the auction mechanics in plain words.\n\n- list item stays\n")
-    publication.write_post(root / "drafts" / "piece.md", {"title": "Piece", "slug": "piece", "composition": {"provider": "anthropic"}}, body)
-    fake_transport.route("POST", "https://api.openai.com/v1/responses",
-                         {"body": json.dumps({"output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps({"sentence": "Spending will reach a lot by 2029, per [eMarketer](https://e.com/x)."})}]}], "usage": {}})},
-                         {"body": json.dumps({"output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps({"sentence": "Buyers ought to plan for that shift today."})}]}], "usage": {}})},
-                         {"body": json.dumps({"output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps({"sentence": "A third sentence explains the auction mechanics in everyday words."})}]}], "usage": {}})})
-    fake_transport.route("POST", "https://api.anthropic.com/v1/messages",
-                         {"body": json.dumps({"content": [{"type": "text", "text": json.dumps({"sentence": "By 2029 spending will reach $25.93 billion, per [eMarketer](https://e.com/x)."})}], "stop_reason": "end_turn", "usage": {}})})
+    publication.write_post(root / "drafts" / "piece.md", {"title": "Piece", "slug": "piece", "composition": {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"}}, body)
+    _llm(fake_transport, [
+        {"sentence": "Spending will reach a lot by 2029, per [eMarketer](https://e.com/x)."},
+        {"sentence": "By 2029 spending will reach $25.93 billion, per [eMarketer](https://e.com/x)."},
+        {"sentence": "Buyers ought to plan for that shift today."},
+        {"sentence": "A third sentence explains the auction mechanics in everyday words."},
+    ])
     out = _run(shred_mod, cfg, ["--publication", "llm-billboard", "--slug", "piece", "--coverage", "1.0", "--seed", "1"], monkeypatch, capsys)
     assert out["status"] == "shredded" and out["guard"] == [], out
     assert out["summary"]["kept_original"] + out["summary"]["shredded"] == 3
@@ -224,3 +224,13 @@ def test_shred_keeps_facts_and_structure(tmp_path, monkeypatch, capsys, fake_tra
     assert "a lot by 2029" not in new_body
     log = pubstate.load_json(pubstate.state_path(cfg, "shred", "llm-billboard"))
     assert log["runs"][-1]["status"] == "shredded"
+
+
+def test_shred_rotates_models_with_one_account(tmp_path):
+    from scripts.lib import llm
+    import pytest
+    cfg = Config(repo_root=tmp_path, env={"OPENROUTER_API_KEY": "test", "LLM_REWRITE_MODELS": "a/one,b/two,a/one"}, site={})
+    assert shred_mod.model_rotation(cfg, "a/one") == ["b/two"]
+    cfg.env["LLM_REWRITE_MODELS"] = "a/one"
+    with pytest.raises(llm.LlmError, match="different from the writer"):
+        shred_mod.model_rotation(cfg, "a/one")

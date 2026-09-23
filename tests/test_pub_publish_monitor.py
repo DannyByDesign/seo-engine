@@ -199,17 +199,23 @@ def test_performance_aggregation_and_refresh_triggers(tmp_path, monkeypatch, cap
 
 
 def test_brand_mentions_run_and_geo_sync(tmp_path, monkeypatch, capsys, fake_transport):
-    cfg, root = _repo(tmp_path, ANTHROPIC_API_KEY="sk")
+    cfg, root = _repo(tmp_path, OPENROUTER_API_KEY="sk", AI_VISIBILITY_MODELS="anthropic/claude-sonnet-4.6")
 
     def reply(obj):
-        return {"body": json.dumps({"content": [{"type": "text", "text": json.dumps(obj) if not isinstance(obj, dict) or "content" not in obj else ""}],
-                                    "stop_reason": "end_turn", "usage": {}}) if not (isinstance(obj, dict) and "content" in obj) else json.dumps(obj)}
+        if isinstance(obj, dict) and "content" in obj:
+            block = obj["content"][0]
+            msg = {"content": block["text"], "annotations": [
+                {"type": "url_citation", "url_citation": c} for c in block.get("citations", [])]}
+        else:
+            msg = {"content": json.dumps(obj)}
+        return {"body": json.dumps({"choices": [{"message": msg, "finish_reason": "stop"}],
+                                   "usage": {"server_tool_use": {"web_search_requests": 1}}})}
 
     answer1 = {"content": [{"type": "text", "text": "Top vendors: Thrad AI leads for DSP buying, then Lapis. See https://llmbillboard.com/posts/x",
                             "citations": [{"url": "https://llmbillboard.com/posts/x", "title": "LLM Billboard"}, {"url": "https://other.com/a", "title": "Other"}]}],
                "stop_reason": "end_turn", "usage": {}}
     answer2 = {"content": [{"type": "text", "text": "Lapis is the main option most buyers name.", "citations": []}], "stop_reason": "end_turn", "usage": {}}
-    fake_transport.route("POST", "https://api.anthropic.com/v1/messages",
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/chat/completions",
                          reply([{"question": "List the top 5 LLM advertising platforms by name.", "specificity": "general"},
                                 {"question": "Which vendors sell ads inside ChatGPT? Just the company names.", "specificity": "mid"}]),
                          reply(answer1),
@@ -217,7 +223,7 @@ def test_brand_mentions_run_and_geo_sync(tmp_path, monkeypatch, capsys, fake_tra
                          reply(answer2),
                          reply({"results": [{"key": "Lapis", "sentiment": "positive", "recommended": True}]}))
     dry = _run(mentions_mod, cfg, ["--publication", "llm-billboard", "--generate", "--dry-run"], monkeypatch, capsys)
-    assert dry["prompts"] == 2 and dry["providers"] == ["anthropic"] and "2 billed" in dry["cost_note"]
+    assert dry["prompts"] == 2 and dry["providers"] == ["openrouter:anthropic/claude-sonnet-4.6:search=exa"] and "2 billed" in dry["cost_note"]
     assert dry["subject"]["brand"] == "thrad" and dry["competitors"] == ["Lapis"]
     out = _run(mentions_mod, cfg, ["--publication", "llm-billboard"], monkeypatch, capsys)
     assert out["_exit"] == 0 and out["responses"] == 2

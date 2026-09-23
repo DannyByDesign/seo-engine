@@ -47,8 +47,9 @@ credit/license; do not invent them or hotlink without a supported permission/del
 Use the host's available native image search, browser/computer-use and image-generation tools
 according to their tool instructions. Discover actual capabilities; do not assume a model
 vendor guarantees a tool. Pass approved visual references to generation/editing tools when
-supported. Otherwise use configured image APIs within existing spending authority. No extra
-image API key is needed when a suitable host tool is available. Product screenshots may
+supported. Otherwise use OpenRouter with `OPENROUTER_API_KEY` and an image-capable
+`IMAGE_MODEL`, within existing spending authority; do not request separate model-vendor
+accounts. No extra API key is needed when a suitable host tool is available. Product screenshots may
 legitimately contain UI text, logos and people; don't apply an abstract-cover ban to all images.
 Inspect and redact private account/customer information before saving publishable screenshots.
 

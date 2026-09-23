@@ -47,7 +47,7 @@ def test_pipeline_stops_before_writing_on_successful_research_pause(tmp_path, mo
 
 
 def test_direct_writer_refuses_missing_confirmation_without_model_call(tmp_path, monkeypatch, capsys):
-    cfg, root = writing_tests._repo(tmp_path, ANTHROPIC_API_KEY='fixture')
+    cfg, root = writing_tests._repo(tmp_path, OPENROUTER_API_KEY='fixture')
     publication.write_post(root / 'drafts/new.md', {'slug': 'new', 'research': {'status': 'done', 'outline': {'sections': [{'heading': 'H'}]}}}, '')
     def forbidden(*a, **kw):
         pytest.fail('model called before operator approval')
@@ -57,7 +57,7 @@ def test_direct_writer_refuses_missing_confirmation_without_model_call(tmp_path,
 
 
 def test_firsthand_evidence_survives_writer_and_review_without_public_url(tmp_path, monkeypatch, capsys):
-    cfg, root = writing_tests._repo(tmp_path, ANTHROPIC_API_KEY='fixture')
+    cfg, root = writing_tests._repo(tmp_path, OPENROUTER_API_KEY='fixture')
     public = tmp_path / 'source.txt'; public.write_text('Public guidance discusses reporting dashboards.')
     research = {'topic': 'Agency evaluation', 'plan': {'queries': ['agency evaluation']},
                 'sources': [{'index': 1, 'url': 'https://fixture.test/guide', 'title': 'Guide', 'cache': str(public)}]}

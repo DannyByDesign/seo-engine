@@ -142,7 +142,7 @@ def infer_keywords(cfg: Config, client_description: str, topics: list[dict[str, 
             t.setdefault("keyword_priority", "medium")
             t["keyword_source"] = "heuristic"
     if not llm.configured_providers(cfg):
-        notes.append("no LLM key — keywords are title-token heuristics, priority defaults to medium")
+        notes.append("no OPENROUTER_API_KEY — keywords are title-token heuristics, priority defaults to medium")
     return notes
 
 

@@ -16,7 +16,7 @@ the mention policy applied exactly once per article (§6).
   Direct invocation also refuses missing or changed permission; see the [interview contract](../../shared/seo-references/content-interview.md).
 - The owner wants another voice or a stronger draft: `--kernel juniper`, `--candidates 3`, `--force`.
 - A masthead with many bylines reads too uniform — run `shred.py` on drafts (or posts) to
-  spread sentence-level rewriting across providers.
+  spread sentence-level rewriting across models through one OpenRouter account.
 - **Not** for outlines (`pub-research`), links/sources/verification (`pub-enhance`), or
   scheduling (`pub-publish`).
 
@@ -63,8 +63,8 @@ body into the draft and records `kernel`, `word_count`, `mention` and the judge 
 
 Splits the body into blocks; only prose sentences are candidates (headings, lists, code,
 images, quotes, links untouched). Attempts `--coverage` of sentences (seeded), each with a
-provider other than the writer's, keeps a rewrite only if numbers, links, proper nouns and
-length survive, enforces `--max-share` per provider and `--max-run` consecutive rewrites, and
+model other than the writer's via OpenRouter, keeps a rewrite only if numbers, links, proper nouns and
+length survive, enforces `--max-share` per model and `--max-run` consecutive rewrites, and
 rejects the whole pass if the article-level guard (numbers, links, headings, length) fails.
 Telemetry per sentence is logged. This is a voice-diversity tool, not a detector-evasion
 tool (red-flags §3).
@@ -95,7 +95,7 @@ Flags: `write_article.py` `--publication`, `--slug`, `--kernel`, `--template`, `
   "judge": [ { "heading": "…", "candidates": 2, "winner": 1, "notes": "…" } ], "notes": [] }
 ```
 `shred.py`: `status` (`shredded | kept_original | rejected`), `summary.shredded`,
-`summary.share_report.{by_provider, over_ceiling, longest_run, window_risk}`, `guard[]`.
+`summary.share_report.{by_model, over_ceiling, longest_run, window_risk}`, `guard[]`.
 
 ## State files
 
@@ -142,7 +142,8 @@ Flags: `write_article.py` `--publication`, `--slug`, `--kernel`, `--template`, `
 
 ## Graceful degradation
 
-Both scripts require an LLM key; with one provider the Shredder alternates that provider's
-quality and cheap models instead of rotating vendors and says so in the share report. If
-the judge call fails, the first candidate is kept and noted. Missing kernels or templates fail
-loudly with the list of available ones.
+Both scripts require `OPENROUTER_API_KEY`. `LLM_MODEL` selects the writer and
+`LLM_REWRITE_MODELS` lists optional rewrite models; the writer model is excluded from rotation.
+If no distinct rewrite model is configured, stop with a setup error. No separate vendor keys.
+If the judge call fails, the first candidate is kept and noted. Missing kernels or templates
+fail loudly with the list of available ones.

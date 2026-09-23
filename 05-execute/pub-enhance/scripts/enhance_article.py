@@ -252,7 +252,7 @@ def stage_meta(meta: dict[str, Any], body: str, section_name: str) -> list[str]:
 def stage_voice(cfg: Config, body: str, kernel_name: str, approved: dict | None = None) -> tuple[str, str]:
     kernel_path = Path(__file__).resolve().parent.parent.parent / "pub-write" / "kernels" / f"{kernel_name}.md"
     if not kernel_path.is_file() or not llm.configured_providers(cfg):
-        return body, "voice pass skipped (no kernel file or no LLM key)"
+        return body, "voice pass skipped (no kernel file or no OPENROUTER_API_KEY)"
     from scripts.lib import writing
     rules = "Preserve approved attribution and limitations even when a voice card disagrees. " + json.dumps(approved or {}) + "\n" + writing.prompt("article", body[:80])
     try:

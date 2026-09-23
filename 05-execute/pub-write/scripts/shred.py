@@ -1,20 +1,19 @@
 """pub-write: the Shredder — sentence-level rewriting spread across several
-model providers so a multi-author masthead does not read as one voice.
+models through OpenRouter so a multi-author masthead does not read as one voice.
 
 Policy (red-flags §3): this is a voice-diversity pass, not detector evasion;
 there is no AI-content penalty to evade. Run it for the reason it exists.
 
-Mechanics (mirroring the vendor's contract, publication-playbook §8):
+Mechanics:
   * structure untouched — headings, lists, code, images, quotes and links
     stay exactly as they are; only prose sentences are candidates;
   * `coverage` = share of prose sentences attempted (default 0.3), chosen
     with a seed so reruns are reproducible;
-  * each attempt asks a provider DIFFERENT from the one that wrote the piece
-    (rotating through the configured providers; with one provider, it
-    alternates quality/cheap models);
+  * each attempt uses a different model from the writer, rotating through
+    LLM_REWRITE_MODELS with the same OpenRouter account;
   * every rewrite passes a content-loss check (same numbers, same links,
     same proper nouns, 0.6-1.6x length) or the original is kept;
-  * a share report enforces ceilings: no provider above --max-share of the
+  * a share report enforces ceilings: no model above --max-share of the
     rewrites, no run of more than --max-run consecutive rewritten sentences;
   * telemetry per sentence lands in .seo-engine/state/pub-shred-<slug>.json.
 
@@ -68,11 +67,13 @@ REWRITE_SYSTEM = (
 _PROPER_RE = re.compile(r"\b[A-Z][a-zA-Z0-9]+(?:\s+[A-Z][a-zA-Z0-9]+)*\b")
 
 
-def provider_rotation(cfg: Config, avoid: str) -> list[tuple[str, str]]:
-    providers = llm.configured_providers(cfg)
-    rotation = [(p, "quality") for p in providers if p != avoid] or []
-    rotation += [(p, "cheap") for p in providers]
-    return rotation or [(avoid, "cheap")]
+def model_rotation(cfg: Config, avoid: str) -> list[str]:
+    from scripts.lib.openrouter import model_list
+    models = model_list(cfg.get("LLM_REWRITE_MODELS") or "openai/gpt-5-mini,google/gemini-2.5-flash")
+    rotation = [m for m in models if m != avoid]
+    if not rotation:
+        raise llm.LlmError("Set LLM_REWRITE_MODELS to at least one model different from the writer's LLM_MODEL.")
+    return rotation
 
 
 def content_ok(before: str, after: str) -> str:
@@ -90,13 +91,13 @@ def content_ok(before: str, after: str) -> str:
     return ""
 
 
-def shred(cfg: Config, md: str, *, coverage: float, attempts: int, seed: int, avoid_provider: str,
+def shred(cfg: Config, md: str, *, coverage: float, attempts: int, seed: int, avoid_model: str,
           max_share: float, max_run: int) -> tuple[str, dict[str, Any]]:
     rng = random.Random(seed)
     items = article.blocks(md)
-    rotation = provider_rotation(cfg, avoid_provider)
+    rotation = model_rotation(cfg, avoid_model)
     units: list[dict[str, Any]] = []
-    by_provider: dict[str, int] = {}
+    by_model: dict[str, int] = {}
     rewritten_total = 0
     run = 0
     longest_run = 0
@@ -112,21 +113,21 @@ def shred(cfg: Config, md: str, *, coverage: float, attempts: int, seed: int, av
             idx += 1
             if attempt and run < max_run:
                 for k in range(attempts):
-                    provider, tier = rotation[(idx + k) % len(rotation)]
-                    if rewritten_total and by_provider.get(provider, 0) / max(rewritten_total, 1) >= max_share and len(rotation) > 1:
+                    model = rotation[(idx + k) % len(rotation)]
+                    if rewritten_total and by_model.get(model, 0) / max(rewritten_total, 1) >= max_share and len(rotation) > 1:
                         continue
                     try:
-                        data = llm.complete_json(cfg, REWRITE_SYSTEM, sent, provider=provider, tier=tier, max_tokens=400)
+                        data = llm.complete_json(cfg, REWRITE_SYSTEM, sent, model=model, max_tokens=400)
                         candidate = str(data.get("sentence") if isinstance(data, dict) else data).strip()
                     except llm.LlmError as exc:
-                        record["discarded"].append({"provider": provider, "reason": http_util.sanitize_text(str(exc))[:100]})
+                        record["discarded"].append({"model": model, "reason": http_util.sanitize_text(str(exc))[:100]})
                         continue
                     problem = content_ok(sent, candidate) if candidate else "empty"
                     if problem:
-                        record["discarded"].append({"provider": provider, "text": candidate[:200], "reason": problem})
+                        record["discarded"].append({"model": model, "text": candidate[:200], "reason": problem})
                         continue
-                    record.update({"chosen": candidate, "outcome": f"rewritten:{provider}/{tier}"})
-                    by_provider[provider] = by_provider.get(provider, 0) + 1
+                    record.update({"chosen": candidate, "outcome": f"rewritten:{model}"})
+                    by_model[model] = by_model.get(model, 0) + 1
                     rewritten_total += 1
                     break
             if record["chosen"]:
@@ -139,21 +140,21 @@ def shred(cfg: Config, md: str, *, coverage: float, attempts: int, seed: int, av
             units.append(record)
         b["text"] = " ".join(new_sentences)
     total = len(units)
-    share = {p: round(n / max(rewritten_total, 1), 3) for p, n in by_provider.items()}
+    share = {p: round(n / max(rewritten_total, 1), 3) for p, n in by_model.items()}
     summary = {"total_units": total, "shredded": rewritten_total, "kept_original": total - rewritten_total,
-               "share_report": {"by_provider": share, "over_ceiling": [p for p, s in share.items() if s > max_share and len(rotation) > 1],
+               "share_report": {"by_model": share, "over_ceiling": [p for p, s in share.items() if s > max_share and len(rotation) > 1],
                                 "longest_run": longest_run, "window_risk": longest_run >= max_run}}
     return article.join_blocks(items), {"units": units, "summary": summary}
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Sentence-level multi-provider rewrite with structure preserved.")
+    parser = argparse.ArgumentParser(description="Sentence-level multi-model rewrite with structure preserved.")
     parser.add_argument("--publication", help="Publication slug")
     parser.add_argument("--slug", required=True, help="Article slug")
     parser.add_argument("--posts", action="store_true", help="Operate on posts/<slug>.md instead of drafts/")
     parser.add_argument("--coverage", type=float, default=0.3, help="Share of sentences to attempt (default 0.3)")
-    parser.add_argument("--attempts", type=int, default=2, help="Providers to try per sentence (default 2)")
-    parser.add_argument("--max-share", type=float, default=0.6, help="Ceiling on one provider's share of rewrites (default 0.6)")
+    parser.add_argument("--attempts", type=int, default=2, help="Models to try per sentence (default 2)")
+    parser.add_argument("--max-share", type=float, default=0.6, help="Ceiling on one model's share of rewrites (default 0.6)")
     parser.add_argument("--max-run", type=int, default=3, help="Max consecutive rewritten sentences (default 3)")
     parser.add_argument("--seed", type=int, help="Random seed (default: derived from the slug)")
     parser.add_argument("--dry-run", action="store_true", help="Report what would change; write nothing")
@@ -164,7 +165,7 @@ def main() -> int:
     if args.publications_dir:
         cfg.site["publications_dir"] = args.publications_dir
     if not llm.configured_providers(cfg):
-        print(json.dumps({"checked": False, "error": "shredding needs at least one LLM key"}, indent=2))
+        print(json.dumps({"checked": False, "error": "shredding needs OPENROUTER_API_KEY"}, indent=2))
         return 1
     if not 0 < args.coverage <= 1:
         parser.error("--coverage must be in (0, 1]")
@@ -175,9 +176,13 @@ def main() -> int:
         return 1
     meta, body = publication.read_post(path)
     seed = args.seed if args.seed is not None else sum(ord(c) for c in args.slug)
-    wrote_with = str((meta.get("composition") or {}).get("provider") or cfg.get("LLM_PROVIDER") or llm.configured_providers(cfg)[0])
-    new_body, telemetry = shred(cfg, body, coverage=args.coverage, attempts=args.attempts, seed=seed, avoid_provider=wrote_with,
-                                max_share=args.max_share, max_run=args.max_run)
+    wrote_with = str((meta.get("composition") or {}).get("model") or llm.model_for(cfg))
+    try:
+        new_body, telemetry = shred(cfg, body, coverage=args.coverage, attempts=args.attempts, seed=seed,
+                                    avoid_model=wrote_with, max_share=args.max_share, max_run=args.max_run)
+    except llm.LlmError as exc:
+        print(json.dumps({"checked": False, "error": str(exc)}))
+        return 1
     guard = article.guard_unchanged(body, new_body)
     status = "shredded" if telemetry["summary"]["shredded"] else "kept_original"
     if guard:

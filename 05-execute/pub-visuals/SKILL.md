@@ -38,9 +38,9 @@ Handles `visual_plan.cover.kind: generated` using the plan's `subject`, website-
 `cover.src`. Existing covers are preserved unless `--force` is explicit. Native image tools
 can generate an asset directly; write its metadata instead of calling the API helper again.
 
-Provider selection honors `--provider`, then `IMAGE_PROVIDER`, then available OpenAI/Gemini
-credentials. Models use `IMAGE_MODEL_OPENAI` / `IMAGE_MODEL_GEMINI`. No configured provider
-means a blocker; `--provider svg` explicitly requests a decorative draft fallback. The helper
+Scripted generation uses `OPENROUTER_API_KEY`, with `--model` overriding `IMAGE_MODEL`.
+Choose a model available through OpenRouter's Image API. No key means a blocker;
+`--provider svg` explicitly requests a decorative draft fallback. The helper
 records source type, generator, timestamp, measured dimensions and MIME in `image_assets`.
 It does not claim visual review or invent image descriptions. Inspect the output, finish alt,
 caption and social placement metadata, and crop/resize with existing tools to the planned ratio.
@@ -61,7 +61,7 @@ Run from the website root; `SKILL_DIR` is this canonical skill directory.
 ```bash
 python3 "$SKILL_DIR/scripts/render_diagram.py" --publication PUBLICATION --slug ARTICLE --png
 python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE
-python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE --provider gemini --force
+python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE --provider openrouter --model google/gemini-2.5-flash-image --force
 python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE --provider svg
 ```
 

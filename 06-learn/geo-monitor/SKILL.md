@@ -1,6 +1,6 @@
 ---
 name: geo-monitor
-description: "Measures actual AI-search visibility: whether the target domain gets cited by ChatGPT, Claude, Perplexity and Gemini for tracked prompts (N samples, majority-voted, flap-damped loss detection), and how often the brand and its competitors are NAMED in answers (mention rate, share of voice, prominence, sentiment, owned-citation rate, Wilson intervals), per publication or for the main site. Invoke for \"are we showing up in AI search\" or the scheduled GEO step. It only measures; geo-optimize and the pub-* skills act."
+description: "Samples AI-search visibility through OpenRouter: whether configured models cite the target domain for tracked prompts (N samples, majority-voted, flap-damped loss detection), and how often the brand and its competitors are NAMED in answers (mention rate, share of voice, prominence, sentiment, owned-citation rate, Wilson intervals), per publication or for the main site. Invoke for \"are we showing up in AI search\" or the scheduled GEO step. It only measures; geo-optimize and the pub-* skills act."
 ---
 
 # geo-monitor
@@ -28,11 +28,11 @@ trusts one call.
 
 ### 1. `scripts/track_ai_visibility.py` — DIY citation probing
 
-Calls each configured vendor's own web-search/grounding API (OpenAI Responses `web_search`,
-Anthropic Messages `web_search_20250305`, Perplexity Sonar, Gemini Google Search grounding) `
---samples` times per tracked prompt and checks whether the target domain appears among the
-citations each API itself returned. A provider with no key reports `not_configured`, never an
-error — a partial key set still produces a useful, narrower run.
+Calls configured OpenRouter models with Exa web search `--samples` times per tracked prompt.
+One `OPENROUTER_API_KEY` funds all models; `AI_VISIBILITY_MODELS` selects the comma-separated
+model slugs. No key reports `not_configured`. No search evidence or an API failure is unknown.
+This measures the configured API setup, not consumer ChatGPT/Claude/Gemini or Google AI Overviews.
+Model/search identities start separate histories from the former direct-vendor probes.
 
 **Tracked-prompt resolution, in order:**
 1. `--prompt "..."` (repeatable) — ad hoc, overrides everything else for that run.
@@ -54,8 +54,7 @@ aggregate state is `error`. Majority vote: `cited` if `cited_count >= ceil(valid
 **second consecutive** `not_cited` run promotes it to `confirmed_citation_loss`, surfaced in the
 headline `newly_lost_citations` (medium). Provider errors never count toward either bucket
 (`indeterminate_provider_errors` is separate). Citation URLs are target-domain-matched and
-deduped; Gemini's are matched by title, since its grounding `uri` is an opaque per-run redirect,
-not the real source URL.
+deduped.
 
 ```bash
 python3 "${SKILL_DIR}/scripts/track_ai_visibility.py"
@@ -144,7 +143,7 @@ a run.
 python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --generate --dry-run
 python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --replicates 2
 python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --brand thrad --domain thrad.ai \
-  --competitor "Lapis=trylapis.com" --topic "LLM advertising platforms" --generate --providers openai,anthropic
+  --competitor "Lapis=trylapis.com" --topic "LLM advertising platforms" --generate --providers openai/gpt-5-mini,anthropic/claude-sonnet-4.6
 ```
 
 ## Running it
@@ -172,15 +171,15 @@ be >= 1), `--skip-trackers`; `grep_ai_crawler_logs.py` positional `log_file`, `-
 ```jsonc
 {
   "checked": true, "run_id": "...", "target_domain": "example.com", "prompt_source": "geo_prompts",
-  "diy_providers_configured": ["openai", "anthropic"],
+  "diy_providers_configured": ["openrouter:openai/gpt-5-mini:search=exa", "openrouter:anthropic/claude-sonnet-4.6:search=exa"],
   "cost_note": "This run makes up to 6 billed web-search LLM API call(s): 2 provider(s) x 1 prompt(s) x 3 sample(s) ...",
   "summary": { "prompts_cited_by_at_least_one_provider": 3, "newly_gained_citations_count": 1,
                "newly_lost_citations_count": 1, "possible_citation_losses_count": 1,
                "indeterminate_provider_errors_count": 0 },
-  "newly_gained_citations": [ { "prompt": "...", "provider": "perplexity", "urls": ["..."] } ],
-  "newly_lost_citations": [ { "prompt": "...", "provider": "openai", "last_known_citation_urls": ["..."] } ],
-  "prompts": [ { "prompt": "...", "cited_by": ["openai"], "provider_detail": { "openai": { "state": "cited" } },
-                 "diff_vs_previous_run": { "has_prior_run": true, "providers": { "openai": { "change": "unchanged" } } } } ],
+  "newly_gained_citations": [ { "prompt": "...", "provider": "openrouter:google/gemini-2.5-flash:search=exa", "urls": ["..."] } ],
+  "newly_lost_citations": [ { "prompt": "...", "provider": "openrouter:openai/gpt-5-mini:search=exa", "last_known_citation_urls": ["..."] } ],
+  "prompts": [ { "prompt": "...", "cited_by": ["openrouter:openai/gpt-5-mini:search=exa"], "provider_detail": { "openrouter:openai/gpt-5-mini:search=exa": { "state": "cited" } },
+                 "diff_vs_previous_run": { "has_prior_run": true, "providers": { "openrouter:openai/gpt-5-mini:search=exa": { "change": "unchanged" } } } } ],
   "history_file": ".seo-engine/state/ai-visibility-history.jsonl", "history_schema_version": 2
 }
 ```
@@ -219,8 +218,7 @@ remain correlated; intervals do not establish population representativeness.
   loss deserves urgency; `possible_citation_losses` is a heads-up, confirm next run.
 - **`newly_gained_citations` tells you what's already working** — feed the actual cited URLs back
   to `seo-content-optimize`/`geo-optimize` as site-specific evidence, not a generic vendor tactic.
-- **The Gemini result is not literally AI Overviews/AI Mode** — it's the Gemini API's own
-  grounding; Google AI Overviews/AI Mode in Search has no public API.
+- **Model samples are not consumer AI products** — these use OpenRouter with Exa search; Google AI Overviews/AI Mode in Search has no public API.
 - **Zero ChatGPT citations + page absent from Bing → dispatch `seo-indexing`, not
   `seo-content-optimize`.** Per `geo-playbook.md` §10, ChatGPT search rides substantially on
   Bing's index — treat Bing indexation as a floor for ChatGPT-citation odds, and fix it at the
@@ -253,7 +251,7 @@ This skill only measures and reports — no content/robots.txt/schema/config cha
 ## Guardrails
 
 - Never scrape a chat UI to measure visibility — only documented vendor APIs (`geo-playbook.md` §9).
-- Never report the Gemini API grounding result as if it were Google AI Overviews/AI Mode.
+- Never report OpenRouter model samples as consumer ChatGPT/Claude/Gemini or Google AI Overviews/AI Mode.
 - Never treat a single probe as a measurement — always the N-sample majority vote.
 - Never report a `possible_citation_loss` with the same urgency as a confirmed one.
 

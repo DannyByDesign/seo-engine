@@ -319,11 +319,8 @@ research falls back to the URLs it is given (`--source-url`, landings, cached re
 
 This category is overwhelmingly **dashboard-first** in 2026 — most vendors gate API access behind
 Enterprise/custom pricing or don't expose one at all. `scripts/lib/ai_visibility.py` is built
-primarily around **direct calls to the AI vendors' own official APIs** (OpenAI, Anthropic,
-Perplexity, Gemini — see [geo-playbook.md](geo-playbook.md) §9 for the DIY citation-probing
-approach, which is the sustainable, always-available core of this skill), with the two commercial
-trackers below wired in as **optional** supplementary sources since they're the only two with
-real, somewhat-accessible APIs:
+primarily around **OpenRouter search-model samples** (see [geo-playbook.md](geo-playbook.md) §9).
+Commercial trackers remain optional supplementary sources with separate accounts:
 
 | Tool | API access | Notes |
 |---|---|---|
@@ -334,54 +331,58 @@ real, somewhat-accessible APIs:
 | Ahrefs Brand Radar, Semrush AI Visibility Toolkit | No public API found | Dashboard add-ons to existing Ahrefs/Semrush subscriptions. |
 
 **Env vars:** `PROFOUND_API_KEY` (optional), `OTTERLY_API_KEY` (optional) — both integrations
-degrade gracefully to "not configured" if absent, since the DIY-via-vendor-APIs approach is the
+degrade gracefully to "not configured" if absent, since the OpenRouter sampling approach is the
 primary mechanism.
 
-## LLM provider APIs — GEO citation-probing
+## OpenRouter — scripted AI
 
-| Provider | Feature | Auth | Notes |
-|---|---|---|---|
-| OpenAI | Responses API `web_search` tool | `OPENAI_API_KEY` | Citations in `annotations` (`type: "url_citation"`) |
-| Anthropic | Claude API `web_search` tool (`web_search_20250305`) | `ANTHROPIC_API_KEY` | Citations inline per text block; supports `allowed_domains`/`blocked_domains` |
-| Perplexity | Sonar API | `PERPLEXITY_API_KEY` | `citations` + `search_results` in every response |
-| Google | Gemini API grounding | `GOOGLE_GEMINI_API_KEY` | `groundingMetadata` — this is the Gemini API's own grounding, not the same system as AI Mode/AI Overviews in Search, which have no public API |
+Use one `OPENROUTER_API_KEY` for all scripted model work. Obtain the key at
+[OpenRouter settings](https://openrouter.ai/settings/keys) and fund that account;
+no separate model-vendor accounts are required. Host-agent work remains independent.
+Paid setup pauses for the operator to obtain the key; store it securely in the website's `.env`.
 
-`geo-monitor`'s brand-mention tracker (`track_brand_mentions.py`) uses the same four with web
-search forced on, then detects mentions deterministically (name + aliases, links blanked, never
-the domain label) and scores sentiment/recommendation with the cheap tier below.
+| Task | Setting | Default model(s) |
+|---|---|---|
+| Writing, research synthesis, judging | `LLM_MODEL` | `anthropic/claude-sonnet-4.6` |
+| Classification, suggestions, mention enrichment | `LLM_CHEAP_MODEL` | `google/gemini-2.5-flash` |
+| Optional sentence rewriting | `LLM_REWRITE_MODELS` | `openai/gpt-5-mini,google/gemini-2.5-flash` |
+| Generated covers | `IMAGE_MODEL` | `google/gemini-2.5-flash-image` |
+| Citation/brand probes | `AI_VISIBILITY_MODELS` | `openai/gpt-5-mini,anthropic/claude-sonnet-4.6,google/gemini-2.5-flash` |
 
-## LLM provider APIs — content generation (the `pub-*` skills)
+Lists are comma-separated OpenRouter model slugs. Check available models and their supported
+parameters during setup; token, image and search costs vary. Do not substitute another model
+silently after an error. `LLM_EFFORT` is optional reasoning effort, only for models supporting it.
+Text JSON mode requires a compatible endpoint; `scripts/dev/smoke.py --only openrouter`
+checks a small paid text call, not every selected model or modality.
 
-Bring-your-own-key text generation in `scripts/lib/llm.py`. Select a configured provider with
-`LLM_PROVIDER` or the command's provider option. A single configured provider works without
-a selector; multiple configured providers require an explicit choice, with no vendor priority.
-Every call goes through `http_util` with the JSON body and a single retry on malformed JSON.
+Text uses `POST https://openrouter.ai/api/v1/chat/completions` through the shared HTTP layer.
+Shredder rotates **model IDs**, excludes the writer model, and reports shares per model.
+It remains an optional rewrite pass, with no watermark-removal or detector-evasion guarantee;
+the human writing corpus and full-article edit remain the writing standard.
 
-| Provider | Endpoint | Quality model (default) | Cheap model (default) | Override |
-|---|---|---|---|---|
-| Anthropic | `POST https://api.anthropic.com/v1/messages` (`anthropic-version: 2023-06-01`; `output_config.effort` when `LLM_EFFORT` is set, never on Haiku) | `claude-opus-5` | `claude-haiku-4-5` | `LLM_MODEL_ANTHROPIC`, `LLM_CHEAP_MODEL_ANTHROPIC` |
-| OpenAI | `POST https://api.openai.com/v1/responses` (`instructions` + `input`; `text.format json_object` for JSON) | `gpt-5` | `gpt-5-mini` | `LLM_MODEL_OPENAI`, `LLM_CHEAP_MODEL_OPENAI` |
-| Google | `POST https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent` (`systemInstruction`; `responseMimeType application/json`) | `gemini-2.5-pro` | `gemini-2.5-flash` | `LLM_MODEL_GEMINI`, `LLM_CHEAP_MODEL_GEMINI` |
+Images use `POST https://openrouter.ai/api/v1/images`, with the planned aspect ratio.
+Check model capabilities at `GET /api/v1/images/models`. Returned base64 bytes determine the
+stored MIME/extension. Native host tools and permitted sourced assets still work without a
+scripted key. `--provider svg` is an explicit draft fallback. Follow the [image workflow](images.md)
+and inspect actual pixels before writing alt text or accepting crops.
+[Image API documentation](https://openrouter.ai/docs/guides/overview/multimodal/image-generation).
 
-Who uses which tier: research synthesis, article candidates, the judge and the voice pass use
-the quality tier; topic-map expansion, keyword suggestions, mention sentiment and seer summaries
-use the cheap tier. The Shredder rotates providers on purpose (one voice per sentence run is
-the point). A `refusal` stop reason or an empty body is surfaced as `LlmError`, never retried
-blindly. Perplexity is probing-only (no content generation).
+Visibility probes use the `openrouter:web_search` server tool with Exa search, capped at three
+tool calls and ten total results per sample. This uses the same OpenRouter account. Missing
+search evidence, refusals and API failures are **unknown**, not a missing citation. Results
+are labeled `openrouter:<model>:search=exa`; they measure that API setup, not consumer
+ChatGPT, Claude, Perplexity or Google AI Overviews. Do not compare these as continuous series
+with old direct-vendor probes. Commercial visibility services remain optional, separate sources.
+[Search tool documentation](https://openrouter.ai/docs/guides/features/server-tools/web-search).
 
-## Image generation APIs (`pub-visuals gen_cover.py`)
+### Migrating an existing workspace
 
-| Provider | Endpoint | Default model | Override | Output |
-|---|---|---|---|---|
-| OpenAI | `POST https://api.openai.com/v1/images/generations` | `gpt-image-1` | `IMAGE_MODEL_OPENAI` | base64 JPEG, `size` 1536×1024 |
-| Google | `POST …/models/<model>:generateContent` with image response modality | `gemini-2.5-flash-image` | `IMAGE_MODEL_GEMINI` | `inlineData` (base64) |
-
-`IMAGE_PROVIDER` (`openai` | `gemini`) selects the configured account; a missing selected key
-is a blocker, not permission to switch providers. Native host tools or sourced assets can
-supply covers without API credentials. `--provider svg` explicitly requests a decorative
-draft fallback. Follow the [image workflow](images.md) and inspect/crop the actual output;
-the requested aspect ratio is not a guarantee of returned dimensions. Diagrams are pure SVG
-(no API) rendered from the research outline's `diagrams` specs.
+Add `OPENROUTER_API_KEY`, then move model choices to the settings above using full OpenRouter
+slugs. Old direct-vendor keys, `LLM_PROVIDER`, per-vendor `LLM_MODEL_*` /
+`LLM_CHEAP_MODEL_*`, `IMAGE_PROVIDER` and per-vendor `IMAGE_MODEL_*` settings are no longer read.
+Do not delete existing secrets automatically: the website may use them independently.
+No new API setup is needed for host-written work. SEO/search data providers, analytics,
+LanguageTool and commercial trackers are separate services, not model endpoints.
 
 ## SociaVault (social-conversation search)
 

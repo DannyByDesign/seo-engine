@@ -1,34 +1,20 @@
-"""AI-visibility / GEO citation-probing client.
+"""OpenRouter search-model samples, never consumer-app visibility measurements.
 
-Primary approach (sustainable, always-available): call each AI vendor's own
-official web-search/grounding tool directly and check whether a target
-domain appears among the citations for a set of prompts. This is the DIY
-equivalent of what commercial AI-visibility trackers sell.
-
-Measurement honesty (geo-playbook.md §9): LLM answers are stochastic — a
-single probe is a coin flip, not a measurement. This module exposes
-`probe_all` for one sample; geo-monitor's tracker takes N samples per
-prompt×provider and majority-votes. A provider API error is returned as an
-explicit error state (`error` + `error_type`) — it must NEVER be conflated
-with "not cited" by consumers.
-
-Gemini note: `groundingChunks[].web.uri` is a vertexaisearch.cloud.google.com
-redirect URL, not the source — the source domain arrives in `web.title`.
-Citation matching therefore checks titles as well as URL hosts.
-
-Never scrape ChatGPT/Perplexity/AI-Overview web UIs directly — that likely
-violates each provider's ToS. Use the documented APIs below instead.
+Each model/search configuration has its own history identity. Errors or missing
+search evidence are unknown, never an uncited answer. Commercial trackers remain
+separate data services.
 """
-
 from __future__ import annotations
 
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from . import http_util
-from .config import INTEGRATION_ENV_VARS, Config
+from . import http_util, openrouter
+from .config import Config
 
-LLM_TIMEOUT = 180.0
+DEFAULT_MODELS = "openai/gpt-5-mini,anthropic/claude-sonnet-4.6,google/gemini-2.5-flash"
+# Pin the search engine so models are compared against the same retrieval surface.
+SEARCH_ENGINE = "exa"
 
 
 def _fold_domain(value: str) -> str:
@@ -70,173 +56,64 @@ def _dedupe(citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return unique
 
 
-def probe_openai(cfg: Config, prompt: str, model: str = "gpt-4.1") -> dict[str, Any]:
-    """Responses API with the web_search tool. Citations arrive as
-    annotations of type url_citation on the output text."""
-    key = cfg.require("OPENAI_API_KEY", "Get a key at platform.openai.com/api-keys.")
-    resp = http_util.post(
-        "https://api.openai.com/v1/responses",
-        headers={"Authorization": f"Bearer {key}"},
-        json_body={"model": model, "input": prompt, "tools": [{"type": "web_search"}]},
-        timeout=LLM_TIMEOUT, check=True,
-    )
-    data = resp.json()
-
-    citations = []
-    for item in data.get("output", []):
-        for content in item.get("content", []):
-            for annotation in content.get("annotations", []):
-                if annotation.get("type") == "url_citation":
-                    citations.append({"url": annotation.get("url"), "title": annotation.get("title")})
-    return {"provider": "openai", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
-
-
-def probe_anthropic(
-    cfg: Config, prompt: str, model: str = "claude-sonnet-4-5",
-    allowed_domains: Optional[list[str]] = None,
-) -> dict[str, Any]:
-    """Messages API with the web_search tool. Citations arrive inline per
-    text block as {url, title, cited_text}. max_tokens is generous — a
-    truncated answer loses its trailing citations and reads as a false
-    "not cited"."""
-    key = cfg.require("ANTHROPIC_API_KEY", "Get a key at console.anthropic.com.")
-    tool: dict[str, Any] = {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
-    if allowed_domains:
-        tool["allowed_domains"] = allowed_domains
-
-    resp = http_util.post(
-        "https://api.anthropic.com/v1/messages",
-        headers={
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        },
-        json_body={
-            "model": model, "max_tokens": 4096,
-            "messages": [{"role": "user", "content": prompt}],
-            "tools": [tool],
-        },
-        timeout=LLM_TIMEOUT, check=True,
-    )
-    data = resp.json()
-
-    citations = []
-    for block in data.get("content", []):
-        for citation in block.get("citations", []) or []:
-            citations.append({
-                "url": citation.get("url"),
-                "title": citation.get("title"),
-                "cited_text": citation.get("cited_text"),
-            })
-    return {"provider": "anthropic", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
-
-
-def probe_perplexity(cfg: Config, prompt: str, model: str = "sonar") -> dict[str, Any]:
-    key = cfg.require("PERPLEXITY_API_KEY", "Get a key at perplexity.ai/settings/api.")
-    resp = http_util.post(
-        "https://api.perplexity.ai/chat/completions",
-        headers={"Authorization": f"Bearer {key}"},
-        json_body={"model": model, "messages": [{"role": "user", "content": prompt}]},
-        timeout=LLM_TIMEOUT, check=True,
-    )
-    data = resp.json()
-
-    citations = [{"url": u, "title": None} for u in data.get("citations", [])]
-    for result in data.get("search_results", []) or []:
-        citations.append({"url": result.get("url"), "title": result.get("title")})
-    return {"provider": "perplexity", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
-
-
-def probe_gemini(cfg: Config, prompt: str, model: str = "gemini-2.5-flash") -> dict[str, Any]:
-    """Gemini API's own Google Search grounding. Distinct from AI Overviews/
-    AI Mode in Search itself, which have no public API — this only tells you
-    how Gemini-the-API-product grounds answers, a useful proxy but not
-    identical to Search's AI surfaces."""
-    key = cfg.require("GOOGLE_GEMINI_API_KEY", "Get a key at aistudio.google.com/apikey.")
-    resp = http_util.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        headers={"x-goog-api-key": key},
-        json_body={
-            "contents": [{"parts": [{"text": prompt}]}],
-            "tools": [{"google_search": {}}],
-        },
-        timeout=LLM_TIMEOUT, check=True,
-    )
-    data = resp.json()
-
-    citations = []
-    grounding = data.get("candidates", [{}])[0].get("groundingMetadata", {})
-    for chunk in grounding.get("groundingChunks", []) or []:
-        web = chunk.get("web", {})
-        citations.append({"url": web.get("uri"), "title": web.get("title")})
-    return {"provider": "gemini", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
-
-
-PROBERS = {
-    "openai": probe_openai,
-    "anthropic": probe_anthropic,
-    "perplexity": probe_perplexity,
-    "gemini": probe_gemini,
-}
+def probe_names(cfg: Config) -> list[str]:
+    models = openrouter.model_list(cfg.get("AI_VISIBILITY_MODELS") or DEFAULT_MODELS)
+    return [f"openrouter:{model}:search={SEARCH_ENGINE}" for model in models]
 
 
 def _provider_configured(cfg: Config, name: str) -> bool:
-    spec = INTEGRATION_ENV_VARS[name]
-    env_vars = spec.get("all") or spec.get("any") or []
-    return all(cfg.has(v) for v in env_vars)
+    return cfg.has("OPENROUTER_API_KEY") and name in probe_names(cfg)
+
+
+def probe(cfg: Config, prompt: str, name: str) -> dict[str, Any]:
+    if name not in probe_names(cfg):
+        raise openrouter.OpenRouterError("Unknown OpenRouter probe identity")
+    model = name.removeprefix("openrouter:").removesuffix(f":search={SEARCH_ENGINE}")
+    data = openrouter.request(cfg, "/chat/completions", {
+        "model": model, "messages": [
+            {"role": "system", "content": "Search the web before answering. Cite the sources you use."},
+            {"role": "user", "content": prompt}],
+        "max_tokens": 4096, "max_tool_calls": 3,
+        "tools": [{"type": "openrouter:web_search", "parameters": {
+            "engine": SEARCH_ENGINE, "max_results": 5, "max_total_results": 10, "max_uses": 3}}],
+    }, timeout=180)
+    msg = openrouter.message(data)
+    citations = []
+    for annotation in msg.get("annotations") or []:
+        if annotation.get("type") == "url_citation":
+            citation = annotation.get("url_citation") or annotation
+            if citation.get("url"):
+                citations.append({"url": citation["url"], "title": citation.get("title")})
+    search_count = ((data.get("usage") or {}).get("server_tool_use") or {}).get("web_search_requests")
+    if search_count == 0 or (not search_count and not citations):
+        raise openrouter.OpenRouterError("No web-search evidence returned; citation visibility is unknown")
+    return {"provider": name, "model": data.get("model") or model, "gateway": "openrouter",
+            "search_engine": SEARCH_ENGINE, "measurement_kind": "openrouter_search_api_sample",
+            "prompt": prompt, "citations": _dedupe(citations), "raw": data}
 
 
 def probe_all(cfg: Config, prompt: str, target_domain: str) -> dict[str, Any]:
-    """Runs every configured provider ONCE for one prompt and reports whether
-    the target domain was cited by each. Skips providers with no key.
-
-    A provider failure is an explicit `error` state with `error_type` —
-    consumers must treat it as "unknown", never as "not cited" (see
-    geo-monitor's diff logic). One sample is one coin flip: callers that
-    persist state must aggregate multiple samples (track_ai_visibility.py).
-    """
     results = {}
-    for name, fn in PROBERS.items():
+    for name in probe_names(cfg):
         if not _provider_configured(cfg, name):
             results[name] = {"configured": False}
             continue
         try:
-            outcome = fn(cfg, prompt)
-            cited = any(citation_matches(c, target_domain) for c in outcome["citations"])
-            results[name] = {
-                "configured": True, "cited": cited,
-                "citation_count": len(outcome["citations"]),
-                "citations": outcome["citations"],
-            }
-        except Exception as exc:
+            outcome = probe(cfg, prompt, name)
             results[name] = {
                 "configured": True,
-                "error": http_util.sanitize_text(str(exc)),
-                "error_type": getattr(exc, "error_type", "") or type(exc).__name__,
+                "cited": any(citation_matches(c, target_domain) for c in outcome["citations"]),
+                "citation_count": len(outcome["citations"]), "citations": outcome["citations"],
+                "model": outcome["model"], "search_engine": SEARCH_ENGINE,
             }
+        except Exception as exc:
+            results[name] = {"configured": True, "error": http_util.sanitize_text(str(exc)),
+                             "error_type": getattr(exc, "error_type", "") or type(exc).__name__}
     return {"prompt": prompt, "target_domain": target_domain, "providers": results}
 
 
 def answer_text(provider: str, raw: dict[str, Any]) -> str:
-    """The assistant's answer as plain text, per provider payload shape."""
-    raw = raw or {}
-    if provider == "openai":
-        parts = []
-        for item in raw.get("output", []) or []:
-            if item.get("type") == "message":
-                for c in item.get("content", []) or []:
-                    if c.get("type") == "output_text":
-                        parts.append(c.get("text", ""))
-        return "".join(parts)
-    if provider == "anthropic":
-        return "".join(b.get("text", "") for b in raw.get("content", []) or [] if b.get("type") == "text")
-    if provider == "perplexity":
-        choices = raw.get("choices") or [{}]
-        return str((choices[0].get("message") or {}).get("content") or "")
-    if provider == "gemini":
-        cands = raw.get("candidates") or [{}]
-        return "".join(p.get("text", "") for p in ((cands[0].get("content") or {}).get("parts") or []))
-    return ""
+    return openrouter.message(raw)["content"]
 
 
 def profound_visibility(cfg: Config, category: Optional[str] = None) -> dict[str, Any]:

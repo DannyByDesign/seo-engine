@@ -8,7 +8,7 @@ Spoke record (mirrors the vendor's planner_topics — publication-playbook §4):
   ai|user|competitor|seo|geo|social|seer, seo_keyword, seo_msv, seo_kd,
   article_slug, created_at, queued_at, covered_at
 
-Generation: with an LLM key, spokes are drafted per pillar from the
+Generation: with OPENROUTER_API_KEY, spokes are drafted per pillar from the
 strategy (direction, priority topics, stances, avoid list, client
 description), the competitor inventory (gaps to fill) and the posts already
 published (never duplicate). Without one, spokes come from competitor
@@ -291,7 +291,7 @@ def main() -> int:
         existing_titles = _existing_titles(pub, root)
         if args.no_llm or not llm.configured_providers(cfg):
             if not args.no_llm:
-                result["notes"].append("no LLM key configured — heuristic spokes only (competitor titles + priority topics)")
+                result["notes"].append("no OPENROUTER_API_KEY configured — heuristic spokes only (competitor titles + priority topics)")
             result["spokes_added"] = spokes_from_heuristics(strategy, topic_map, competitor_topics, args.spokes_per_pillar)
         else:
             try:
@@ -302,7 +302,7 @@ def main() -> int:
                 result["spokes_added"] = spokes_from_heuristics(strategy, topic_map, competitor_topics, args.spokes_per_pillar)
         if not result["spokes_added"] and not pubstate.all_spokes(topic_map):
             result["notes"].append("no spokes yet — set priority_topics (pub-strategy positioning.py --apply), scrape competitors "
-                                   "(scrape_competitors.py), configure an LLM key, or --add one by hand; the planner cannot queue an empty map")
+                                   "(scrape_competitors.py), configure OPENROUTER_API_KEY, or --add one by hand; the planner cannot queue an empty map")
         if not args.no_volume:
             result["notes"] += enrich_volume(cfg, topic_map)
     if args.mark_covered or fresh or args.refresh:

@@ -44,7 +44,7 @@
 integration to its env var(s) — Google Search Console (either
 `GOOGLE_APPLICATION_CREDENTIALS` or `GSC_SERVICE_ACCOUNT_JSON`), PageSpeed/CrUX
 (`GOOGLE_PSI_API_KEY`), Ahrefs, DataForSEO (login **and** password), Firecrawl,
-IndexNow, Semrush, Bing Webmaster, OpenAI, Anthropic, Perplexity, Gemini,
+IndexNow, Semrush, Bing Webmaster, OpenRouter,
 Profound, Otterly. See [api-reference.md](api-reference.md) for setup per
 integration. Skills report exactly which env var unlocks a skipped capability —
 `seo-setup`'s `check_integrations.py --format table` shows the full status.

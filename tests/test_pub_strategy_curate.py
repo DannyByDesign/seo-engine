@@ -60,7 +60,7 @@ def _run(mod: ModuleType, cfg: Config, argv: list[str], monkeypatch, capsys) -> 
 
 
 def test_positioning_sets_validates_and_applies(tmp_path, monkeypatch, capsys, fake_transport):
-    cfg, root = _repo(tmp_path, ANTHROPIC_API_KEY="sk-ant")
+    cfg, root = _repo(tmp_path, OPENROUTER_API_KEY="sk-ant")
     out = _run(positioning, cfg, ["--publication", "adsinllms", "--direction", "how trading desks buy LLM placements",
                                   "--mention-degree", "subtle", "--mention-rate", "0.1"], monkeypatch, capsys)
     strategy = pubstate.load_strategy(root)
@@ -72,8 +72,8 @@ def test_positioning_sets_validates_and_applies(tmp_path, monkeypatch, capsys, f
                 "ranking_targets": [{"phrase": f"target {i}", "basis": "white_space", "mention_framing": "as the DSP option"} for i in range(7)],
                 "competitors": [{"name": "AdExchanger", "domain": "https://adexchanger.com/", "reason": "trade press"}],
                 "landings": [{"url": "https://www.thrad.ai/content/guide", "context": "when CPM ranges come up"}, {"url": "not-a-url"}]}
-    fake_transport.route("POST", "https://api.anthropic.com/v1/messages", {
-        "body": json.dumps({"content": [{"type": "text", "text": json.dumps(proposal)}], "stop_reason": "end_turn", "usage": {}})})
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/chat/completions", {
+        "body": json.dumps({"choices": [{"message": {"content": json.dumps(proposal)}, "finish_reason": "stop"}], "usage": {}})})
     out = _run(positioning, cfg, ["--publication", "adsinllms", "--suggest"], monkeypatch, capsys)
     assert "proposal" in out and len(out["proposal"]["ranking_targets"]) == 5 and "applied" not in out
     assert pubstate.load_strategy(root)["priority_topics"] == []

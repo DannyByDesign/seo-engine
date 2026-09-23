@@ -143,5 +143,5 @@ Flags: `enhance_article.py` `--publication`, `--slug`, `--posts`, `--stages`,
 ## Graceful degradation
 
 `links`, `sources`, `anchors`, `diagrams`, `verify`, `meta` and `relink.py` need no API key.
-`keywords` and `voice` need an LLM key and skip with a note otherwise. `--check-links` uses
+`keywords` and `voice` need `OPENROUTER_API_KEY` and skip with a note otherwise. `--check-links` uses
 the network; without it the verifier reads only the research cache.

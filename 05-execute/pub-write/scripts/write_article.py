@@ -225,7 +225,7 @@ def main() -> int:
     if args.publications_dir:
         cfg.site["publications_dir"] = args.publications_dir
     if not llm.configured_providers(cfg):
-        print(json.dumps({"checked": False, "error": "writing needs an LLM key (ANTHROPIC_API_KEY / OPENAI_API_KEY / GOOGLE_GEMINI_API_KEY)"}, indent=2))
+        print(json.dumps({"checked": False, "error": "writing needs an LLM key (OPENROUTER_API_KEY)"}, indent=2))
         return 1
     root = publication.find_publication(cfg, args.publication)
     pub = publication.load_publication(root)
@@ -303,7 +303,7 @@ def main() -> int:
         "written_at": pubstate.now_iso(), "kicker": meta.get("kicker") or "Guide",
         "mention": {"allowed": mention["allowed"], "degree": mention["degree"], "applied": bool(client_links),
                     "landing_url": client_links[0] if client_links else None, "reasons": mention["reasons"], "stripped": stripped},
-        "composition": {"candidates": args.candidates, "judge": judge_log, "numeric_anchors": anchored},
+        "composition": {"provider": "openrouter", "model": llm.model_for(cfg), "candidates": args.candidates, "judge": judge_log, "numeric_anchors": anchored},
         "writing_example_ids": references['example_ids'],
     })
     if not meta.get("section"):

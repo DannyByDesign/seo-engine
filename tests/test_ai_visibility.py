@@ -66,77 +66,70 @@ def test_dedupe_keeps_entries_with_no_url_or_title():
     assert av._dedupe(citations) == [{}, {}]
 
 
-def test_provider_configured_true_when_key_present(tmp_repo):
-    cfg = tmp_repo.make_config(env={"OPENAI_API_KEY": "sk-real-key"})
-    assert av._provider_configured(cfg, "openai") is True
+def test_gateway_configuration(tmp_repo):
+    cfg = tmp_repo.make_config(env={"OPENROUTER_API_KEY": "key", "AI_VISIBILITY_MODELS": "vendor/one,vendor/two,vendor/one"})
+    names = av.probe_names(cfg)
+    assert names == ["openrouter:vendor/one:search=exa", "openrouter:vendor/two:search=exa"]
+    assert av._provider_configured(cfg, names[0])
+    assert not av._provider_configured(cfg, "openai")
+    cfg.env["OPENROUTER_API_KEY"] = "your-key-here"
+    assert not av._provider_configured(cfg, names[0])
 
 
-def test_provider_configured_false_when_key_absent(tmp_repo):
-    cfg = tmp_repo.make_config(env={})
-    assert av._provider_configured(cfg, "anthropic") is False
+def test_probe_all_skips_without_key(tmp_repo, fake_transport):
+    cfg = tmp_repo.make_config()
+    assert all(p == {"configured": False} for p in av.probe_all(cfg, "q", TARGET)["providers"].values())
+    assert not fake_transport.calls
 
 
-def test_provider_configured_false_for_placeholder_value(tmp_repo):
-    cfg = tmp_repo.make_config(env={"PERPLEXITY_API_KEY": "your-key-here"})
-    assert av._provider_configured(cfg, "perplexity") is False
+def test_probe_citations_and_errors_are_separate(tmp_repo, fake_transport):
+    import json
+    cfg = tmp_repo.make_config(env={"OPENROUTER_API_KEY": "key", "AI_VISIBILITY_MODELS": "vendor/one,vendor/two"})
+    fake_transport.route("POST", "https://openrouter.ai/api/v1/chat/completions",
+        {"body": json.dumps({"choices": [{"message": {"content": "answer", "annotations": [
+            {"type": "url_citation", "url_citation": {"url": "https://mysite.org/x", "title": "x"}}]}, "finish_reason": "stop"}]})},
+        {"body": json.dumps({"error": {"message": "denied SECRET123"}})})
+    result = av.probe_all(cfg, "q", TARGET)["providers"]
+    first, second = av.probe_names(cfg)
+    assert result[first]["cited"] and result[first]["citation_count"] == 1
+    assert "cited" not in result[second] and "SECRET123" not in result[second]["error"]
+    body = fake_transport.calls[0][2]["json"]
+    assert body["tools"][0]["type"] == "openrouter:web_search"
+    assert body["tools"][0]["parameters"]["engine"] == "exa"
+    assert body["max_tool_calls"] == 3
 
 
-def test_probe_all_skips_unconfigured_providers(tmp_repo, monkeypatch):
-    cfg = tmp_repo.make_config(env={})
-
-    def boom(cfg, prompt, **kw):
-        raise AssertionError("should never be called: provider not configured")
-
-    monkeypatch.setattr(av, "PROBERS", {"openai": boom})
-    result = av.probe_all(cfg, "prompt", TARGET)
-    assert result["providers"]["openai"] == {"configured": False}
-
-
-def test_probe_all_one_cited_one_errors_with_error_type(tmp_repo, monkeypatch):
-    cfg = tmp_repo.make_config(env={"OPENAI_API_KEY": "k1", "ANTHROPIC_API_KEY": "k2"})
-
-    def fake_openai(cfg, prompt, **kw):
-        return {"provider": "openai", "prompt": prompt,
-                "citations": [{"url": "https://mysite.org/x", "title": "x"}]}
-
-    def fake_anthropic(cfg, prompt, **kw):
-        raise http_util.HttpError("request timed out for key=SECRET123", error_type="timeout")
-
-    monkeypatch.setattr(av, "PROBERS", {"openai": fake_openai, "anthropic": fake_anthropic})
-    result = av.probe_all(cfg, "prompt", TARGET)
-
-    openai_result = result["providers"]["openai"]
-    assert openai_result["configured"] is True
-    assert openai_result["cited"] is True
-    assert openai_result["citation_count"] == 1
-    assert "error" not in openai_result
-
-    anthropic_result = result["providers"]["anthropic"]
-    assert anthropic_result["configured"] is True
-    assert anthropic_result["error_type"] == "timeout"
-    assert "cited" not in anthropic_result
-    assert "SECRET123" not in anthropic_result["error"]
-    assert "key=REDACTED" in anthropic_result["error"]
+@pytest.mark.parametrize("searches,has_error", [(0, True), (None, True), (1, False)])
+def test_no_search_is_unknown_not_uncited(tmp_repo, fake_transport, searches, has_error):
+    import json
+    cfg = tmp_repo.make_config(env={"OPENROUTER_API_KEY": "key", "AI_VISIBILITY_MODELS": "vendor/one"})
+    fake_transport.route("POST", "https://openrouter.ai/", {"body": json.dumps({
+        "choices": [{"message": {"content": "answer"}, "finish_reason": "stop"}],
+        "usage": {"server_tool_use": {"web_search_requests": searches}}})})
+    result = av.probe_all(cfg, "q", TARGET)["providers"][av.probe_names(cfg)[0]]
+    assert ("error" in result) == has_error
+    if not has_error:
+        assert result["cited"] is False
 
 
-def test_probe_all_not_cited_when_no_citation_matches(tmp_repo, monkeypatch):
-    cfg = tmp_repo.make_config(env={"OPENAI_API_KEY": "k1"})
+def test_history_diff_uses_model_identity_and_keeps_legacy_series_separate():
+    import importlib.util
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[1] / '06-learn/geo-monitor/scripts/track_ai_visibility.py'
+    spec = importlib.util.spec_from_file_location('visibility_tracker', path)
+    tracker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tracker)
+    name = 'openrouter:vendor/one:search=exa'
 
-    def fake_openai(cfg, prompt, **kw):
-        return {"provider": "openai", "prompt": prompt,
-                "citations": [{"url": "https://unrelated.example/x", "title": "unrelated"}]}
+    def record(state, identity=name):
+        return {'providers': {identity: {'state': state, 'citation_urls': ['https://mysite.org/x']}}}
 
-    monkeypatch.setattr(av, "PROBERS", {"openai": fake_openai})
-    result = av.probe_all(cfg, "prompt", TARGET)
-    assert result["providers"]["openai"]["cited"] is False
-
-
-def test_probe_all_error_type_falls_back_to_exception_class_name(tmp_repo, monkeypatch):
-    cfg = tmp_repo.make_config(env={"OPENAI_API_KEY": "k1"})
-
-    def fake_openai(cfg, prompt, **kw):
-        raise ValueError("something unexpected broke")
-
-    monkeypatch.setattr(av, "PROBERS", {"openai": fake_openai})
-    result = av.probe_all(cfg, "prompt", TARGET)
-    assert result["providers"]["openai"]["error_type"] == "ValueError"
+    current = record('not_cited')
+    legacy = tracker._diff_against_prior(current, [record('cited', 'openai')], False)
+    assert legacy['providers'][name]['change'] == 'provider_newly_configured'
+    first_miss = tracker._diff_against_prior(current, [record('cited')], False)
+    assert first_miss['providers'][name]['change'] == 'possible_citation_loss'
+    second_miss = tracker._diff_against_prior(current, [record('not_cited'), record('cited')], False)
+    assert second_miss['providers'][name]['change'] == 'confirmed_citation_loss'
+    error = tracker._diff_against_prior(record('error'), [record('cited')], False)
+    assert error['providers'][name]['change'] == 'indeterminate_provider_error'
