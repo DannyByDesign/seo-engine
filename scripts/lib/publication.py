@@ -776,9 +776,11 @@ def _initials(name: str) -> str:
 
 
 def _nav(pub: Publication, current: Optional[str] = None) -> str:
-    links = "".join(
-        f'<a href="/sections/{_e(s["slug"])}"{" aria-current=\"page\"" if current == s["slug"] else ""}>{_e(s["name"])}</a>'
-        for s in pub.sections)
+    links = []
+    for section in pub.sections:
+        active = ' aria-current="page"' if current == section['slug'] else ''
+        links.append(f'<a href="/sections/{_e(section["slug"])}"{active}>{_e(section["name"])}</a>')
+    links = ''.join(links)
     return (f'<header class="site"><div class="container"><div class="row">'
             f'<a class="brand" href="/"><img src="/icons/{_e(pub.icon)}.svg" alt="" width="28" height="28">{_e(pub.name)}</a>'
             f'<nav class="sections" aria-label="Sections">{links}<a href="/search">Search</a></nav></div></div></header>')
@@ -975,13 +977,14 @@ def render_about(pub: Publication, build_year: int) -> str:
 def render_search(pub: Publication, build_year: int) -> str:
     index = [{"t": p.title, "u": f"/posts/{p.slug}", "d": p.dek, "s": pub.section_for(p)["name"], "a": pub.author_for(p)["name"],
               "p": display_date(p.published_at)} for p in pub.posts]
+    serialized_index = json.dumps(index, ensure_ascii=False).replace("</", "<\\/")
     script = ('<script>(function(){var d=JSON.parse(document.getElementById("search-index").textContent),q=document.getElementById("q"),r=document.getElementById("results");'
               'function go(){var v=q.value.trim().toLowerCase();r.innerHTML="";if(!v)return;d.filter(function(p){return (p.t+" "+p.d+" "+p.s).toLowerCase().indexOf(v)>-1}).slice(0,30).forEach(function(p){'
               'var a=document.createElement("article");a.className="card";a.innerHTML="<p class=kicker>"+p.s+"</p><h3><a href=\\""+p.u+"\\"></a></h3><p></p><p class=meta>"+p.a+" · "+p.p+"</p>";'
               'a.querySelector("h3 a").textContent=p.t;a.querySelectorAll("p")[1].textContent=p.d;r.appendChild(a)})}q.addEventListener("input",go)})();</script>')
     body = (f'<p class="kicker">Search</p><h1>Search</h1><p class="dek">Find any article across the publication. Start typing to search.</p>'
             f'<div class="search"><label class="skip" for="q">Search articles</label><input id="q" type="search" placeholder="Search articles…" autocomplete="off"></div>'
-            f'<div id="results" class="grid"></div><script type="application/json" id="search-index">{json.dumps(index, ensure_ascii=False).replace("</", "<\\/")}</script>{script}')
+            f'<div id="results" class="grid"></div><script type="application/json" id="search-index">{serialized_index}</script>{script}')
     og = {"og:title": pub.name, "og:description": pub.tagline, "og:url": pub.site_url, "og:site_name": pub.name, "og:type": "website",
           "twitter:card": "summary_large_image", "twitter:title": pub.name}
     return _page(pub, title=f"Search · {pub.name}", description=pub.tagline, canonical_path="/search", body=body,
