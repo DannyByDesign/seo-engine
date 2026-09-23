@@ -23,8 +23,8 @@ pages is not proof that nobody has covered it. External evidence still needs con
 
 ## Interview for this topic
 
-Use the host's question tool when available; otherwise ask in the conversation. Begin with
-two or three questions informed by the research gaps, then follow up on concrete answers:
+Follow the question-interface rule below. Begin with two or three questions informed by the
+research gaps, then follow up on concrete answers:
 what happened, what the operator did differently, why, what failed, and when the lesson would
 not apply. Do not ask the operator to do keyword research or author a JSON brief.
 
@@ -34,6 +34,23 @@ For a substantive refresh, ask what has changed and recheck the intended use. If
 has no relevant contribution or declines to share, record that and propose an `external_only`
 piece with a useful comparison, tested example or synthesis; never manufacture expertise.
 If no useful contribution can be supported, choose another topic rather than pad a draft.
+
+### Question interface
+
+Use the host's native structured question tool for onboarding and topic interviews, including
+follow-ups. Check the tools exposed in the current session and their usage restrictions before
+asking. Examples include Codex `request_user_input_async` or `request_user_input`, and Claude
+Code `AskUserQuestion`; names and availability depend on the host, not the model vendor.
+If a synchronous tool is unavailable in the current mode, check for an available async
+equivalent before falling back. Do not print a questionnaire in chat when a suitable question
+tool is callable. Use free-text input for experience and nuance; use choices for actual choices.
+
+After an async question, keep the answer pending and continue only independent work. Do not
+draft the dependent contribution or infer an answer from silence. Fall back to chat only when
+no suitable tool is available/permitted or a tool fails without a usable alternative. State
+the specific limitation in one short sentence before asking in chat. For disclosure approval,
+use the question tool only if its rules permit approval requests; otherwise ask explicitly in
+chat. The approval requirement below applies regardless of interface.
 
 ## Confirm proposed use
 

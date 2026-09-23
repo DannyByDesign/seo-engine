@@ -48,7 +48,8 @@ Load only the next applicable skill, not the entire catalog.
 
 ### 2. Have a short, adaptive conversation
 
-Use the host's question tool; use chat if absent. Ask two or three questions at a time, skip
+Follow the [native question-tool rule](../../shared/seo-references/content-interview.md#question-interface),
+including its availability check and explicit fallback reason. Ask two or three questions at a time, skip
 known answers, and follow up on what matters. Start with:
 
 - Which website/brand is this workspace for, and who should it help?

@@ -23,7 +23,7 @@ candidate source only through the landing pages whose "when to cite" context mat
 
 Before outlining, follow [Topic research and interview](../../shared/seo-references/content-interview.md).
 The first run gathers web sources and returns `awaiting_interview`. The host inspects competing
-answers and demand, interviews the operator with its question tool (conversation fallback),
+answers and demand, interviews the operator using the contract's native question-tool rule,
 then records proposed use and explicit article-scoped permission. Answering is not permission.
 Rerun after confirmation; unchanged approved input resumes without another interview.
 Use `--refresh-research` for a substantive new topic/source investigation, which invalidates

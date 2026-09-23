@@ -7,7 +7,8 @@ The skills are Markdown instructions for any capable AI agent, independent of it
 For "get started", "onboard me", or first-time SEO work, read
 `00-onboarding/seo-setup/SKILL.md`. Follow its conversation; do not read every skill or
 ask the user to navigate folders, author config, or supply a keyword strategy.
-Use your question tool if available, otherwise ordinary chat.
+Use the native question tool, checking available async alternatives before a chat fallback;
+follow `shared/seo-references/content-interview.md#question-interface` and explain any fallback.
 
 If `.seo-engine/onboarding.json` is complete, read `.seo-engine/knowledge.md` and the
 saved next action; continue with `04-choose/seo-growth/SKILL.md` or the relevant specialist.
