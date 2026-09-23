@@ -1,0 +1,21 @@
+{
+  "name": "seo-engine",
+  "interface": {
+    "displayName": "SEO Engine"
+  },
+  "plugins": [
+    {
+      "name": "seo-engine",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/DannyByDesign/seo-engine.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

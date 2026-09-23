@@ -136,7 +136,18 @@ Article metadata and growth briefs carry a path/digest reference, not a company-
 Onboarding records and brand knowledge are local persistent context, not template content.
 They are ignored by Git along with other private state; back them up privately for continuity.
 A completed onboarding record is reused across sessions. Topic disclosure permissions remain
-separate. Use a fresh working copy for a different website; never switch domains over old state.
+separate. Use each website's own repository; never switch domains over another site's state.
 
 The agent may use `.seo-engine/onboarding-input.json` as ignored, non-secret working input
 for the onboarding helper; it is not a second source of saved onboarding state.
+
+## Installed code and website state
+
+Prefer the existing website repository as the workspace. Native plugins keep reusable code
+in their host's cache; direct installs keep it in `.seo-engine/engine/`. Neither location
+owns the website's state. Run from the website root and use its `.seo-engine/venv/` Python
+for requirements; never put brand knowledge or dependencies in a shared plugin cache.
+The direct installer records its downloaded commit in `engine/.installed-by-bootstrap`.
+Re-running it preserves the installed revision unless an update is requested; updates replace
+only engine code and leave onboarding, knowledge, state, reports, credentials and the venv alone.
+After updating, let the agent refresh dependencies in the website's environment if needed.

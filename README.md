@@ -1,78 +1,96 @@
 # SEO Engine
 
-Give your AI coding agent a repeatable workflow for researching, writing and improving a
-website’s SEO. Each copy learns one brand’s goals and keeps its research and decisions
-between sessions.
+Install SEO skills into your existing website project. Your AI agent researches opportunities,
+interviews you for firsthand knowledge, writes useful content, fixes technical issues and
+measures results. Each website keeps its own brand brief and research between sessions.
 
-Use it to:
+Works with any AI coding agent that can read files and run commands. You stay in your website
+repo—no separate SEO project to clone or open.
 
-- Find useful topics through search results, competitor research and available analytics.
-- Write articles grounded in your experience: the agent interviews you and confirms what
-  it may share, studies human writing examples, then edits for clarity and concision.
-- Diagnose technical SEO problems, improve an existing site and measure the results.
+## Install
 
-Works with any AI coding agent that can read files and run commands. No specific model
-vendor is required.
+Choose one route, then start onboarding below.
+
+<details>
+<summary><strong>Codex plugin</strong></summary>
+
+```bash
+codex plugin marketplace add DannyByDesign/seo-engine
+codex plugin add seo-engine@seo-engine
+```
+
+Open a new agent session in your website repo after installing.
+
+</details>
+
+<details>
+<summary><strong>Claude Code plugin</strong></summary>
+
+Run these as separate commands in Claude Code:
+
+```text
+/plugin marketplace add DannyByDesign/seo-engine
+/plugin install seo-engine@seo-engine
+```
+
+Use the plugin from your website project. For team installation, see [project-scoped setup](00-onboarding/install.md).
+
+</details>
+
+<details>
+<summary><strong>Direct install for any coding agent</strong></summary>
+
+Run from your existing website repository (macOS, Linux or WSL; Python 3.9+ required):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DannyByDesign/seo-engine/main/bootstrap.sh | bash
+```
+
+This downloads the engine into `.seo-engine/engine/` and adds a short entry point to your
+agent instructions, preserving existing content. [Install details and updates](00-onboarding/install.md).
+
+</details>
 
 ## Get started
 
-Make a separate copy for each website:
+In your website's agent session, say:
 
-```bash
-git clone https://github.com/DannyByDesign/seo-engine.git my-website-seo
-```
+> Use seo-setup to set up SEO Engine for this website.
 
-Open that folder in your AI coding agent and say:
+The agent asks about your goals, sets up its Python environment, saves a brand brief, and
+guides only the integrations you need. No manual environment-file editing. Start without
+API keys; some optional services cost money.
 
-> Read `00-onboarding/seo-setup/SKILL.md` and help me get started.
-
-The agent asks about your website and goals, sets up the environment, saves a brand brief,
-and guides integration setup. No need to browse skills or edit environment variables yourself.
-
-Start without API keys; add optional services as needed. Some cost money. Host-agent writing
-needs no extra model API. Optional scripted publication generation supports OpenAI, Anthropic
-and Gemini.
-
-For source-code changes, put your copy inside the website repository and tell the agent to
-use the website root. A standalone copy supports research, public-site audits and drafts.
-
-## Keep working
-
-Ask naturally:
-
-> Continue with our next SEO task.
+Then ask naturally:
 
 > Research and draft an article about [topic] for our audience.
 
 > Check this website for technical SEO problems.
 
-The agent reuses saved context. Each new article gets its own interview and disclosure
-confirmation.
+> Continue with our next SEO task.
 
-Your brand brief, research and credentials stay in ignored `.seo-engine/` and `.env` files.
-They persist locally but aren’t included in Git pushes; back them up privately. Start a fresh
-copy for another brand.
+Articles combine external research with your approved experience, study human writing
+examples, and receive a full clarity/concision edit. Each topic gets its own interview and
+disclosure confirmation.
 
-## Go deeper
+## Your website owns its knowledge
 
-- [Onboarding](00-onboarding/README.md)
-- [Understand → Research → Position → Choose → Execute → Learn](workflow/README.md)
-- [Environment variables and integrations](.env.example)
-- [Research tools](02-research/research-apis.md)
-- [Human writing references](05-execute/seo-copywriting/SKILL.md)
-- [Architecture and repository layout](ARCHITECTURE.md)
+Engine code can update independently. Your website's `.seo-engine/` holds its onboarding,
+brand brief, research and decisions; credentials stay in its `.env`. These files are ignored
+by Git, so back them up privately. Different websites never share this state.
 
-Traffic growth has not yet been demonstrated in a live pilot; results are not guaranteed.
+Host-agent writing uses your chosen model. Optional scripted publication generation supports
+OpenAI, Anthropic and Gemini APIs. Traffic growth has not yet been demonstrated in a live pilot.
+
+[Onboarding](00-onboarding/README.md) · [Workflow](workflow/README.md) ·
+[Integrations](.env.example) · [Architecture](ARCHITECTURE.md)
 
 ## Development
 
-With Python 3.9+ in a virtual environment:
+Clone this repository only to contribute to the engine. With Python 3.9+ in a virtual environment:
 
 ```bash
 python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest tests/ -q
 python scripts/dev/check_docs.py
 ```
-
-CI runs the offline tests and documentation checks. Live API checks are opt-in and may
-consume paid quota.

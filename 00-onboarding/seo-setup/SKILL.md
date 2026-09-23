@@ -7,7 +7,7 @@ description: Guide first-time or resumed onboarding for one website's SEO Engine
 
 ## When to use this skill
 
-A fresh template clone, a newly installed engine, an interrupted setup, or an explicit change
+A newly installed plugin or engine in a website repo, an interrupted setup, or an explicit change
 to goals/integrations. This is the single onboarding entry point for every host AI. A completed
 workspace skips the initial interview unless the owner changes direction. Missing credentials
 later call for a targeted setup step, not another full onboarding.
@@ -21,26 +21,30 @@ Read existing config, onboarding and knowledge before asking anything. For exist
 without an onboarding record, reuse their site identity and settings and ask only missing
 business questions. Do not infer the customer's business from this template or its corpus.
 
-One working copy belongs to one website/brand. The public upstream remains a clean template.
-For a standalone clone, use its root as the workspace; suggest a descriptive clone/repository
-name such as `acme-seo`. Record the name without renaming an active checkout, changing remotes,
-or creating a GitHub repository as a side effect. If asked to rename, finish setup first and
-reopen the new path; installed relative links survive moving the whole workspace.
+The **existing website repository is the workspace**. Keep its name, Git history and remotes.
+No separate SEO project, clone or repo renaming is needed. The public upstream distributes
+reusable code. Plugin managers may cache that code globally; the website's brand brief,
+credentials, interviews and research always stay in its own workspace.
 
-For work inside an existing website repository, keep a dedicated engine copy there (for example
-`tools/seo-engine/`), and install into the website root explicitly. That website root owns the
-brief, credentials and state. Do not route several brands through one mutable workspace.
-A standalone clone can research a remote/CMS site and create drafts without its source code.
-For implementation, obtain the real source/CMS access; a sibling code checkout is not silently
-made a second state root. If moving to the website repo, move the complete private workspace
-with user scope and resume there, rather than duplicating brand memory.
+For a plugin install, use the resolved skill directory supplied by the host; do not copy the
+plugin or link skills out of a versioned cache. For the direct installer, engine code lives
+in `.seo-engine/engine/`. Both routes run commands from the website root, not from the
+engine/cache directory. Different websites share tools, never a state directory.
 
-Bootstrap Python 3.9+ and a local virtual environment if needed; install `requirements.txt`
-from the engine and use that interpreter for subsequent commands. Do not install globally.
-Run `install.sh ENGINE_ROOT WORKSPACE_ROOT generic` for portable direct-file use, or choose
-`codex`/`claude` solely for that host's skill discovery. Other agents can read this file directly.
-If the host cannot edit files/run commands, explain that capability requirement; no specific
-model vendor is required. Load only the next applicable skill, not the entire catalog.
+If an older standalone SEO workspace already exists for this same site, identify its saved
+context before starting again. Move the complete private context into the website repo only
+within user scope, preserving existing target settings; stop on conflicts instead of
+silently duplicating or overwriting memory. Source/CMS access remains necessary for implementation.
+A deliberate remote-only workspace is still supported, but isn't the default onboarding path.
+
+Bootstrap Python 3.9+ and a virtual environment at `.seo-engine/venv/` if needed; install
+`requirements.txt` from the resolved engine and use that environment's interpreter for every
+subsequent command. Never install dependencies globally or inside a shared plugin cache.
+Native plugin discovery needs no additional `install.sh` run. For a manually supplied engine,
+`install.sh ENGINE_ROOT WEBSITE_ROOT generic` adds the entry point; `codex`/`claude` also
+link skills for that host. Other agents can read this file directly. If the host cannot read,
+edit or execute files, explain that capability requirement rather than requiring a model vendor.
+Load only the next applicable skill, not the entire catalog.
 
 ### 2. Have a short, adaptive conversation
 
@@ -194,8 +198,8 @@ all of `.seo-engine/`. A private remote alone doesn't change ignore rules.
 
 A completed record avoids repeating onboarding. A later missing token or failed API needs a
 focused repair. The helper refuses silently changing an existing site's URL; an actual domain
-migration needs deliberate reconciliation of identity/state, while another brand gets a fresh
-clone. A pending record may be incomplete and is never treated as readiness.
+migration needs deliberate reconciliation of identity/state, while another brand uses its own
+website repository. A pending record may be incomplete and is never treated as readiness.
 
 ## Safe to auto-apply vs. human review
 
@@ -209,7 +213,7 @@ remotes, rename the active directory, publish, purchase, schedule or send messag
 Never load another workspace's brand knowledge or credentials. Process environment overrides
 local `.env`, so inspect configured variable **names**, never values, when accounts look wrong.
 Do not modify the public template's README/name/corpus to personalize a customer's workspace;
-identity lives in local context and its clone/repository name. Never fabricate successful checks.
+identity lives in local context and the existing website repository. Never fabricate successful checks.
 
 ## References
 

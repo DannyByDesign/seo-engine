@@ -1,6 +1,6 @@
 # Onboarding
 
-Start here once per website workspace. Read [seo-setup/SKILL.md](seo-setup/SKILL.md),
+Start here once per existing website repository, after installing the plugin or engine. Read [seo-setup/SKILL.md](seo-setup/SKILL.md),
 or tell your AI agent: **“Help me get started.”**
 
 ```text

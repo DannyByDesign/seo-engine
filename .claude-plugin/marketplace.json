@@ -1,0 +1,15 @@
+{
+  "name": "seo-engine",
+  "owner": {
+    "name": "dannybydesign",
+    "url": "https://github.com/DannyByDesign"
+  },
+  "plugins": [
+    {
+      "name": "seo-engine",
+      "source": "./",
+      "description": "SEO research, firsthand content and technical improvements inside your website repository."
+    }
+  ],
+  "description": "Install SEO Engine into your existing website workflow."
+}

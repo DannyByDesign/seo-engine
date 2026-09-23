@@ -1,6 +1,7 @@
 # SEO Engine workspace
 
-This repository is a reusable template. Each working copy serves one website/brand.
+This repository distributes an installable engine. Users run it inside their existing
+website repositories; each website owns its private context and state.
 The skills are Markdown instructions for any capable AI agent, independent of its model.
 
 For "get started", "onboard me", or first-time SEO work, read

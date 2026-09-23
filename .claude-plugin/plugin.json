@@ -1,5 +1,11 @@
 {
   "name": "seo-engine",
-  "description": "Continuous, sustainable SEO + GEO (Generative Engine Optimization) skills for any website repo — technical SEO, Core Web Vitals, structured data, AI-crawler access, AI-citation and brand-mention monitoring — plus the pub-* skills that build and run owned publications (static sites, personas, topic maps, an evidence-verified article pipeline, planner, monitoring), backed by a research-verified knowledge base and policy-safety guardrails.",
-  "version": "0.2.0"
+  "version": "0.3.0",
+  "description": "SEO research, firsthand content and technical improvements inside your website repository.",
+  "author": {
+    "name": "dannybydesign",
+    "url": "https://github.com/DannyByDesign"
+  },
+  "homepage": "https://github.com/DannyByDesign/seo-engine",
+  "repository": "https://github.com/DannyByDesign/seo-engine"
 }

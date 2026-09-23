@@ -1,0 +1,27 @@
+{
+  "name": "seo-engine",
+  "version": "0.3.0",
+  "description": "SEO research, firsthand content and technical improvements inside your website repository.",
+  "author": {
+    "name": "dannybydesign",
+    "url": "https://github.com/DannyByDesign"
+  },
+  "homepage": "https://github.com/DannyByDesign/seo-engine",
+  "repository": "https://github.com/DannyByDesign/seo-engine",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "SEO Engine",
+    "shortDescription": "Research, write and improve your website",
+    "longDescription": "Guided setup for your existing website repository, with per-site brand knowledge, topic interviews, human writing references, SEO tools and measurement.",
+    "developerName": "dannybydesign",
+    "category": "Productivity",
+    "capabilities": [
+      "Instructions"
+    ],
+    "websiteURL": "https://github.com/DannyByDesign/seo-engine",
+    "defaultPrompt": [
+      "Set up SEO Engine for this website.",
+      "Continue with our next SEO task."
+    ]
+  }
+}

@@ -8,12 +8,11 @@
 
 ## What this is
 
-A portable folder of agent skills that turns any AI coding agent working in a
-website repo into a continuous SEO + GEO (Generative Engine Optimization)
-maintenance system. Copy (or install) this folder into a repo that contains a
-website; the agent gains skills to audit, fix, improve, and monitor organic
-search and AI-search visibility — using only long-term, sustainable,
-policy-compliant strategies.
+An installable set of agent skills for SEO research, content, technical work and measurement.
+The user's existing website repository is the workspace. Codex/Claude plugins cache reusable
+engine code; the direct installer puts it in `<website>/.seo-engine/engine/`. Each website
+keeps its own config, brand brief, credentials and working state. No separate user clone or
+SEO project is required. Plugin/cache updates never own or replace that site-specific state.
 
 It also runs the operator's own **publications** (the `pub-*` skills): a
 Next.js-free static site per publication, accurate contributor or organization attribution, a topic map, an evidence

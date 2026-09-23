@@ -102,6 +102,39 @@ else
 fi
 
 echo ""
+if [ "$TARGET_REPO" != "$ENGINE_DIR" ]; then
+  python3 - "$ENGINE_DIR" "$TARGET_REPO" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+engine, repo = map(Path, sys.argv[1:])
+skill = os.path.relpath(engine / '00-onboarding/seo-setup/SKILL.md', repo)
+begin, end = '<!-- BEGIN SEO ENGINE -->', '<!-- END SEO ENGINE -->'
+block = f'''{begin}
+For SEO Engine tasks, read `{skill}` and follow its onboarding/resume flow.
+This website repo is the workspace. Keep its brand knowledge and state in `.seo-engine/`.
+Use the host's question tool or normal chat. Never store site knowledge in installed engine code.
+{end}'''
+for name in ('AGENTS.md', 'CLAUDE.md'):
+    path = repo / name
+    if path.is_symlink():
+        print(f'Preserved symlinked {name}; add the SEO entry point there if needed.')
+        continue
+    text = path.read_text() if path.exists() else ''
+    if begin in text and end in text:
+        start = text.index(begin)
+        stop = text.index(end, start) + len(end)
+        text = text[:start] + block + text[stop:]
+    elif begin in text or end in text:
+        print(f'Preserved incomplete SEO block in {name}; reconcile it manually.')
+        continue
+    else:
+        text = text.rstrip() + ('\n\n' if text.strip() else '') + block + '\n'
+    path.write_text(text)
+PY
+fi
+
 echo "Next steps:"
 echo "  1. Let your agent create a local Python environment and install requirements.txt."
 echo "  2. In an agent session in $TARGET_REPO, say: Help me get started with seo-setup."
