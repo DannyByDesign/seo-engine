@@ -49,7 +49,7 @@ import subprocess
 from datetime import datetime, timezone
 from typing import Any
 
-from scripts.lib import publication, pubstate
+from scripts.lib import content, publication, pubstate
 
 from scripts.lib.paths import skill
 STEPS = ["research", "write", "enhance", "diagrams", "cover", "shred", "publish", "relink", "build"]
@@ -140,6 +140,11 @@ def main() -> int:
         print(json.dumps({"checked": False, "error": "prepare and review a draft before --approve"}))
         return 1
     elif body.strip():
+        try:
+            content.check_article(meta, root, slug, cfg.repo_root)
+        except ValueError as exc:
+            print(json.dumps({"checked": False, "status": "awaiting_confirmation", "error": str(exc)}))
+            return 1
         steps = [s for s in steps if s not in ("research", "write")]
         ready_path = pubstate.state_path(cfg, "prepared", root.name + "-" + slug)
         prepared = pubstate.load_json(ready_path, {})
@@ -174,6 +179,10 @@ def main() -> int:
             entry["stderr"] = out["stderr"]
             entry["result"] = out["result"]
         result["steps"].append(entry)
+        if out['result'].get('status') in ('awaiting_interview', 'awaiting_confirmation', 'awaiting_direction'):
+            result.update(status=out['result']['status'], next_action=out['result'])
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 0
         if out["exit"] != 0 and p["step"] not in ("shred",):
             result["stopped_at"] = p["step"]
             break

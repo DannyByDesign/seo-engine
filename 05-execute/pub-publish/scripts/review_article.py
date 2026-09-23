@@ -30,7 +30,7 @@ from scripts.lib import config as config_module
 import argparse
 import hashlib
 import json
-from scripts.lib import editorial, publication, pubstate
+from scripts.lib import content, editorial, publication, pubstate
 
 
 def main():
@@ -49,6 +49,8 @@ def main():
     meta, body = publication.read_post(path)
     review = json.loads(Path(args.review_file).read_text())
     try:
+        content.check_article(meta, root, args.slug, cfg.repo_root)
+        meta['slug'] = args.slug
         meta["editorial_review"] = editorial.record_review(meta, body, root, review)
     except ValueError as exc:
         print(json.dumps({"checked": False, "error": str(exc)})); return 1

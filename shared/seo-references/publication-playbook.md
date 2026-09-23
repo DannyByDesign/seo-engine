@@ -10,11 +10,11 @@ Static HTML, useful navigation, canonical URLs, crawlable links, sitemaps and ac
 
 ## 3. Article quality and cadence
 
-Answer a documented reader need with original evidence, practical examples, a tool, data or expert analysis. Do not restate existing sources at scale. Publication defaults of 1,200 words and three distinct sources are minimum mechanical gates, not quality proof or Google requirements. Match length and format to the question. A launch burst and six posts per week are configurable defaults without measured traffic evidence; empty slots are acceptable.
+Answer a documented reader need with original evidence, practical examples, a tool, data or expert analysis. Do not restate existing sources at scale. Length and public-source-count floors are optional publication policies, defaulting to zero; contextual editorial review remains mandatory. Match length and format to the question. A launch burst and six posts per week are configurable defaults without measured traffic evidence; empty slots are acceptable.
 
 ## 4. Pipeline and deployment
 
-Queue a topic, fetch sources, research, write and enhance, then inspect final text and visuals. `review_article.py` records accountable review of reader need, distinct value and claim/source context. It hashes content, evidence, assets and publication policy. Any subsequent change requires review again. `run_pipeline.py` resumes the prepared draft without rewriting it. Manual approval is separate from editorial review; review-window and autopilot modes also require an unchanged reviewed draft. Local publication transitions to building, then published after successful validation. This is not deployment. Deploy the built site through the website's authorized hosting workflow, verify production HTML and crawler access, and record the deployment date before evaluating outcomes. A refresh retains its URL, author and original date and supplies original text to research/writing; review that useful material survived.
+Queue a topic, fetch and compare sources, complete the [topic interview and proposed-use confirmation](content-interview.md), outline, write and enhance, then inspect final text and visuals. `review_article.py` records accountable review of reader need, distinct value and claim/source context. It checks approved attribution and disclosure limits and hashes content, evidence, permissions, assets and publication policy. Any subsequent change requires review again. `run_pipeline.py` resumes the prepared draft without rewriting it. Manual approval is separate from editorial review; review-window and autopilot modes also require an unchanged reviewed draft. Local publication transitions to building, then published after successful validation. This is not deployment. Deploy the built site through the website's authorized hosting workflow, verify production HTML and crawler access, and record the deployment date before evaluating outcomes. A refresh retains its URL, author and original date and supplies original text to research/writing; review that useful material survived.
 
 ## 5. Attribution and migration
 
@@ -28,6 +28,6 @@ Mention the business only when it helps the reader and is factually supported. D
 
 Measure Google clicks in Search Console and actual Google/ChatGPT referrals and meaningful conversions in analytics. Keep API model probes separate from consumer ChatGPT citations and visits. Missing credentials/data are unknown, never zero. Compare equal, nonoverlapping, mature windows for the same property, filters and cohorts. Track baseline, deployment, spend, uncertainty and rollback decisions. Observational changes cannot by themselves prove causality.
 
-## 8. Historical vendor observations
+## 8. Writing references
 
-The research directory includes observations of a vendor and its publication layout. These are provenance for design choices, not endorsements or evidence that this implementation generates traffic. Prefer primary current platform documentation over those observations when they disagree.
+The local human corpus provides writing techniques. It is separate from current topic evidence and approved company experience; never import its historical facts as product claims. Read the selected passages before drafting and preserve their recorded example IDs.

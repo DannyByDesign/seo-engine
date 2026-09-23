@@ -65,7 +65,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
-from scripts.lib import article, http_util, llm, publication, pubstate
+from scripts.lib import content, article, http_util, llm, publication, pubstate
 from scripts.lib.config import Config
 
 ALL_STAGES = ["links", "sources", "anchors", "diagrams", "keywords", "verify", "meta", "voice", "language"]
@@ -76,7 +76,7 @@ KEYWORDS_SYSTEM = (
     "related phrases a comprehensive treatment would naturally contain but this text lacks. Return ONLY JSON: {\"missing\": [str]}."
 )
 VOICE_SYSTEM = (
-    "You are a line editor enforcing a voice card. Rewrite ONLY sentences that violate it (hedging, first person, filler, "
+    "You are a line editor enforcing a voice card. Rewrite ONLY sentences that violate it (unsupported hedging, filler, "
     "banned words, throat-clearing). Keep every number, link, heading, list and paragraph break exactly as is. Return the "
     "full markdown body unchanged except for those sentences. Return ONLY JSON: {\"markdown\": string}."
 )
@@ -121,7 +121,7 @@ def stage_links(body: str, targets: list[dict[str, Any]], max_links: int) -> tup
 
 
 def stage_sources(meta: dict[str, Any], body: str, site_host: str) -> list[dict[str, Any]]:
-    trail = {p["url"]: p for p in ((meta.get("research") or {}).get("paper_trail") or []) if p.get("quotes")}
+    trail = {p["url"]: p for p in ((meta.get("research") or {}).get("paper_trail") or []) if p.get("quotes") and p.get("url", "").startswith("http")}
     ordered: list[dict[str, Any]] = []
     seen: set[str] = set()
     for _, url in article.links_in(body):
@@ -211,9 +211,7 @@ def stage_keywords(cfg: Config, meta: dict[str, Any], body: str, keyword: str) -
 def stage_verify(cfg: Config, body: str, research: dict[str, Any], *, check_links: bool) -> dict[str, Any]:
     texts: list[str] = []
     for s in research.get("sources", []):
-        p = Path(str(s.get("cache") or ""))
-        if p.is_file():
-            texts.append(p.read_text(encoding="utf-8"))
+        texts.append(content.source_text(s))
     fetched = 0
     if check_links:
         for _, url in article.links_in(body):
@@ -242,7 +240,7 @@ def stage_meta(meta: dict[str, Any], body: str, section_name: str) -> list[str]:
     if len(str(meta.get("title") or "")) > 75:
         notes.append("title is over 75 characters")
     meta.setdefault("tags", [section_name])
-    meta.setdefault("kicker", "Long read")
+    meta.setdefault("kicker", "Guide")
     meta["word_count"] = article.word_count(body)
     meta["reading_minutes"] = publication.reading_minutes(meta["word_count"])
     seo = meta.get("seo") if isinstance(meta.get("seo"), dict) else {}
@@ -251,12 +249,14 @@ def stage_meta(meta: dict[str, Any], body: str, section_name: str) -> list[str]:
     return notes
 
 
-def stage_voice(cfg: Config, body: str, kernel_name: str) -> tuple[str, str]:
+def stage_voice(cfg: Config, body: str, kernel_name: str, approved: dict | None = None) -> tuple[str, str]:
     kernel_path = Path(__file__).resolve().parent.parent.parent / "pub-write" / "kernels" / f"{kernel_name}.md"
     if not kernel_path.is_file() or not llm.configured_providers(cfg):
         return body, "voice pass skipped (no kernel file or no LLM key)"
+    from scripts.lib import writing
+    rules = "Preserve approved attribution and limitations even when a voice card disagrees. " + json.dumps(approved or {}) + "\n" + writing.prompt("article", body[:80])
     try:
-        data = llm.complete_json(cfg, VOICE_SYSTEM, f"VOICE CARD:\n{kernel_path.read_text(encoding='utf-8')}\n\nBODY:\n{body}", max_tokens=16000)
+        data = llm.complete_json(cfg, VOICE_SYSTEM + rules, f"VOICE CARD:\n{kernel_path.read_text(encoding='utf-8')}\n\nBODY:\n{body}", max_tokens=16000)
         new = str(data.get("markdown") or "")
     except llm.LlmError as exc:
         return body, f"voice pass failed: {http_util.sanitize_text(str(exc))[:120]}"
@@ -320,7 +320,8 @@ def main() -> int:
             body, specs = stage_diagrams(root, asset_dir.name, body, research)
         report["diagrams"] = {"specs_written": specs}
     if "voice" in stages:
-        body, note = stage_voice(cfg, body, str(meta.get("kernel") or (pubstate.load_strategy(root).get("brand_voice") or {}).get("kernel") or "editorial"))
+        approved = content.check_article(meta, root, args.slug, cfg.repo_root)
+        body, note = stage_voice(cfg, body, str(meta.get("kernel") or (pubstate.load_strategy(root).get("brand_voice") or {}).get("kernel") or "editorial"), approved)
         report["voice"] = note
     if "sources" in stages:
         meta["sources"] = stage_sources(meta, body, pub.host)

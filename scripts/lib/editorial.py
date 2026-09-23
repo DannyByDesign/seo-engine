@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from bs4 import BeautifulSoup
-from . import article, publication, pubstate
+from . import article, content, publication, pubstate
 
 
 def plain(text: str) -> str:
@@ -22,6 +22,9 @@ def plain(text: str) -> str:
 def digest(meta: dict, body: str, root: Path) -> str:
     metadata = {k: v for k, v in meta.items() if k not in ('editorial_review', 'status', 'published_at', 'updated_at', 'gate_overridden')}
     files = {}
+    ref_path = Path(str((meta.get('content_brief') or {}).get('path') or ''))
+    if ref_path.is_file():
+        files['content_permission'] = hashlib.sha256(ref_path.read_bytes()).hexdigest()
     for source in (meta.get('research') or {}).get('sources', []):
         path = Path(str(source.get('cache') or ''))
         files[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
@@ -36,6 +39,12 @@ def digest(meta: dict, body: str, root: Path) -> str:
 
 def review_problems(meta: dict, body: str, root: Path, review: dict) -> list[str]:
     problems = []
+    try:
+        content.check_article(meta, root, str(meta.get('slug') or ''))
+    except (ValueError, OSError) as exc:
+        problems.append(str(exc))
+    if review.get('disclosure_checked') is not True:
+        problems.append('reviewer must check contribution, approved attribution and disclosure boundaries in body, metadata and visuals')
     for field in ('reviewer', 'reader_need', 'value_added'):
         if len(str(review.get(field) or '').strip()) < (3 if field == 'reviewer' else 30):
             problems.append(f'editorial review needs {field}')
@@ -45,16 +54,15 @@ def review_problems(meta: dict, body: str, root: Path, review: dict) -> list[str
     if not isinstance(claims, list) or not claims:
         return problems + ['review needs claim-to-source assessments']
     text = plain(body).lower()
-    sources = {s.get('url'): s for s in (meta.get('research') or {}).get('sources', [])}
+    sources = {s.get('id') or s.get('url'): s for s in (meta.get('research') or {}).get('sources', [])}
     covered_numbers = set()
     for i, claim in enumerate(claims):
         if not isinstance(claim, dict):
             problems.append(f'claim {i} must be an object'); continue
         words = plain(str(claim.get('claim') or '')).lower()
         source = sources.get(claim.get('source'))
-        path = Path(str((source or {}).get('cache') or ''))
         quote = re.sub(r'\s+', ' ', str(claim.get('quote') or '')).strip().lower()
-        source_text = re.sub(r'\s+', ' ', path.read_text()).lower() if path.is_file() else ''
+        source_text = re.sub(r'\s+', ' ', content.source_text(source or {})).lower()
         if not words or words not in text:
             problems.append(f'claim {i} is not present in the final body')
         if not quote or quote not in source_text:

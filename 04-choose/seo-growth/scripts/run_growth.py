@@ -41,6 +41,7 @@ def main():
     parser.add_argument('--id')
     parser.add_argument('--parent-id')
     parser.add_argument('--brief-file')
+    parser.add_argument('--content-review-file', help='For validate: JSON mapping page paths to current content/disclosure review receipts')
     parser.add_argument('--reconciliation-file')
     parser.add_argument('--decision-file')
     parser.add_argument('--update-file')
@@ -81,7 +82,15 @@ def main():
                     parser.error('a valid --id is required')
                 path = folder / (args.id + '.json')
                 job = json.loads(path.read_text())
-                if args.stage == 'validate': growth.validate(cfg.repo_root, job)
+                if args.stage == 'validate':
+                    if job['brief'].get('kind') != 'technical_repair':
+                        if not args.content_review_file:
+                            parser.error('content validation requires --content-review-file after reviewing the current pages')
+                        reviews = json.loads(Path(args.content_review_file).read_text())
+                        if not isinstance(reviews, dict):
+                            raise ValueError('content review must map page paths to review receipts')
+                        job['brief']['content_reviews'] = reviews
+                    growth.validate(cfg.repo_root, job)
                 elif args.stage == 'deploy': growth.deploy(cfg.repo_root, job, args.approve_deploy, persist=lambda record: pubstate.save_json(path, record))
                 elif args.stage == 'verify': growth.verify(cfg.repo_root, job)
                 elif args.stage == 'update':

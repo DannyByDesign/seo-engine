@@ -11,10 +11,23 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from urllib.parse import urlsplit
 from bs4 import BeautifulSoup
-from . import http_util, pubstate, robots, traffic, opportunities
+from . import content, http_util, pubstate, robots, traffic, opportunities
+
+
+def check_content(root, brief, review=False):
+    if brief.get('kind') == 'technical_repair':
+        return
+    for page in brief.get('pages', []):
+        ref = (brief.get('content_briefs') or {}).get(page['path'])
+        content.load(ref, 'page:' + page['path'], root)
+        if review:
+            receipt = (brief.get('content_reviews') or {}).get(page['path'], {})
+            if receipt.get('disclosure_checked') is not True or not receipt.get('value_added'):
+                raise ValueError('review each page contribution, evidence, attribution and disclosure boundaries before validation')
 
 
 def fingerprint(root, brief):
+    check_content(root, brief)
     hashes = {}
     names=set(brief['source_files'])
     detected=subprocess.run(['git','rev-parse','--show-toplevel'],cwd=root,capture_output=True,text=True)
@@ -26,7 +39,9 @@ def fingerprint(root, brief):
         if not path.is_relative_to(root.resolve()):
             raise ValueError('source file escapes repository')
         hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
-    return hashlib.sha256(json.dumps({'files': hashes, 'brief': brief}, sort_keys=True).encode()).hexdigest()
+    # Recording a review alone must never masquerade as an implemented source change.
+    stable_brief = {k: v for k, v in brief.items() if k != 'content_reviews'}
+    return hashlib.sha256(json.dumps({'files': hashes, 'brief': stable_brief}, sort_keys=True).encode()).hexdigest()
 
 
 def assertions_for(page):
@@ -72,6 +87,7 @@ def create(root, brief):
     for key in ('hypothesis', 'reader_need', 'original_value', 'demand_evidence', 'rollback'):
         if not isinstance(brief.get(key), str) or len(brief[key].strip()) < 20:
             raise ValueError(f'brief requires substantive {key}')
+    check_content(root, brief)
     if brief.get('kind') == 'technical_repair':
         evidence=(root / brief.get('diagnostic_file','')).resolve()
         if not evidence.is_relative_to(root.resolve()) or not evidence.is_file() or not evidence.read_bytes():
@@ -169,6 +185,7 @@ def validate(root, job):
     if job['status'] not in ('planned', 'validation_failed', 'validated'):
         raise ValueError('create a new intervention for changes after a deployment attempt')
     brief = job['brief']
+    check_content(root, brief, review=True)
     before = fingerprint(root, brief)
     if before == job['initial_fingerprint']:
         raise ValueError('no declared source change; implement the selected opportunity first')
@@ -188,6 +205,7 @@ def validate(root, job):
 def deploy(root, job, approved=False, persist=None):
     if not approved:
         raise ValueError('deployment needs existing user authorization and --approve-deploy')
+    check_content(root, job['brief'], review=True)
     if job['status'] not in ('validated', 'deploy_failed') or fingerprint(root, job['brief']) != job.get('validated_fingerprint'):
         raise ValueError('validate the current source state before deployment')
     command(job['brief'],'deploy')

@@ -12,9 +12,9 @@ publication-playbook §4):
               JS pages), keep up to --max-sources with an excerpt on disk
   direction   LLM proposes three directions (thesis + framework) and recommends
               one; --direction-gate pauses here for a human choice
-  synthesize  LLM writes the outline: refined title, dek, 6-8 declarative H2
+  synthesize  LLM writes the outline: refined title, dek, reader-led
               sections each with claims tied to quoted evidence and a source
-              index, an opening statistic, closing advice, 1-2 diagram briefs
+              index, an optional evidenced opening, closing advice and optional diagram briefs
   verify      every quoted evidence line is checked against the fetched source
               text; unverifiable claims are dropped and counted
 
@@ -67,7 +67,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
-from scripts.lib import firecrawl, http_util, llm, publication, pubstate, sociavault
+from scripts.lib import content, firecrawl, http_util, llm, publication, pubstate, sociavault
 from scripts.lib.config import Config
 
 MAX_SOURCE_URLS = 20
@@ -89,17 +89,15 @@ DIRECTION_SYSTEM = (
     "Return ONLY JSON: {\"options\": [...3], \"recommended\": 0|1|2}."
 )
 SYNTH_SYSTEM = (
-    "You write a sourced outline for a 2,200-2,600 word long read in an independent trade publication. House rules: "
-    "the opening paragraph leads with a cited statistic; 6-8 H2 sections whose headings are full declarative sentences "
-    "of 8-14 words (no questions except possibly the last one, which may be 'What should <reader> do ...?'); every "
-    "factual claim is tied to a VERBATIM quote (10-40 words, copied exactly) from one of the numbered sources; numbers "
-    "are anchored on the exact figure as it appears in the source; the close returns to the opening number and gives "
-    "sequenced advice. Never invent a source or a number. Return ONLY JSON: {\"title\": str, \"dek\": str (one sentence, "
-    "<= 140 chars), \"opening\": {\"claim\": str, \"quote\": str, \"source\": int}, \"sections\": [{\"heading\": str, "
-    "\"goal\": str, \"points\": [{\"claim\": str, \"quote\": str, \"source\": int}], \"internal_link_hint\": str|null}], "
-    "\"closing_advice\": [str], \"diagrams\": [{\"title\": str, \"brief\": str, \"type\": \"stat_callout\"|\"stepped_flow\"|"
-    "\"funnel\"|\"comparison\", \"data\": object}], \"keywords\": [str]}. Diagram `data` must only use numbers present in "
-    "the sources."
+    "Build an outline around the reader's task and approved original contribution. Choose the appropriate "
+    "length and section count; no mandatory opening statistic, word quota or heading formula. "
+    "Use only numbered source evidence. Every factual point needs an exact quotation and source index. "
+    "Operator experience is scoped experience, opinion is attributed opinion, and measurements retain limits. "
+    "Never generalize an interview into an industry fact. Respect the approved attribution and constraints. "
+    "Return ONLY JSON: {title: str, dek: str, opening: {claim: str, quote: str, source: int}, "
+    "sections: [{heading: str, goal: str, points: [{claim: str, quote: str, source: int}]}], "
+    "closing_advice: [str], diagrams: [{title: str, brief: str, type: str, data: object}], keywords: [str]}. "
+    "Opening and diagrams are optional. Diagram data must be supported by evidence."
 )
 
 
@@ -225,7 +223,8 @@ def read(cfg: Config, candidates: list[dict[str, Any]], max_sources: int, cache_
 def _source_digest(sources: list[dict[str, Any]], per_source_chars: int) -> str:
     parts = []
     for s in sources:
-        text = Path(s["cache"]).read_text(encoding="utf-8") if Path(s["cache"]).is_file() else ""
+        text = content.source_text(s)
+        text += "\nAttribution: " + str(s.get("attribution", "")) + "\nLimits: " + str(s.get("limits", "")) + "\nKind: " + str(s.get("kind", "web"))
         parts.append(f"[{s['index']}] {s['title']} — {s['url']}\n{text[:per_source_chars]}")
     return "\n\n".join(parts)
 
@@ -250,7 +249,7 @@ def synthesize(cfg: Config, topic: str, brief: str, direction: dict[str, Any], p
 
 
 def verify(outline: dict[str, Any], sources: list[dict[str, Any]]) -> dict[str, Any]:
-    texts = {s["index"]: (Path(s["cache"]).read_text(encoding="utf-8") if Path(s["cache"]).is_file() else "") for s in sources}
+    texts = {s["index"]: (content.source_text(s)) for s in sources}
     kept = dropped = 0
     trail: dict[int, list[str]] = {}
 
@@ -272,7 +271,7 @@ def verify(outline: dict[str, Any], sources: list[dict[str, Any]]) -> dict[str, 
             outline.pop("opening")
     for section in outline.get("sections", []):
         section["points"] = [p for p in section.get("points", []) if isinstance(p, dict) and check(p)]
-    paper_trail = [{"index": s["index"], "url": s["url"], "title": s["title"], "quotes": trail.get(s["index"], [])} for s in sources]
+    paper_trail = [{"index": s["index"], "id": s.get("id") or s["url"], "url": s["url"], "title": s["title"], "quotes": trail.get(s["index"], [])} for s in sources]
     return {"kept": kept, "dropped": dropped, "paper_trail": paper_trail}
 
 
@@ -286,6 +285,7 @@ def main() -> int:
     parser.add_argument("--must-include", action="append", default=[], help=f"Subsection the outline must cover (repeatable, max {MAX_MUST_INCLUDE})")
     parser.add_argument("--depth", choices=["barebones", "fleshed_out"], default="fleshed_out")
     parser.add_argument("--max-sources", type=int, default=12, help="Sources to read (default 12)")
+    parser.add_argument("--refresh-research", action="store_true", help="Gather fresh sources and require a new topic contribution confirmation")
     parser.add_argument("--direction-gate", action="store_true", help="Pause after proposing directions (status awaiting_direction)")
     parser.add_argument("--direction", help="Resume with your own direction/thesis")
     parser.add_argument("--choice", type=int, help="Resume by picking a proposed direction (0-based index)")
@@ -318,7 +318,7 @@ def main() -> int:
     if args.spoke_id:
         meta["spoke_id"] = args.spoke_id
     spoke = pubstate.find_spoke(topic_map, str(meta.get("spoke_id") or "")) or {}
-    topic = str(meta.get("title") or args.topic)
+    topic = str(args.topic or meta.get("title"))
     brief = str(meta.get("brief") or spoke.get("brief") or "")
     angle = str(spoke.get("angle") or "")
     if meta.get("refresh_of"):
@@ -327,42 +327,63 @@ def main() -> int:
     result: dict[str, Any] = {"checked": True, "publication": root.name, "draft": str(path), "topic": topic, "notes": []}
     cache_dir = cfg.state_dir / "pub-research" / root.name / slug
 
-    if research.get("status") == "awaiting_direction" and (args.direction or args.choice is not None):
-        sources = research.get("sources", [])
-        plan_data = research.get("plan", {})
-        options = research.get("direction_options", [])
-        if args.direction:
-            direction = {"thesis": args.direction, "framework": "", "why_now": "", "source": "user"}
-        else:
-            if args.choice is None or not 0 <= args.choice < len(options):
-                parser.error(f"--choice must be 0..{len(options) - 1}")
-            direction = {**options[args.choice], "source": f"option {args.choice}"}
-    else:
+    if args.refresh_research or (args.topic and research.get("topic") != args.topic):
+        research = {}
+        meta.pop("content_brief", None)
+    if not research.get("sources"):
         seed_urls = list(dict.fromkeys(args.source_url + [str(u) for u in (meta.get("source_urls") or [])]))
         plan_data = plan(cfg, topic, brief, angle, strategy, args.must_include)
-        result["plan"] = plan_data
         candidates, notes = gather(cfg, plan_data["queries"], seed_urls, str(strategy.get("client", {}).get("domain") or ""), no_search=args.no_search)
-        candidates = landing_candidates(strategy, topic, brief) + candidates
+        sources = read(cfg, landing_candidates(strategy, topic, brief) + candidates, args.max_sources, cache_dir)
         result["notes"] += notes
-        sources = read(cfg, candidates, args.max_sources, cache_dir)
         if not sources:
-            research.update({"status": "failed", "reason": "no readable sources", "plan": plan_data})
-            meta["research"] = research
+            meta['research'] = {'status': 'failed', 'topic': topic, 'plan': plan_data, 'sources': []}
+            meta.pop('content_brief', None)
             publication.write_post(path, meta, body)
-            result.update({"checked": False, "error": "no readable sources found — add --source-url seeds or configure a search provider"})
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+            result.update(checked=False, error="no readable sources; add seed URLs or configure a search provider")
+            print(json.dumps(result))
             return 1
         dirs = directions(cfg, topic, strategy, sources)
-        research = {"status": "awaiting_direction" if args.direction_gate else "synthesizing", "plan": plan_data, "sources": sources,
+        research = {"status": "awaiting_interview", "topic": topic, "plan": plan_data, "sources": sources,
                     "direction_options": dirs["options"], "recommended": dirs["recommended"], "started_at": pubstate.now_iso()}
-        if args.direction_gate:
-            meta["research"] = research
-            publication.write_post(path, meta, body)
-            result.update({"status": "awaiting_direction", "direction_options": dirs["options"], "recommended": dirs["recommended"],
-                           "next_step": f"rerun with --choice N (0..{len(dirs['options']) - 1}) or --direction \"...\""})
-            print(json.dumps(result, indent=2, ensure_ascii=False))
-            return 0
-        direction = {**(dirs["options"][dirs["recommended"]] if dirs["options"] else {"thesis": topic}), "source": "recommended"}
+    sources = [s for s in research["sources"] if s.get("origin") != "operator"]
+    plan_data = research["plan"]
+    content_id = content.publication_id(root, slug)
+    record = pubstate.load_json(content.record_path(cfg.repo_root, content_id), {})
+    ref = content.reference(cfg.repo_root, content_id, record) if record.get("digest") else None
+    try:
+        approved = content.load(ref, content_id, cfg.repo_root)
+        if approved["research_digest"] != content.research_digest(research):
+            raise ValueError("research changed; update the proposed contribution and obtain confirmation")
+    except ValueError as exc:
+        research["status"] = "awaiting_confirmation" if record else "awaiting_interview"
+        meta["research"] = research
+        publication.write_post(path, meta, body)
+        result.update(status=research["status"], content_id=content_id,
+                      research_digest=content.research_digest(research), plan=plan_data,
+                      sources=sources, reason=str(exc),
+                      next_step="Host: inspect competing answers and demand evidence, interview the operator using the question tool, then prepare and confirm content_brief.py. Rerun this command afterward.")
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+    meta["content_brief"] = ref
+    sources += content.sources(approved, len(sources) + 1)
+    research["sources"] = sources
+    options = research.get("direction_options", [])
+    if args.direction_gate and not (args.direction or args.choice is not None):
+        research["status"] = "awaiting_direction"
+        meta["research"] = research
+        publication.write_post(path, meta, body)
+        result.update(status="awaiting_direction", direction_options=options)
+        print(json.dumps(result, indent=2))
+        return 0
+    if args.direction:
+        direction = {"thesis": args.direction, "source": "user"}
+    elif args.choice is not None:
+        if not 0 <= args.choice < len(options): parser.error("choice is outside available directions")
+        direction = options[args.choice]
+    else:
+        direction = {"thesis": approved["contribution"], "source": "approved_contribution"}
+    brief += "\nAPPROVED CONTENT BRIEF:\n" + json.dumps(approved, ensure_ascii=False)
 
     targets = [t.get("phrase") for t in strategy.get("ranking_targets", []) if pubstate.overlap(str(t.get("phrase")), f"{topic} {brief}") > 0.2]
     outline = synthesize(cfg, topic, brief, direction, plan_data, strategy, sources, args.depth, targets)
@@ -374,7 +395,7 @@ def main() -> int:
         meta["title"] = str(outline["title"])
     if outline.get("dek"):
         meta["dek"] = str(outline["dek"])
-    meta["sources"] = [{"url": s["url"], "title": s["title"]} for s in sources if any(p["index"] == s["index"] and p["quotes"] for p in verification["paper_trail"])]
+    meta["sources"] = [{"url": s["url"], "title": s["title"]} for s in sources if s.get("url", "").startswith("http") and any(p["index"] == s["index"] and p["quotes"] for p in verification["paper_trail"])]
     publication.write_post(path, meta, body)
     result.update({"status": "done", "title": meta["title"], "sources_read": len(sources), "claims_verified": verification["kept"],
                    "claims_dropped": verification["dropped"], "sections": len(outline.get("sections", [])),

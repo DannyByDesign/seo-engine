@@ -95,7 +95,9 @@ def _review_draft(root, slug, reviewed_at=None):
     cache = root / f'{slug}-fixture-source.txt'
     cache.write_text(text)
     meta['research']['sources'] = [{'url': 'https://e.com/a', 'cache': str(cache)}]
-    review = {'reviewer': 'Fixture Editor', 'reader_need': 'Synthetic article used to exercise publication state transitions.',
+    from content_helpers import article_permission
+    article_permission(meta, root, slug)
+    review = {'disclosure_checked': True, 'reviewer': 'Fixture Editor', 'reader_need': 'Synthetic article used to exercise publication state transitions.',
               'value_added': 'Synthetic fixture supporting deterministic integration testing.', 'facts_checked': True,
               'claims': [{'claim': text, 'source': 'https://e.com/a', 'quote': text,
                           'assessment': 'Synthetic fixture matches its synthetic source for state-transition testing only.'}]}

@@ -16,6 +16,14 @@ for reasoning when the host agent is already available.
 
 ## What it checks / does
 
+Content work requires [topic research, interview and disclosure confirmation](../../shared/seo-references/content-interview.md)
+for each target page before drafting. Bind `content_briefs[page_path]` in the growth brief;
+supply `--content-review-file` during validation, mapping page paths to receipts with `disclosure_checked: true` and a substantive
+`value_added` explanation after inspecting the edited pages. The command stores these as
+`content_reviews[page_path]`; editing the original brief file does not update a recorded job. Changed permissions block validation/deployment.
+Technical repairs continue through their existing diagnostic exception.
+
+
 `run_strategy.py` inventories the target and validates agent-authored understanding, research
 and positioning. Read its status before selecting an opportunity; the next missing or stale
 section is explicit. Follow the [artifact contract](../../workflow/contract.md), storing

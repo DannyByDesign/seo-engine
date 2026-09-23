@@ -1,5 +1,8 @@
 # 02 Research
 
+For substantive content, follow [Topic research and interview](../shared/seo-references/content-interview.md):
+research existing answers, interview for this topic, confirm proposed use, then outline and write.
+
 Read the understanding record and derive a small, diverse search set: the customer's problem,
 solution category, task/use case, alternatives, and buying objections. Use the configured
 language and market. Expand from results when they reveal different customer terminology.

@@ -126,3 +126,8 @@ a script and never silently narrows a report: every skipped capability appears
 as `"checked": false` with the exact env var and remediation. When summarizing
 results for a human, read `not_checked` first — "everything *checked* is fine"
 and "everything is fine" are different claims.
+
+Per-topic research and operator permissions live in the target's ignored
+`.seo-engine/state/content/` as JSON records managed by `content_brief.py`.
+They contain proposed publishable material and scoped confirmation, never raw private notes.
+Article metadata and growth briefs carry a path/digest reference, not a company-wide approval.

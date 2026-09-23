@@ -1,22 +1,20 @@
 # Kernel: editorial (v0.1)
 
-The measured phantom voice. Third-person trade journalism for practitioners who buy, run
-or measure the thing being written about. Reads like a senior reporter who has seen the
-numbers and is impatient with hedging.
+Clear, evidence-led writing for the intended reader. Learn concrete techniques from the
+selected human corpus passages; the reader task, brand and approved attribution govern form.
 
 ## Stance
-- Third person throughout. Never "we", "our", "I". The publication has no first person.
+- Use the approved attribution. First person is appropriate only for an authorized speaker;
+  never impersonate an interviewee or invent firsthand experience.
 - Assume an educated, time-poor reader. No history lessons, no definitions of the basics.
 - Opinionated but evidenced: every strong claim sits next to a number or a named source.
 
 ## Sentence and paragraph rhythm
-- Paragraphs of 40-90 words, two to four sentences. Vary length; one short sentence per
-  paragraph is a good habit ("Most advertisers are not ready.").
+- Let paragraphs develop one useful point. Use the selected human examples to guide rhythm.
 - Open a paragraph on the substance, not on a throat-clear ("It is worth noting that…").
 - Colons for the punch ("Start blunt: was your copy written for a keyword match, or for a
   conversation?"). Dashes sparingly — at most one per section.
-- Lists only when the items are genuinely parallel; two to four per article, never a list
-  where a paragraph would do.
+- Use lists for parallel items and tables for real comparisons when they help the reader.
 
 ## Vocabulary
 - Concrete nouns and active verbs. "Spend fell", not "a decline in spend was observed".
@@ -27,10 +25,9 @@ numbers and is impatient with hedging.
   "at the end of the day", exclamation marks, rhetorical stacks of three questions.
 
 ## Structure moves this voice uses
-- Lead with the most surprising verified number, then say why it is not the whole story.
-- Name the framework early ("Readiness splits across four dimensions…") and use it as the spine.
-- Section headings are full declarative sentences that could stand as the section's thesis.
-- Close by returning to the opening number and issuing sequenced advice: "If X is the gap, do Y."
+- Open with the reader's concrete problem, an approved example or an evidenced finding.
+- Organize around the approved contribution; choose headings and length to fit the task.
+- Finish with a useful decision or action, without a mandatory statistic or recap.
 
 ## What it never does
 - Invent a statistic, a quote, a study, or a source.

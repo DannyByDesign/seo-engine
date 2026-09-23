@@ -94,9 +94,11 @@ def _write_posts(pub_dir: Path, authors: list[str]) -> None:
         text = editorial.plain(body)
         cache = pub_dir / (path.stem + '-fixture.txt'); cache.write_text(text)
         meta['research'] = {'status': 'done', 'sources': [{'url': 'https://fixture.test', 'cache': str(cache)}]}
+        from content_helpers import article_permission
+        article_permission(meta, pub_dir, path.stem)
         meta['editorial_review'] = editorial.record_review(meta, body, pub_dir, {
             'reviewer': 'Synthetic Fixture Editor', 'reader_need': 'Synthetic fixture verifying build and validator behavior.',
-            'value_added': 'Exercises structural publication output in offline integration tests.', 'facts_checked': True,
+            'value_added': 'Exercises structural publication output in offline integration tests.', 'facts_checked': True, 'disclosure_checked': True,
             'claims': [{'claim': text, 'quote': text, 'source': 'https://fixture.test',
                         'assessment': 'Synthetic article matched to its synthetic evidence for tests only.'}]})
         publication.write_post(path, meta, body)

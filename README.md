@@ -26,6 +26,11 @@ scripts/lib/   shared Python implementation
 volumes and competitor rankings; Brave web discovery; Firecrawl search/scraping; existing
 GSC/GA4 and optional keyword/backlink providers. Actual responses and failures are saved.
 
+**[Topic interviews and approved contributions](shared/seo-references/content-interview.md):**
+content runs research existing answers, interview the operator for this topic, and confirm
+publishable material before outlining. Both writing paths bind article/page-specific permission;
+new or changed input pauses for confirmation. Raw private notes stay out of writer prompts.
+
 **[Human writing references](05-execute/seo-copywriting/SKILL.md):** 38 frozen sources, 373 excerpts,
 51 passages curated for task-specific packets, and real examples inside the skill. All writing
 is stored directly as local Markdown with basic metadata; no JSON catalog or live-link lookup.

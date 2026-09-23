@@ -13,6 +13,13 @@ supports the research/positioning brief; examples supply writing technique, neve
 
 ## What it checks / does
 
+For a new article, substantial refresh, landing page or other substantive content, complete
+[Topic research and interview](../../shared/seo-references/content-interview.md) before drafting.
+Use the same article/page-specific approved contribution as the publication writer. This is
+separate from the human corpus: interviews supply permitted facts and experience; examples
+supply writing techniques. Minor copy corrections and technical repairs do not start interviews.
+
+
 The corpus contains the actual human writing in local Markdown, with only title/date,
 genre, tone and integrity metadata. It needs no website fetch or JSON catalog. The examples
 below are real passages, not generated demonstrations. Technique notes are separate from

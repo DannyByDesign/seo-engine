@@ -1,6 +1,6 @@
 ---
 name: pub-publish
-description: Runs a publication on a cadence: the Planner materializes de-robotized publish slots (default six per week with a launch burst) and fills them from the scored queue or the topic map, creating drafts; publish_article enforces the quality gate (research done, enhanced, cover, word and source floors, mention rules) and the approval posture (manual, review window, autopilot), sets dates once and moves the post live; run_pipeline chains research, write, enhance, visuals, publish, relink and build. Invoke for scheduled runs.
+description: "Plans publication slots and runs the article pipeline through research, topic interview, writing, enhancement, visuals and editorial review. Pauses for missing contribution permission, enforces current review and publication authorization, and builds approved articles. Use for publication scheduling and publishing."
 ---
 
 # pub-publish
@@ -18,6 +18,15 @@ sequences the other `pub-*` skills and owns the only irreversible step (`publish
 
 ## What it checks / does
 
+Pipeline source collection can return `awaiting_interview`, `awaiting_confirmation` or
+`awaiting_direction`. Return control to the host immediately; do not proceed to writing or
+mark the draft prepared. Follow the [interview contract](../../shared/seo-references/content-interview.md).
+Publication approval is separate from permission to use interview material. Final review
+covers approved attribution, contribution, disclosure limits, metadata and visuals; permission
+changes invalidate the review. Public-source and word-count floors are optional policy flags,
+not universal measures of usefulness; defaults are zero and editorial review stays mandatory.
+
+
 ### 1. `scripts/planner.py`
 
 Reads `site.yml → planner` (`cadence_per_week` 6, `sourcing_mode` `curate_first |
@@ -31,8 +40,8 @@ the spoke/suggestion `queued`. `--due` lists what should run now.
 
 ### 2. `scripts/publish_article.py`
 
-Gate: body, `research.status == done`, `enhanced_at`, cover, `--min-words` (1200),
-`--min-sources` (3), at most one client link and only when `mention.allowed`. Approval per
+Gate: body, `research.status == done`, `enhanced_at`, cover, `--min-words` (default 0),
+`--min-sources` (default 0), at most one client link and only when `mention.allowed`. Approval per
 `planner.approval_mode`; `--approve` is the human signature. On success: `published_at` set
 once (or `--at`), `updated_at` equal, byline assigned to the least-used author if missing,
 file moved to `posts/`, spoke `covered`, suggestion and slot `published`. Hooks: `--relink`
@@ -69,8 +78,8 @@ Flags: `planner.py` `--publication`, `--configure`, `--enable`, `--disable`,
 
 Before approval, run `review_article.py --publication <publication> --slug <slug>
 --review-file review.json` (also accepts `--publications-dir` and `--posts` for migration review of existing published content). Review JSON requires
-`reviewer`, `reader_need`, `value_added`, `facts_checked: true`, and `claims[]` with
-`claim` (exact final text), `source` (fetched URL), `quote` (exact source excerpt), and
+`reviewer`, `reader_need`, `value_added`, `facts_checked: true`, `disclosure_checked: true`, and `claims[]` with
+`claim` (exact final text), `source` (public URL or `interview:ITEM_ID`), `quote` (exact source excerpt), and
 `assessment` (explain entity, metric, period and caveats). Record only actual review;
 never manufacture an attestation to make the gate pass. All numeric claims need mappings,
 and the reviewer checks nonnumeric factual claims too. This is accountable judgment,

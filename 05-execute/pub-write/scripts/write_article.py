@@ -58,27 +58,28 @@ import re
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from scripts.lib import article, http_util, llm, publication, pubstate
+from scripts.lib import content, article, http_util, llm, publication, pubstate
 from scripts.lib.config import Config
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 KERNELS_DIR = SKILL_DIR / "kernels"
 TEMPLATES_DIR = SKILL_DIR / "templates"
 DEFAULT_KERNEL = "editorial"
-DEFAULT_TEMPLATE = "long-read"
+DEFAULT_TEMPLATE = "reader-led"
 
 HOUSE_RULES = (
-    "House rules (non-negotiable): third-person trade journalism; no first person; British or American spelling "
-    "consistently (follow the sources); paragraphs of 40-90 words; every factual claim comes from the provided evidence "
-    "points and may be paraphrased but never extended; every number is written exactly as it appears in its evidence "
-    "quote; name the source organization in prose the first time it appears; no headings inside a section (no H3); "
-    "no tables; at most one bulleted list per two sections; never praise the client or any vendor; never invent a "
-    "statistic, study, quote, or source; do not write a title or the H2 — only the section body in markdown."
+    "Use the human references for concrete writing techniques, with a coherent brand voice. "
+    "The approved contribution, attribution and reader task override generic voice-card preferences. "
+    "First person is allowed only for an approved speaker; never impersonate an interviewee. "
+    "Every factual claim comes from provided evidence; preserve numbers, scope and limitations. "
+    "Distinguish attributed experience and opinion from independently supported facts. "
+    "Use paragraphs, lists, tables and subheadings where the task benefits; do not pad for a word quota. "
+    "No invented statistics, sources, experiences or quotations. Return only the section body."
 )
 JUDGE_SYSTEM = (
     "You judge candidate versions of one article section against a voice card, house rules and the evidence points "
     "they were allowed to use. Score each on: fidelity to the voice card, use of the evidence (numbers present, sources "
-    "named, nothing invented), specificity, and rhythm. Penalize any fact not in the evidence heavily. Return ONLY JSON: "
+    "named, nothing invented), specificity, rhythm, delivery of the approved contribution and fidelity to attribution/limits. Penalize any fact not in the evidence heavily. Return ONLY JSON: "
     "{\"winner\": index, \"scores\": [numbers], \"notes\": \"one sentence\"}."
 )
 
@@ -127,7 +128,7 @@ def _evidence_block(points: list[dict[str, Any]], sources: dict[int, dict[str, A
     lines = []
     for p in points:
         src = sources.get(p.get("source"), {})
-        lines.append(f"- CLAIM: {p.get('claim')}\n  EVIDENCE (verbatim): \"{p.get('quote')}\"\n  SOURCE: {src.get('title', '')} — {src.get('url', '')}")
+        lines.append(f"- CLAIM: {p.get('claim')}\n  EVIDENCE (verbatim): \"{p.get('quote')}\"\n  SOURCE: {src.get('title', '')} — {src.get('url', '')}\n  TYPE: {src.get('kind', 'web')}; ATTRIBUTION: {src.get('attribution', 'name the source')}; LIMITS: {src.get('limits', 'preserve source caveats')}")
     return "\n".join(lines) or "- (no verified evidence for this section: write from the goal only, without any numbers)"
 
 
@@ -141,15 +142,17 @@ def compose_section(cfg: Config, kernel: str, section: dict[str, Any], sources: 
         if mention["allowed"] else
         f"Do not name or link the client ({mention['client_name'] or 'the client'}, {mention['client_host'] or 'client domain'}) anywhere."
     )
+    if any(sources.get(p.get('source'), {}).get('origin') == 'operator' for p in section.get('points', [])):
+        mention_rule += " Approved interview attribution overrides the name restriction for those evidence points only; it does not authorize a promotional link."
     closing = ""
     if is_closing:
-        closing = "This is the CLOSING section: give sequenced advice ('If X is the gap, do Y'), one short paragraph per item, and end by returning to the opening number.\nAdvice items to cover: " + "; ".join(closing_advice)
+        closing = "This is the final section: finish the reader task with useful next steps; avoid a repetitive summary.\nAdvice items to cover: " + "; ".join(closing_advice)
     user = (
         f"VOICE CARD:\n{kernel}\n\n{HOUSE_RULES}\n\nARTICLE CONTEXT:\n{context}\n\nSECTION HEADING (already written, do not repeat): {section.get('heading')}\n"
         f"SECTION GOAL: {section.get('goal')}\n\nEVIDENCE POINTS (use these and only these):\n{_evidence_block(section.get('points', []), sources)}\n\n"
         f"MENTION RULE: {mention_rule}\n{closing}\n\n"
-        f"Write {candidates} distinct candidate versions of this section body (250-420 words each, markdown paragraphs, inline links "
-        f"allowed only to the SOURCE URLs above). Return ONLY JSON: {{\"candidates\": [markdown strings]}}."
+        f"Write {candidates} distinct candidate versions of this section body (only as long as useful, markdown, inline links "
+        f"allowed only to public SOURCE URLs above; interview evidence uses approved attribution without an invented link). Return ONLY JSON: {{\"candidates\": [markdown strings]}}."
     )
     data = llm.complete_json(cfg, "You are the writing kernel of an independent trade publication.", user, max_tokens=8000, effort="high")
     raw = data.get("candidates") if isinstance(data, dict) else data
@@ -176,10 +179,11 @@ def compose_opening(cfg: Config, kernel: str, outline: dict[str, Any], sources: 
         return ""
     src = sources.get(opening.get("source"), {})
     user = (f"VOICE CARD:\n{kernel}\n\n{HOUSE_RULES}\n\nARTICLE CONTEXT:\n{context}\n\nTEMPLATE BLOCK:\n{template_block}\n\n"
-            f"OPENING STATISTIC: {opening.get('claim')}\nEVIDENCE (verbatim): \"{opening.get('quote')}\"\nSOURCE: {src.get('title', '')} — {src.get('url', '')}\n"
+            f"OPENING EVIDENCE: {opening.get('claim')}\nEVIDENCE (verbatim): \"{opening.get('quote')}\"\nSOURCE: {src.get('title', '')} — {src.get('url', '')}\n"
+            f"ATTRIBUTION: {src.get('attribution', '')}; KIND: {src.get('kind', 'web')}; LIMITS: {src.get('limits', '')}\n"
             f"SECTIONS TO COME: {[s.get('heading') for s in outline.get('sections', [])]}\n"
-            f"MENTION RULE: {'the client may not be named here' if not mention['allowed'] else 'do not name the client in the opening'}\n\n"
-            f"Write the opening (two or three paragraphs, 120-220 words, no heading). Return ONLY JSON: {{\"opening\": markdown}}.")
+            f"MENTION RULE: use approved interview attribution where applicable; otherwise do not name the client in the opening.\n\n"
+            f"Write a concise opening suited to the reader task and evidence; no mandatory statistic or word quota. Return ONLY JSON: {{\"opening\": markdown}}.")
     data = llm.complete_json(cfg, "You are the writing kernel of an independent trade publication.", user, max_tokens=2000, effort="high")
     return str(data.get("opening") if isinstance(data, dict) else data).strip()
 
@@ -233,6 +237,11 @@ def main() -> int:
     meta, body = publication.read_post(path)
     research = meta.get("research") if isinstance(meta.get("research"), dict) else {}
     outline = research.get("outline") or {}
+    try:
+        approved = content.check_article(meta, root, args.slug, cfg.repo_root)
+    except ValueError as exc:
+        print(json.dumps({"checked": False, "status": "awaiting_confirmation", "error": str(exc)}))
+        return 1
     if research.get("status") != "done" or not outline.get("sections"):
         print(json.dumps({"checked": False, "error": "draft has no completed research outline — run research_outline.py first"}, indent=2))
         return 1
@@ -252,7 +261,8 @@ def main() -> int:
     section = pub.section_for(publication.Post(slug=args.slug, meta=meta, body_md=""))
     context = (f"Publication: {pub.name} — {pub.tagline}\nSection: {section['name']}\nTitle: {meta.get('title')}\nDek: {meta.get('dek')}\n"
                f"Direction/thesis: {json.dumps(research.get('direction') or {}, ensure_ascii=False)}\nStances: {strategy.get('stances')}\n"
-               f"Target length: {template.get('target_words', 2400)} words across {len(outline['sections'])} sections.")
+               f"Length guidance: {template.get('target_words') or 'only as long as needed to complete the reader task'}.\n"
+               f"APPROVED CONTRIBUTION AND DISCLOSURE: {json.dumps(approved, ensure_ascii=False)}")
 
     if meta.get("refresh_of"):
         context += "\nORIGINAL ARTICLE TO REFRESH (preserve correct useful material; change only what new evidence warrants):\n" + str(meta.get("original_body") or "")
@@ -290,7 +300,7 @@ def main() -> int:
     words = article.word_count(md)
     meta.update({
         "status": "written", "kernel": kernel_name, "template": template.get("key", args.template), "word_count": words,
-        "written_at": pubstate.now_iso(), "kicker": meta.get("kicker") or "Long read",
+        "written_at": pubstate.now_iso(), "kicker": meta.get("kicker") or "Guide",
         "mention": {"allowed": mention["allowed"], "degree": mention["degree"], "applied": bool(client_links),
                     "landing_url": client_links[0] if client_links else None, "reasons": mention["reasons"], "stripped": stripped},
         "composition": {"candidates": args.candidates, "judge": judge_log, "numeric_anchors": anchored},
@@ -301,7 +311,7 @@ def main() -> int:
     from scripts.lib import languagetool
     meta['languagetool'] = languagetool.check(cfg, md)
     publication.write_post(path, meta, md)
-    target = int(template.get("target_words", 2400))
+    target = int(template.get("target_words") or 0)
     notes = []
     if words < target * 0.75:
         notes.append(f"short: {words} words vs target {target} — consider --candidates 3 or a richer outline")

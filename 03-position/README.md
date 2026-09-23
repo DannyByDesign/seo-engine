@@ -1,5 +1,8 @@
 # 03 Position
 
+For substantive content, follow [Topic research and interview](../shared/seo-references/content-interview.md):
+research existing answers, interview for this topic, confirm proposed use, then outline and write.
+
 Use current research and product evidence to decide whom to address, which problem to own,
 what the offering promises, how it differs and what proof can support that promise. Compare
 plausible audiences and angles; choose based on demand, fit and defensible product strengths.

@@ -170,3 +170,13 @@ rollout intervals and explicit decisions/costs. Inconclusive experiments remain 
 `run_cycle.py` gives a configured agent a durable work packet. The external host scheduler
 must be activated explicitly. GA4 and other normalized exports are distinct from API visibility
 probes. The capability ledger records tested interfaces and missing effectiveness evidence.
+
+## Article-specific knowledge
+
+`scripts/lib/content.py` stores and validates proposed publishable knowledge and the operator's
+explicit permission in target-local ignored state. `pub-research/scripts/content_brief.py`
+serves both publication and website content. Publication research pauses before outlining;
+its source digest binds the interview record to the gathered evidence. Writers and editorial
+reviews accept attributed interview evidence without public URLs. Growth briefs bind the same
+records per page, and permission changes block validation/deployment. The host conducts the
+interview and semantic review; validators enforce recorded scope, not human authorship.

@@ -80,5 +80,18 @@
         ]
       }
     ]
+  },
+  "content_briefs": {
+    "/guides/deploy": {
+      "content_id": "page:/guides/deploy",
+      "path": "Replace with the target-local record path returned by content_brief.py",
+      "digest": "Replace with the approved digest"
+    }
+  },
+  "content_reviews": {
+    "/guides/deploy": {
+      "disclosure_checked": false,
+      "value_added": "After drafting, describe the actual reviewed contribution and confirm disclosure boundaries."
+    }
   }
 }

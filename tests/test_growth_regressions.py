@@ -72,10 +72,10 @@ def test_reject_partial_fabricated_quote_and_remove_opening(tmp_path):
 def test_gate_rejects_filler_duplicate_sources_and_unverified():
     meta = {'research': {'status': 'done'}, 'enhanced_at': 'now', 'cover': {'src': 'cover.svg'},
             'sources': [{'url': 'https://example.org'}] * 3, 'verification': {'unverified': ['999%']}}
-    problems = t.publish_mod.gate(meta, 'filler ' * 1200, {}, min_words=1, min_sources=0)
+    problems = t.publish_mod.gate(meta, 'filler ' * 1200, {}, min_words=1200, min_sources=3)
     assert 'repetitive content' in problems and 'unverified numbers remain' in problems
     assert any('sources' in p for p in problems)
-    assert any('words' in p for p in t.publish_mod.gate(meta, 'short body', {}, min_words=0, min_sources=0))
+    assert any('words' in p for p in t.publish_mod.gate(meta, 'short body', {}, min_words=1200, min_sources=3))
 
 
 def test_approval_resumes_prepared_body_unchanged(tmp_path, monkeypatch, capsys):

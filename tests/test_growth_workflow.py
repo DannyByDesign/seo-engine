@@ -9,8 +9,10 @@ import pytest
 from scripts.lib import growth
 
 
-def brief(url):
+def brief(url, root):
     from datetime import date
+    from content_helpers import approved
+    refs = {page: approved(root, 'page:' + page) for page in ('/', '/products/widget')}
     candidates = [{'id': key, 'query': 'deployment question', 'audience': 'developers', 'intent': 'learn setup',
         'page': '/', 'original_value': 'A reproducible tested example for this fixture only.',
         'business_reason': 'Exercise first-party workflow behavior; not actual demand.',
@@ -18,7 +20,7 @@ def brief(url):
         'evidence': [{'kind': 'customer_question', 'reference': 'https://fixture.test/question',
                       'observation': 'Synthetic fixture demand observation only.', 'observed_on': date.today().isoformat()}]}
         for key,hours in [('guide',1),('tool',2)]]
-    return {'simulation': True, 'selection': {'candidates': candidates, 'selected_id': 'guide',
+    return {'content_briefs': refs, 'content_reviews': {page: {'disclosure_checked': True, 'value_added': 'Synthetic fixture reviewed for workflow testing.'} for page in refs}, 'simulation': True, 'selection': {'candidates': candidates, 'selected_id': 'guide',
                          'rationale': 'This fixture prioritizes a small useful example over a larger tool.'},'id': 'useful-guide', 'site_url': url, 'hypothesis': 'Answering the deployment question can attract relevant organic visits.',
             'reader_need': 'Developers need a tested deployment procedure for the product.',
             'original_value': 'A reproducible example tested against the actual product code.',
@@ -39,7 +41,7 @@ def test_real_local_deploy_and_stale_validation_rejected(tmp_path):
     url = f'http://127.0.0.1:{server.server_port}'
     try:
         (tmp_path / 'index.html').write_text('Old content')
-        job = growth.create(tmp_path, brief(url))
+        job = growth.create(tmp_path, brief(url, tmp_path))
         with pytest.raises(ValueError, match='no declared source change'): growth.validate(tmp_path, job)
         html = f'<html><head><link rel="canonical" href="{url}/"></head><body>Tested deployment procedure</body></html>'
         (tmp_path / 'index.html').write_text(html)
@@ -58,7 +60,7 @@ def test_real_local_deploy_and_stale_validation_rejected(tmp_path):
 
 def test_validation_failure_does_not_allow_deployment(tmp_path):
     (tmp_path / 'index.html').write_text('Old')
-    job = growth.create(tmp_path, brief('https://fixture.test'))
+    job = growth.create(tmp_path, brief('https://fixture.test', tmp_path))
     (tmp_path / 'index.html').write_text('Still missing required content')
     growth.validate(tmp_path, job)
     assert job['status'] == 'validation_failed'
@@ -67,7 +69,7 @@ def test_validation_failure_does_not_allow_deployment(tmp_path):
 
 def test_timeout_persists_uncertainty_before_effect_and_forbids_blind_retry(tmp_path, monkeypatch):
     (tmp_path / 'index.html').write_text('old')
-    job = growth.create(tmp_path, brief('https://fixture.test'))
+    job = growth.create(tmp_path, brief('https://fixture.test', tmp_path))
     (tmp_path / 'index.html').write_text('Tested deployment procedure')
     growth.validate(tmp_path, job)
     saved = []
@@ -82,7 +84,7 @@ def test_timeout_persists_uncertainty_before_effect_and_forbids_blind_retry(tmp_
 
 
 def test_first_deployment_date_survives_delayed_verification(tmp_path, fake_transport):
-    (tmp_path / 'index.html').write_text('old'); job = growth.create(tmp_path, brief('https://fixture.test'))
+    (tmp_path / 'index.html').write_text('old'); job = growth.create(tmp_path, brief('https://fixture.test', tmp_path))
     (tmp_path / 'index.html').write_text('Tested deployment procedure'); growth.validate(tmp_path, job)
     job.update(status='deployment_unverified', deployment_attempted_at='2026-01-01T12:00:00Z')
     fake_transport.route('GET','https://fixture.test/robots.txt', {'body':'User-agent: *\nAllow: /'})
@@ -114,7 +116,7 @@ def test_codex_install_and_scheduled_packet_handoff(tmp_path):
 
 def test_confirmed_non_deployment_can_be_reconciled_and_retried(tmp_path):
     (tmp_path/'index.html').write_text('Old')
-    job = growth.create(tmp_path, brief('https://fixture.test'))
+    job = growth.create(tmp_path, brief('https://fixture.test', tmp_path))
     (tmp_path/'index.html').write_text('Tested deployment procedure')
     growth.validate(tmp_path, job)
     job.update(status='deployment_uncertain', deployment_attempted_at='2026-01-01T00:00:00Z', deployment={'exit': None})
@@ -127,18 +129,18 @@ def test_confirmed_non_deployment_can_be_reconciled_and_retried(tmp_path):
 
 def test_demand_comparison_rejects_assumptions_and_stale_evidence(tmp_path):
     from scripts.lib import opportunities
-    candidates = brief('https://fixture.test')['selection']['candidates']
+    candidates = brief('https://fixture.test', tmp_path)['selection']['candidates']
     for c in candidates: c['evidence'] = []
     result = opportunities.assess(candidates)
     assert result['suggested_id'] is None
     (tmp_path/'index.html').write_text('Old')
-    b = brief('https://fixture.test'); b['selection']['candidates'] = candidates
+    b = brief('https://fixture.test', tmp_path); b['selection']['candidates'] = candidates
     with pytest.raises(ValueError, match='evidenced candidate'): growth.create(tmp_path,b)
 
 
 def test_inconclusive_outcomes_remain_scheduled_and_record_cost_decision(tmp_path):
     from datetime import date, timedelta
-    (tmp_path/'index.html').write_text('Old'); job = growth.create(tmp_path, brief('https://fixture.test'))
+    (tmp_path/'index.html').write_text('Old'); job = growth.create(tmp_path, brief('https://fixture.test', tmp_path))
     job.update(status='verified', deployment_earliest='2026-02-02', first_verified_on='2026-02-08')
     def export(start,end):
         return {'property':'fixture','timezone':'UTC','site_url':'https://fixture.test','exporter':'unit-test',
@@ -153,7 +155,7 @@ def test_inconclusive_outcomes_remain_scheduled_and_record_cost_decision(tmp_pat
 
 def test_local_evidence_hash_and_incomplete_paid_discovery(tmp_path, monkeypatch):
     from scripts.lib import opportunities
-    candidates = brief('https://fixture.test')['selection']['candidates']
+    candidates = brief('https://fixture.test', tmp_path)['selection']['candidates']
     (tmp_path/'evidence.txt').write_text('Synthetic evidence snapshot')
     candidates[0]['evidence'][0]['snapshot']='evidence.txt'
     result=opportunities.assess(candidates,root=tmp_path)
@@ -199,7 +201,7 @@ def test_dynamic_product_route_build_deploy_verify(tmp_path):
     thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
     try:
         (tmp_path/'product.json').write_text(json.dumps({'name':'Widget','price':25,'guide':'Old summary'}))
-        b = brief(url); b['source_files']=['product.json']; b['pages']=[{'path':'/products/widget','expected_text':'Tested deployment procedure','baseline_file':'product.json'}]
+        b = brief(url, tmp_path); b['source_files']=['product.json']; b['pages']=[{'path':'/products/widget','expected_text':'Tested deployment procedure','baseline_file':'product.json'}]
         for candidate in b['selection']['candidates']: candidate['page']='/products/widget'
         b['commands']={'test':[sys.executable,'-c',"import json; from pathlib import Path; p=json.loads(Path('product.json').read_text()); assert p['price']==25 and 'Tested deployment procedure' in p['guide']"],
                        'build':[sys.executable,'-c',"import json; from pathlib import Path; json.loads(Path('product.json').read_text())"],
@@ -217,17 +219,17 @@ def test_dynamic_product_route_build_deploy_verify(tmp_path):
 def test_existing_expected_phrase_cannot_verify_a_noop_change(tmp_path):
     (tmp_path/'index.html').write_text('<p>Tested deployment procedure</p><p>old information</p>')
     with pytest.raises(ValueError, match='already pass in the production baseline'):
-        growth.create(tmp_path,brief('https://fixture.test'))
+        growth.create(tmp_path,brief('https://fixture.test', tmp_path))
 
 
 def test_followup_creation_links_parent_and_prevents_duplicate_url(tmp_path):
     import os
     import subprocess
     (tmp_path/'index.html').write_text('Old content')
-    parent=growth.create(tmp_path,brief('https://fixture.test')); parent['status']='followup_required'; parent['decisions']=[{'decision':'refine'}]
+    parent=growth.create(tmp_path,brief('https://fixture.test', tmp_path)); parent['status']='followup_required'; parent['decisions']=[{'decision':'refine'}]
     folder=tmp_path/'.seo-engine/state/growth'; folder.mkdir(parents=True)
     (folder/'useful-guide.json').write_text(json.dumps(parent))
-    b=brief('https://fixture.test'); b['id']='refined-guide'; b['followup']={'decision':'refine','scope':'Improve the original guide with more useful deployment instructions.'}; path=tmp_path/'brief.json'; path.write_text(json.dumps(b))
+    b=brief('https://fixture.test', tmp_path); b['id']='refined-guide'; b['followup']={'decision':'refine','scope':'Improve the original guide with more useful deployment instructions.'}; path=tmp_path/'brief.json'; path.write_text(json.dumps(b))
     script=Path(__file__).resolve().parents[1]/'skills/seo-growth/scripts/run_growth.py'
     env={**os.environ,'SEO_REPO_ROOT':str(tmp_path)}
     result=subprocess.run([sys.executable,str(script),'--stage','create','--brief-file',str(path)],env=env,capture_output=True,text=True)
@@ -242,7 +244,7 @@ def test_metadata_only_repair_and_stale_deploy(tmp_path, fake_transport):
     old='<link rel="canonical" href="https://fixture.test/"><meta name="robots" content="noindex"><p>Existing useful content stays unchanged.</p>'
     (tmp_path/'index.html').write_text(old); (tmp_path/'diagnostic.json').write_text('{"finding":"accidental noindex"}')
     (tmp_path/'public').mkdir()
-    b=brief('https://fixture.test'); b.update(kind='technical_repair',diagnostic_file='diagnostic.json')
+    b=brief('https://fixture.test', tmp_path); b.update(kind='technical_repair',diagnostic_file='diagnostic.json')
     b.pop('selection')
     b['pages']=[{'path':'/','baseline_file':'index.html','assertions':[{'kind':'indexable','expected':True}]}]
     b['commands']['test']=[sys.executable,'-c',"from pathlib import Path; text=Path('index.html').read_text(); assert 'noindex' not in text and 'Existing useful content stays unchanged.' in text"]
@@ -268,7 +270,7 @@ def test_cancel_block_resume_preserves_uncertain_deployment_rules():
 
 
 def test_unrelated_followup_cannot_close_parent(tmp_path):
-    (tmp_path/'index.html').write_text('Old'); parent=growth.create(tmp_path,brief('https://fixture.test'))
+    (tmp_path/'index.html').write_text('Old'); parent=growth.create(tmp_path,brief('https://fixture.test', tmp_path))
     parent.update(status='followup_required',decisions=[{'decision':'revert'}])
     child={'brief':{**parent['brief'],'pages':[{'path':'/unrelated'}], 'followup':{'decision':'revert','scope':'An unrelated page is not an implementation of the requested rollback.'}}}
     with pytest.raises(ValueError,match='every affected'): growth.validate_followup(parent,child)
@@ -277,7 +279,7 @@ def test_unrelated_followup_cannot_close_parent(tmp_path):
 
 
 def test_synthetic_data_cannot_drive_production_outcomes(tmp_path):
-    (tmp_path/'index.html').write_text('Old'); job=growth.create(tmp_path,brief('https://fixture.test'))
+    (tmp_path/'index.html').write_text('Old'); job=growth.create(tmp_path,brief('https://fixture.test', tmp_path))
     job.update(status='verified',simulation=False)
     with pytest.raises(ValueError,match='synthetic exports'): growth.evaluate(job,{'synthetic':True},{'synthetic':True})
     job['outcome']={'synthetic':True}
@@ -287,9 +289,9 @@ def test_synthetic_data_cannot_drive_production_outcomes(tmp_path):
 def test_cancelled_child_reopens_parent_for_replacement(tmp_path):
     import os, subprocess
     (tmp_path/'index.html').write_text('Old content')
-    parent=growth.create(tmp_path,brief('https://fixture.test')); parent.update(status='followup_required',decisions=[{'decision':'refine'}])
+    parent=growth.create(tmp_path,brief('https://fixture.test', tmp_path)); parent.update(status='followup_required',decisions=[{'decision':'refine'}])
     folder=tmp_path/'.seo-engine/state/growth'; folder.mkdir(parents=True); (folder/'useful-guide.json').write_text(json.dumps(parent))
-    b=brief('https://fixture.test'); b.update(id='child-one',followup={'decision':'refine','scope':'Improve the same guide with a tested original deployment example.'})
+    b=brief('https://fixture.test', tmp_path); b.update(id='child-one',followup={'decision':'refine','scope':'Improve the same guide with a tested original deployment example.'})
     path=tmp_path/'brief.json'; path.write_text(json.dumps(b))
     script=Path(__file__).resolve().parents[1]/'skills/seo-growth/scripts/run_growth.py'; env={**os.environ,'SEO_REPO_ROOT':str(tmp_path)}
     def run(*args):
@@ -308,13 +310,13 @@ def test_git_fingerprint_detects_undeclared_template_change(tmp_path):
     import subprocess
     subprocess.run(['git','init','-q',str(tmp_path)],check=True)
     (tmp_path/'index.html').write_text('Old'); (tmp_path/'template.html').write_text('Original template')
-    b=brief('https://fixture.test'); initial=growth.fingerprint(tmp_path,b)
+    b=brief('https://fixture.test', tmp_path); initial=growth.fingerprint(tmp_path,b)
     (tmp_path/'template.html').write_text('Changed shared template')
     assert growth.fingerprint(tmp_path,b)!=initial
 
 
 def test_measurement_uses_analytics_timezone_and_site_prefix(tmp_path):
-    (tmp_path/'index.html').write_text('Old'); b=brief('https://fixture.test/shop'); job=growth.create(tmp_path,b)
+    (tmp_path/'index.html').write_text('Old'); b=brief('https://fixture.test/shop', tmp_path); job=growth.create(tmp_path,b)
     job.update(status='verified',deployment_earliest='2026-02-02',first_verified_on='2026-02-08',
                deployment_attempted_at='2026-02-02T01:00:00Z',verified_at='2026-02-08T12:00:00Z')
     def export(start,end,sessions):

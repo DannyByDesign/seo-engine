@@ -62,3 +62,15 @@ Content briefs bind `position_digest` once this strategy workflow is adopted. Te
 repairs can proceed independently with diagnostics. `run_cycle.py` includes strategy status,
 artifact paths and actual observations/decisions in the scheduled work packet. The agent
 reads those inputs to update strategy; the packet itself is not an autonomous reasoning model.
+
+## Per-topic content contribution
+
+Substantive copy work also follows [Topic research and interview](../shared/seo-references/content-interview.md).
+A growth brief has `content_briefs`, mapping each page path to the approved reference returned
+by `content_brief.py`. Each record uses `content_id: page:/target-path`. Before validation,
+pass `--content-review-file` to `run_growth.py --stage validate`, mapping page paths to
+`disclosure_checked: true` and a `value_added` explanation
+covering facts, contribution, attribution and disclosure in the actual page and metadata.
+The existing lifecycle checks current permission on create, validation and deployment.
+The technical-repair exception still requires diagnostic evidence. An absent operator pauses
+content drafting; it does not prevent independent source collection or technical work.

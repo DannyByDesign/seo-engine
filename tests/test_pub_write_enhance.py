@@ -112,6 +112,13 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
         outline,
     ])
     res = _run(research_mod, cfg, ["--publication", "llm-billboard", "--topic", "Advertiser readiness for the AI search transition"], monkeypatch, capsys)
+    assert res["_exit"] == 0 and res["status"] == "awaiting_interview", res
+    from content_helpers import approved
+    from scripts.lib import content
+    draft_slug = "advertiser-readiness-for-the-ai-search-transition"
+    pending, _ = publication.read_post(root / "drafts" / f"{draft_slug}.md")
+    approved(tmp_path, content.publication_id(root, draft_slug), pending['research'])
+    res = _run(research_mod, cfg, ["--publication", "llm-billboard", "--slug", draft_slug], monkeypatch, capsys)
     assert res["_exit"] == 0 and res["status"] == "done", res
     assert res["sources_read"] == 2 and res["claims_dropped"] == 1 and res["claims_verified"] == 4
     meta, body = publication.read_post(root / "drafts" / "advertiser-readiness-for-the-ai-search-transition.md")

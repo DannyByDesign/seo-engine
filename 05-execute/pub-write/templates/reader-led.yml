@@ -1,0 +1,19 @@
+key: reader-led
+name: Reader-led article
+angle: Deliver the approved original contribution in the structure the reader needs.
+blocks:
+  - id: opening
+    kind: open
+    text: |
+      Open with the concrete reader problem, approved experience or useful finding.
+      Use the supplied evidence and human reference techniques. A statistic is optional.
+      Preserve approved attribution and limits. Do not invent a personal anecdote.
+  - id: body
+    kind: open
+    text: |
+      Follow the evidenced outline, with no fixed word count or section quota.
+      Explain the approved contribution and its limits with useful examples and steps.
+  - id: closing
+    kind: open
+    text: |
+      Finish with what the reader can do or decide. Do not force a recap or return to a number.

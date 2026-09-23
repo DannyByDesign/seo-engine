@@ -1,6 +1,6 @@
 ---
 name: pub-research
-description: Researches an article topic against the live web and writes a verified, sourced outline into the draft — plan queries, gather and read sources (client landing pages included only where their context matches), propose three editorial directions with an optional human gate, synthesize 6-8 declarative sections whose claims carry verbatim quotes tied to numbered sources, and drop every claim whose quote cannot be found in its source. Invoke for each draft before pub-write. Not for choosing topics (pub-curate) or writing prose (pub-write).
+description: Researches an article topic against the live web and writes a verified, sourced outline into the draft — plan queries, gather and read sources (client landing pages included only where their context matches), pause for a topic interview and approved contribution, synthesize reader-led sections whose claims carry verbatim quotes tied to numbered sources, and drop every claim whose quote cannot be found in its source. Invoke for each draft before pub-write. Not for choosing topics (pub-curate) or writing prose (pub-write).
 ---
 
 # pub-research
@@ -21,6 +21,15 @@ candidate source only through the landing pages whose "when to cite" context mat
 
 ## What it checks / does
 
+Before outlining, follow [Topic research and interview](../../shared/seo-references/content-interview.md).
+The first run gathers web sources and returns `awaiting_interview`. The host inspects competing
+answers and demand, interviews the operator with its question tool (conversation fallback),
+then records proposed use and explicit article-scoped permission. Answering is not permission.
+Rerun after confirmation; unchanged approved input resumes without another interview.
+Use `--refresh-research` for a substantive new topic/source investigation, which invalidates
+old contribution scope. Missing operator input pauses unattended runs before drafting.
+
+
 `scripts/research_outline.py` runs the six phases in order:
 
 1. **plan** — LLM: 4-8 search queries, must-cover subsections (merged with `--must-include`),
@@ -34,17 +43,22 @@ candidate source only through the landing pages whose "when to cite" context mat
    `.seo-engine/state/pub-research/<publication>/<slug>/`.
 4. **direction** — three thesis/framework options with a recommendation; `--direction-gate`
    stops here (`research.status: awaiting_direction`).
-5. **synthesize** — title, dek, opening statistic, 6-8 sections of evidenced points,
-   closing advice, 1-2 diagram briefs with data, keywords; `--depth barebones` yields
+5. **synthesize** — title, dek, optional evidenced opening, reader-led sections of evidenced points,
+   closing advice, optional diagram briefs with data, keywords; `--depth barebones` yields
    headings and goals only.
-6. **verify** — each quote is searched in its source (exact, 8-word window, then fuzzy
-   ≥ 0.82); unverifiable points are removed and counted in `verification.dropped`.
+6. **verify** — each quote is matched exactly after normalization against its web or approved interview source; unverifiable points are removed and counted in `verification.dropped`.
 
 The draft's frontmatter gains `research` (plan, sources, direction, outline, paper_trail,
 verification) and `sources` (only sources that back a surviving quote), and `title`/`dek`
 are refined.
 
 ## Running it
+
+The host also uses `scripts/content_brief.py` for either content path. Flags: `--action`
+(`prepare`, `confirm`, `status`), `--content-id`, `--file`, `--confirm-digest`, `--operator`,
+`--confirmation`. See the linked interview contract for the JSON and command sequence.
+Only proposed publishable material belongs in that JSON, never raw/private interview notes.
+
 
 > Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
 
@@ -87,17 +101,17 @@ and a `next_step`. Exit 1 when no LLM key is configured or no source could be re
 - **`claims_dropped` is the safety net working**, not a failure. A high ratio (more dropped
   than kept) means the sources were thin or off-topic — add `--source-url` seeds or narrow
   the topic rather than writing from what survived.
-- **`sources_read` below ~6** produces a shallow long read; the measured norm is 10-17
-  cited sources per article (`publication-playbook.md` §3).
-- **A client landing in `sources`** is the only legitimate path to a client mention later;
-  if none matched, the article simply will not mention the client — that is by design.
+- **Source counts describe coverage**, not usefulness. Inspect whether the evidence supports
+  the reader task and approved contribution; do not add citations to meet a quota.
+- **Client landings** govern promotional links. Approved interviews use their own attribution
+  and may be cited without a public URL or invented link.
 - **The gate is cheap; use it** on the first few articles of a new publication until the
   recommended directions consistently match the owner's taste.
 
 ## Safe to auto-apply vs. human review
 
-- **Safe without asking:** the whole run — it writes only into `drafts/` frontmatter and
-  state caches, never into `posts/`.
+- **Safe without asking:** source collection and preparation. Outlining waits for the topic
+  interview and the operator’s explicit confirmation of proposed use.
 - **Ask first:** nothing here publishes; but when `claims_dropped` exceeds `claims_verified`,
   surface it before `pub-write` spends tokens on a weak outline.
 
@@ -105,7 +119,7 @@ and a `next_step`. Exit 1 when no LLM key is configured or no source could be re
 
 - Never invent a source: every quote is checked against fetched text; unverifiable points
   are removed, not softened.
-- The client site is read only through configured landings (red-flags §7: mentions stay honest).
+- Client web sources use configured landings; approved interviews are a separate attributed source. The client site is read through configured landings (red-flags §7: mentions stay honest).
 - Bounded network: ≤20 seed URLs, `--max-sources` pages, polite intervals, week-long cache.
 - Numbers in diagram briefs must appear in the sources; `pub-enhance`'s verifier re-checks
   them in the finished prose.
@@ -113,7 +127,7 @@ and a `next_step`. Exit 1 when no LLM key is configured or no source could be re
 ## References
 
 - [publication-playbook.md](../../shared/seo-references/publication-playbook.md) §3 (article
-  anatomy: opening statistic, declarative H2s, numeric anchors), §4 (the research phases).
+  quality: reader need, original contribution and contextual review), §4 (the research phases).
 - [geo-playbook.md](../../shared/seo-references/geo-playbook.md) §5 (cited statistics, quotations and
   specificity are the one evidence-backed content lever for AI citation).
 - [red-flags.md](../../shared/seo-references/red-flags.md) §7 (substance floor and honest mentions).

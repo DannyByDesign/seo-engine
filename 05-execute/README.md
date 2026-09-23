@@ -1,5 +1,8 @@
 # 05 Execute
 
+For substantive content, follow [Topic research and interview](../shared/seo-references/content-interview.md):
+research existing answers, interview for this topic, confirm proposed use, then outline and write.
+
 Implement the selected intervention in the website's actual source and existing design system.
 The host agent writes copy and code; scripts do not manufacture strategy by filling templates.
 Use the copy brief and inspect every important claim against its source. New landing pages,

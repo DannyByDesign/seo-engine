@@ -3,7 +3,7 @@ quality gate and the approval posture are enforced.
 
 Gate (skip individual checks only with --skip-checks, never silently):
   * body present, research done, enhanced_at present, cover present
-  * word_count >= --min-words (default 1200), sources >= --min-sources (3)
+  * optional --min-words and --min-sources policies (defaults 0), current contribution permission
   * no client link unless mention.allowed
   * approval: planner.approval_mode manual -> needs --approve;
     review_window -> written_at older than the window or --approve;
@@ -69,7 +69,7 @@ def gate(meta: dict[str, Any], body: str, strategy: dict[str, Any], *, min_words
     if not (isinstance(meta.get("cover"), dict) and meta["cover"].get("src")):
         problems.append("no cover (run pub-visuals gen_cover.py)")
     words = article.word_count(body)
-    min_words, min_sources = max(1200, min_words), max(3, min_sources)
+    min_words, min_sources = max(0, min_words), max(0, min_sources)
     if words < min_words:
         problems.append(f"{words} words < {min_words}")
     if len({s.get("url") for s in meta.get("sources", []) if isinstance(s, dict) and s.get("url")}) < min_sources:
@@ -120,8 +120,8 @@ def main() -> int:
     parser.add_argument("--slug", required=True, help="Draft slug")
     parser.add_argument("--at", help="published_at ISO timestamp (default now)")
     parser.add_argument("--approve", action="store_true", help="Human approval for manual/review_window modes")
-    parser.add_argument("--min-words", type=int, default=1200)
-    parser.add_argument("--min-sources", type=int, default=3)
+    parser.add_argument("--min-words", type=int, default=0, help="Optional publication-specific length floor; editorial review always required")
+    parser.add_argument("--min-sources", type=int, default=0, help="Optional public-source count; interview evidence is assessed in editorial review")
     parser.add_argument("--skip-checks", action="store_true", help="Publish despite gate failures (logged in frontmatter)")
     parser.add_argument("--relink", action="store_true", help="Run pub-enhance relink.py afterwards")
     parser.add_argument("--build", action="store_true", help="Run pub-site build_site.py afterwards")
@@ -141,6 +141,12 @@ def main() -> int:
         return 1
     meta, body = publication.read_post(draft)
     problems = gate(meta, body, strategy, min_words=args.min_words, min_sources=args.min_sources)
+    from scripts.lib import content
+    try:
+        content.check_article(meta, root, args.slug, cfg.repo_root)
+    except ValueError as exc:
+        print(json.dumps({'checked': False, 'published': False, 'error': str(exc), 'gate': problems + [str(exc)]}))
+        return 1
     if not editorial.valid_review(meta, body, root):
         print(json.dumps({"checked": True, "published": False, "gate": problems + ["missing or stale editorial review"],
                           "approval": "run review_article.py on the final prepared draft"}))

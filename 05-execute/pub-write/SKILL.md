@@ -1,18 +1,19 @@
 ---
 name: pub-write
-description: Writes a publication article from its verified research outline in a chosen voice: a voice card (editorial, sequoia, juniper, madrona, spruce) plus a content template shape the piece, each section is composed as several candidates and judged, every number is anchored to its source, and the client mention policy (degree, rate, landing) is decided and enforced. Also runs the Shredder, a sentence-level multi-provider rewrite that diversifies voice with structure and facts preserved. Invoke after pub-research, before pub-enhance.
+description: "Writes publication articles from verified research and an operator-approved contribution. Uses local human-writing examples, a voice card and a reader-led template; preserves evidence, attribution and disclosure boundaries. Includes optional sentence-level rewriting. Use after pub-research and before pub-enhance; never publishes."
 ---
 
 # pub-write
 
 The writing kernel. It never researches (that is `pub-research`) and never publishes (that is
-`pub-publish`); it turns a verified outline into 2,200-2,600 words that obey a voice card,
-a template and the house rules measured on live phantoms (`publication-playbook.md` §3), with
+`pub-publish`); it turns a verified outline and approved contribution into reader-led prose using human examples,
+a voice card and a chosen template, with
 the mention policy applied exactly once per article (§6).
 
 ## When to use this skill
 
-- A draft's `research.status` is `done` — run `write_article.py`.
+- A draft has completed research and current approved `content_brief` evidence — run `write_article.py`.
+  Direct invocation also refuses missing or changed permission; see the [interview contract](../../shared/seo-references/content-interview.md).
 - The owner wants another voice or a stronger draft: `--kernel juniper`, `--candidates 3`, `--force`.
 - A masthead with many bylines reads too uniform — run `shred.py` on drafts (or posts) to
   spread sentence-level rewriting across providers.
@@ -36,9 +37,8 @@ The automatic pass covers the body. Check visible title/dek text separately usin
 ### 1. `scripts/write_article.py`
 
 Loads `kernels/<name>.md` (from `--kernel`, else `strategy.brand_voice.kernel`, default
-`editorial`) and `templates/<key>.yml` (default `long-read`: opening block with the cited
-statistic and the framework, 6-8 declarative H2 sections, a closing "what should the reader do"
-section that returns to the opening number). For the opening and each section it sends the
+`editorial`) and `templates/<key>.yml` (default `reader-led`: an opening, evidenced sections and practical ending sized to the task;
+`long-read` remains an explicit format option). For the opening and each section it sends the
 voice card, house rules, article context and **only the verified evidence points** (claim +
 verbatim quote + source), asks for `--candidates` versions in one call, and a cheap judge picks
 the winner (skipped when `--candidates 1`). Then it anchors every number from a verified point
@@ -114,9 +114,10 @@ Flags: `write_article.py` `--publication`, `--slug`, `--kernel`, `--template`, `
 
 - The kernel receives only verified evidence and is told it may not extend it; numbers are
   written as sourced and anchored to the source.
-- The client is never praised and is cited at most once, only through a landing that
-  survived research, and only within `mention.rate` (playbook §6, red-flags §7).
-- No first person on a publication; no H3s; no tables without tabular data.
+- Promotional client links remain subject to the mention policy. Interview attribution uses
+  the operator-approved wording, without inventing links or implying independent endorsement.
+- First person requires an approved speaker. Structure, length and headings follow the reader
+  task; evidence and disclosure constraints override generic voice-card preferences.
 - The Shredder keeps every number, link, proper noun and heading or keeps the original.
 
 ## References
