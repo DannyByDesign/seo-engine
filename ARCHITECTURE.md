@@ -61,8 +61,10 @@ First-run setup lives separately in `00-onboarding/`, which owns the `seo-setup`
 and its helper scripts. The ongoing workflow lives in six physical phase directories, from
 `01-understand/` through `06-learn/`. Each owns its skills, scripts and phase README. Cross-phase reference material
 lives in `shared/seo-references/`; shared Python mechanics remain in `scripts/lib/`.
-`skills/*` and the old workflow filenames are compatibility symlinks. Installers and internal
-skill dispatch use the canonical phase locations, not those aliases.
+`skills/*/SKILL.md` are generated discovery adapters pointing to the canonical instructions.
+They are real files because some plugin caches omit symlinks. Local compatibility links for
+older script paths remain; runtime plugin instructions use canonical phase paths.
+Regenerate adapters with `python3 scripts/dev/sync_plugin_skills.py`; CI checks for drift.
 
 `scripts/lib/strategy.py` validates and versions agent-authored business/research/positioning
 records with parent and evidence hashes. `scripts/lib/research.py` collects real vendor API

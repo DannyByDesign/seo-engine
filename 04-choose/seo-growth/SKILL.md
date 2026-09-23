@@ -75,7 +75,7 @@ commands and evidence to the actual repo. Include every dependency that can affe
 (template, config, lockfile and content). Commands are executable repository code, not sandboxed.
 No framework adapter is assumed: the agent implements the change using the existing stack.
 
-Recurring execution: [growth-cycle.md](../../shared/seo-references/growth-cycle.md) is the scheduled-agent
+Recurring execution: [growth-cycle.md](../../06-learn/growth-cycle.md) is the scheduled-agent
 prompt. `run_cycle.py` writes a work packet; `--execute-agent` invokes the explicitly configured
 `growth.agent_command` argv array with the packet path appended. The command must accept that
 file as its last argument. Configure the actual agent/host scheduler and inspect its first run;

@@ -21,10 +21,13 @@ def test_every_skill_has_one_physical_phase_owner_and_legacy_alias():
         assert not directory.is_symlink()
         assert paths.skill(directory.name) == directory
         alias = ROOT / 'skills' / directory.name
-        assert alias.is_symlink() and alias.resolve() == directory
+        assert not alias.is_symlink() and (alias / 'SKILL.md').is_file()
+        assert f'../../{directory.relative_to(ROOT)}/SKILL.md' in (alias / 'SKILL.md').read_text()
     for name, phase in [('run_strategy.py', '01-understand'), ('research_market.py', '02-research'), ('run_cycle.py', '06-learn'), ('traffic_report.py', '06-learn')]:
         assert not (ROOT / phase / 'scripts' / name).is_symlink()
-        assert (ROOT / 'skills/seo-growth/scripts' / name).resolve() == ROOT / phase / 'scripts' / name
+        launcher = ROOT / '04-choose/seo-growth/scripts' / name
+        assert not launcher.is_symlink()
+        assert f'{phase}/scripts/{name}' in launcher.read_text()
 
 
 def test_installer_and_canonical_commands_work_from_foreign_repo(tmp_path):

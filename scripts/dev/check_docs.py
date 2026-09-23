@@ -172,6 +172,9 @@ def main() -> int:
             fail(skill_md, "canonical headings are out of order")
 
         scripts = sorted(skill_dir.glob("scripts/*.py"))
+        if skill_dir.name == 'seo-growth':
+            for phase in ('01-understand', '02-research', '06-learn'):
+                scripts.extend((ENGINE_ROOT / phase / 'scripts').glob('*.py'))
         script_flags: set[str] = set()
         for script in scripts:
             script_flags |= argparse_flags(script)

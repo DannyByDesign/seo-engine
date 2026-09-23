@@ -137,3 +137,29 @@ def test_plugin_package_has_valid_skills_and_consistent_identity():
         assert metadata['name'] == skill.parent.name
         assert isinstance(metadata['description'], str)
         assert skill.resolve().is_relative_to(ROOT)
+
+
+def test_plugin_works_when_cache_discards_all_symlinks(tmp_path, archive):
+    cached = tmp_path / 'plugin-cache'
+    cached.mkdir()
+    subprocess.run(['tar', '-xzf', str(archive), '--strip-components=1', '-C', str(cached)], check=True)
+    # Match the native plugin cache's treatment of symlinks, not just Git checkout behavior.
+    for base, dirs, files in os.walk(cached, followlinks=False):
+        for name in dirs + files:
+            path = Path(base) / name
+            if path.is_symlink():
+                path.unlink()
+    entries = list((cached / 'skills').glob('*/SKILL.md'))
+    assert len(entries) == 27
+    import re
+    for entry in entries:
+        target = re.search(r'\]\(([^)]+)\)', entry.read_text()).group(1)
+        assert (entry.parent / target).is_file()
+    site = tmp_path / 'website'
+    (site / '.seo-engine').mkdir(parents=True)
+    result = subprocess.run([sys.executable, str(cached / '04-choose/seo-growth/scripts/run_strategy.py'), '--action', 'inspect'],
+                            cwd=site, text=True, capture_output=True, check=True)
+    assert json.loads(result.stdout)['result']['repo_root'] == str(site)
+    result = subprocess.run([sys.executable, str(cached / '05-execute/seo-copywriting/scripts/writing_examples.py'), '--mode', 'landing'],
+                            cwd=site, text=True, capture_output=True, check=True)
+    assert 'Human reference' in result.stdout

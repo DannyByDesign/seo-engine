@@ -1,0 +1,1 @@
+../../shared/seo-references/publication-playbook.md

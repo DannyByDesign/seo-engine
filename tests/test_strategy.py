@@ -148,7 +148,7 @@ def test_missing_credentials_and_missing_agent_leave_failures(tmp_path, monkeypa
     assert not receipt['checked'] and 'credentials missing' in receipt['result']['error']
     assert Path(receipt['output']).exists()
     assert not list((cfg.state_dir / 'research').glob('calls-*.json'))
-    script = Path(__file__).resolve().parents[1] / 'skills/seo-growth/scripts/run_cycle.py'
+    script = Path(__file__).resolve().parents[1] / '06-learn/scripts/run_cycle.py'
     spec = importlib.util.spec_from_file_location('blocked_cycle_test', script)
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     monkeypatch.setattr(mod.config_module, 'load', lambda: cfg)

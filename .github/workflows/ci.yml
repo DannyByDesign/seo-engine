@@ -22,5 +22,7 @@ jobs:
         run: python -m pytest tests/ -q
       - name: Docs-vs-code contract linter
         run: python scripts/dev/check_docs.py
+      - name: Plugin discovery adapters
+        run: python scripts/dev/sync_plugin_skills.py --check
       - name: Compile every script
         run: python -m compileall -q scripts skills

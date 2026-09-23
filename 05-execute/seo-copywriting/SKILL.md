@@ -414,7 +414,7 @@ original useful prose informed by a varied human corpus.
 
 - [Local writing library](corpus/README.md)
 - [LanguageTool setup and API](references/languagetool.md)
-- [Growth cycle](../../shared/seo-references/growth-cycle.md)
+- [Growth cycle](../../06-learn/growth-cycle.md)
 - [People-first guidance](../../shared/seo-references/seo-playbook.md)
 
 ## Graceful degradation

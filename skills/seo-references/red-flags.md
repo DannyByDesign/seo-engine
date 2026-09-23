@@ -1,0 +1,1 @@
+../../shared/seo-references/red-flags.md

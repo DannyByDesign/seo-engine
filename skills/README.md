@@ -1,6 +1,9 @@
-# Compatibility aliases
+# Plugin discovery adapters
 
-Every skill directory here is a symlink to its canonical phase directory (or shared references).
-Actual files live in `00-onboarding/` and `01-understand/` through `06-learn/`; do not create new implementations here.
-The installer discovers those physical directories directly. These aliases preserve existing
-host/plugin discovery and older command paths without duplicating content.
+Each real `SKILL.md` here points to the canonical skill in onboarding, a workflow phase, or
+shared references. Plugin caches can discard symlinks, so discovery must use real files.
+The instructions and corpus are maintained only in their canonical directories.
+
+After editing a canonical skill, run `python3 scripts/dev/sync_plugin_skills.py` from the
+engine root. CI checks these generated entry files for drift. Other symlinks here preserve
+legacy local CLI paths; installed plugins don't depend on them.
