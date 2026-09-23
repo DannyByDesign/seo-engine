@@ -40,7 +40,6 @@ MAX_RETRIES = 3
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 RETRY_AFTER_CAP = 120.0
 
-#: Query-parameter names whose *values* are redacted from every surfaced URL.
 SENSITIVE_PARAMS = {
     "key", "apikey", "api_key", "apiKey", "token", "access_token", "secret",
     "client_secret", "password", "signature", "auth",
@@ -48,7 +47,6 @@ SENSITIVE_PARAMS = {
 
 _REDACTED = "REDACTED"
 
-# Matches `key=...` fragments inside free text (exception strings, bodies).
 _SENSITIVE_KV_RE = re.compile(
     r"\b(" + "|".join(re.escape(p) for p in SENSITIVE_PARAMS) + r")=([^&\s\"'<>]+)",
     re.IGNORECASE,
@@ -158,11 +156,8 @@ def _should_retry(method: str, retry: str, *, status: Optional[int] = None,
         return False
     if retry == "idempotent":
         return conn_error or status in RETRYABLE_STATUS
-    # retry == "auto": idempotency-aware default.
     if method in ("GET", "HEAD"):
         return conn_error or status in RETRYABLE_STATUS
-    # Non-idempotent verb: only a 429 is provably not-executed (rejected at
-    # the gate, not billed). 5xx/timeouts may have executed server-side.
     return status == 429
 
 
@@ -194,7 +189,6 @@ def _cache_read(cache_path: Path, cache_ttl: int, url: str) -> Optional[requests
         resp.url = sanitize_url(url)
         return resp
     except Exception:
-        # A corrupt cache entry must never brick an endpoint: drop and miss.
         try:
             cache_path.unlink()
         except OSError:
@@ -295,7 +289,6 @@ def request(
             last_response = getattr(exc, "response", None)
             if last_response is not None:
                 last_response = _sanitize_response(last_response)
-            # A redirect loop is deterministic — retrying cannot help.
             retryable = last_error_type != "too_many_redirects"
             if (retryable and attempt < MAX_RETRIES
                     and _should_retry(method, retry, conn_error=True)):

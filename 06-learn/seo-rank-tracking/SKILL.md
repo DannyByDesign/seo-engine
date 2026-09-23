@@ -60,25 +60,18 @@ whole-site tracking.
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Default: track queries, last 90 days, GSC data only
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py"
 
-# Track pages instead of queries
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --dimension page
 
-# Shorter window, stricter sensitivity, wider baseline
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --days 60 --drop-threshold 5.0 --baseline-weeks 8
 
-# Raise the impression floor; raise the paginated-fetch safety cap
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --min-impressions 25 --max-rows 200000
 
-# Supplementary live SERP spot-check (needs DataForSEO or Ahrefs)
 python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes"
 
-# Location/language (DataForSEO only; both ignored for --source ahrefs)
 python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --location-code 2826 --language-code en
 
-# Check a competitor's domain; force a provider ("auto" prefers DataForSEO)
 python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --domain competitor.com --source ahrefs
 ```
 
@@ -95,8 +88,8 @@ too noisy to act on, so the drop check is suppressed for that key that week).
   "dimension": "query",
   "summary": {
     "distinct_keys_returned_by_gsc": 6800, "distinct_keys_tracked_this_run": 340,
-    "tracking_scope": "impression_threshold",   // or "target_topics"
-    "gsc_hit_cap": false,                        // true = row set truncated at --max-rows
+    "tracking_scope": "impression_threshold",
+    "gsc_hit_cap": false,
     "drops_flagged": 6, "improvements_noted": 11
   },
   "drops": [{
@@ -107,7 +100,7 @@ too noisy to act on, so the drop check is suppressed for that key that week).
     "position_delta": 6.7,
     "ranking_pages": [{ "page": "https://example.com/blog/cwv-checklist", "impressions": 590, "position": 15.1 }]
   }],
-  "improvements": [ /* same shape, negative position_delta — informational only */ ],
+  "improvements": [ ],
   "setup_notes": ["GSC window ...", "Tracking scope ..."],
   "history_file": ".seo-engine/state/rank-history.json",
   "report_file": ".seo-engine/reports/rank-tracking-<stamp>.json"

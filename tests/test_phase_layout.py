@@ -38,7 +38,6 @@ def test_installer_and_canonical_commands_work_from_foreign_repo(tmp_path):
     samples = subprocess.run([sys.executable, str(installed / 'seo-copywriting/scripts/writing_examples.py'), '--mode', 'landing'],
                              cwd=tmp_path, capture_output=True, text=True, check=True)
     assert 'Human reference' in samples.stdout and 'Product explanation' in samples.stdout
-    # Running again is idempotent and preserves all canonical links.
     again = subprocess.run(['bash', str(ROOT / 'install.sh'), str(ROOT), str(tmp_path), 'codex'], check=True, capture_output=True, text=True)
     assert 'Linked 0 skill(s)' in again.stdout
 

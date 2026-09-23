@@ -58,7 +58,6 @@ deduped; Gemini's are matched by title, since its grounding `uri` is an opaque p
 not the real source URL.
 
 ```bash
-# First run: reports checked:false with an explicit ask-the-user instruction if nothing is configured
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py"
 
 python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py" \

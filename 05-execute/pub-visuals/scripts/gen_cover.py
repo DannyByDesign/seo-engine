@@ -44,15 +44,15 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import hashlib  # noqa: E402
-import json  # noqa: E402
-import random  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import hashlib
+import json
+import random
+from typing import Any
 
-from scripts.lib import images, publication, pubstate  # noqa: E402
+from scripts.lib import images, publication, pubstate
 
 COVER_W, COVER_H = 1600, 900
 

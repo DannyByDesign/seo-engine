@@ -29,8 +29,8 @@ topic_map_mod = _load(REPO / "skills/pub-curate/scripts/build_topic_map.py")
 scoring = _load(REPO / "skills/pub-curate/scripts/score_suggestions.py")
 seers_mod = _load(REPO / "skills/pub-curate/scripts/seers.py")
 
-from scripts.lib import publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import publication, pubstate
+from scripts.lib.config import Config
 
 
 def _repo(tmp_path: Path, **env) -> tuple[Config, Path]:
@@ -76,13 +76,13 @@ def test_positioning_sets_validates_and_applies(tmp_path, monkeypatch, capsys, f
         "body": json.dumps({"content": [{"type": "text", "text": json.dumps(proposal)}], "stop_reason": "end_turn", "usage": {}})})
     out = _run(positioning, cfg, ["--publication", "adsinllms", "--suggest"], monkeypatch, capsys)
     assert "proposal" in out and len(out["proposal"]["ranking_targets"]) == 5 and "applied" not in out
-    assert pubstate.load_strategy(root)["priority_topics"] == []  # nothing written without --apply
+    assert pubstate.load_strategy(root)["priority_topics"] == []
 
     out = _run(positioning, cfg, ["--publication", "adsinllms", "--suggest", "--apply", "--validate"], monkeypatch, capsys)
     strategy = pubstate.load_strategy(root)
     assert out["applied"] and strategy["priority_topics"] == ["LLM ad auctions", "deal IDs for AI inventory"]
     assert strategy["competitors"][0]["domain"] == "adexchanger.com" and len(strategy["ranking_targets"]) == 5
-    assert [l["url"] for l in strategy["landings"]] == ["https://www.thrad.ai/content/guide"]  # invalid URL filtered
+    assert [l["url"] for l in strategy["landings"]] == ["https://www.thrad.ai/content/guide"]
     assert out["validation"] == [] and out["_exit"] == 0
 
 
@@ -108,7 +108,7 @@ def test_scrape_competitors_builds_topic_files(tmp_path, monkeypatch, capsys, fa
     assert {t["url"] for t in data["topics"]} >= {"https://adexchanger.com/blog/llm-ad-auctions-explained"}
     assert all("/tag/" not in t["url"] for t in data["topics"])
     assert data["topics"][0]["inferred_keyword"] and data["topics"][0]["keyword_priority"] == "medium"
-    assert out["fresh_posts"][0]["title"] == "X two"  # newest first
+    assert out["fresh_posts"][0]["title"] == "X two"
     assert pubstate.load_strategy(root)["competitors"][0]["domain"] == "adexchanger.com"
     again = _run(scrape, cfg, ["--publication", "adsinllms", "--no-llm", "--no-volume"], monkeypatch, capsys)
     assert again["competitors"][0]["skipped"] is True
@@ -131,7 +131,7 @@ def test_topic_map_heuristics_statuses_and_scoring(tmp_path, monkeypatch, capsys
     tm = pubstate.load_topic_map(root)
     subtopics = [s["subtopic"] for _, s in pubstate.all_spokes(tm)]
     assert "LLM ad auction bidding strategy" in subtopics
-    assert subtopics.count("Deal ID structures for private AI publisher supply") == 1  # near-duplicate folded
+    assert subtopics.count("Deal ID structures for private AI publisher supply") == 1
     assert "Deal ID structures for private AI publisher supply chains" not in subtopics
     covered = [s for _, s in pubstate.all_spokes(tm) if s["status"] == "covered"]
     assert len(covered) == 1 and covered[0]["article_slug"] == "qa-checklist" and out["summary"]["covered"] == 1
@@ -144,12 +144,12 @@ def test_topic_map_heuristics_statuses_and_scoring(tmp_path, monkeypatch, capsys
     dup = _run(topic_map_mod, cfg, ["--publication", "adsinllms", "--add", "Bid adjustment logic in conversational auctions"], monkeypatch, capsys)
     assert dup["added"] is None
     refreshed = _run(topic_map_mod, cfg, ["--publication", "adsinllms", "--refresh", "--no-llm", "--no-volume"], monkeypatch, capsys)
-    assert refreshed["summary"]["covered"] == 1  # statuses survive a refresh
+    assert refreshed["summary"]["covered"] == 1
 
     scored = _run(scoring, cfg, ["--publication", "adsinllms", "--no-llm", "--no-social", "--target", "5"], monkeypatch, capsys)
     assert scored["_exit"] == 0 and scored["dropped_as_cannibalizing"] == 0
     heads = [s["headline"] for s in scored["suggestions"]]
-    assert "QA checklist before an AI placement goes live" not in heads  # covered spokes are not scored
+    assert "QA checklist before an AI placement goes live" not in heads
     top = scored["suggestions"][0]
     assert set(top["signal_breakdown"]) == {"competitor", "geo", "seo", "cluster", "authority", "social", "cannibalization"}
     deal = next(s for s in scored["suggestions"] if s["subtopic"].startswith("Deal ID"))
@@ -157,7 +157,6 @@ def test_topic_map_heuristics_statuses_and_scoring(tmp_path, monkeypatch, capsys
     state = pubstate.load_json(pubstate.state_path(cfg, "suggestions", "adsinllms"))
     assert len(state["items"]) == scored["open_spokes_scored"] == 3 and state["items"][0]["status"] == "suggested"
 
-    # an open spoke that duplicates a newly published title is dropped outright (not re-written)
     publication.write_post(root / "posts" / "bid-adjustment.md", {"title": "Bid Adjustment Logic in Conversational Auctions", "slug": "bid-adjustment",
                                                                    "section": "Features", "author": "kwame-contreras", "published_at": "2026-09-05T13:00:00Z"}, "body")
     scored2 = _run(scoring, cfg, ["--publication", "adsinllms", "--no-llm", "--no-social"], monkeypatch, capsys)
@@ -180,9 +179,9 @@ def test_seers_spec_change_and_github_release(tmp_path, monkeypatch, capsys, fak
         {"id": 2, "draft": True, "tag_name": "v1.3.0-draft", "html_url": "x"}])})
     first = _run(seers_mod, cfg, ["--publication", "adsinllms"], monkeypatch, capsys)
     by_name = {r["seer"]: r for r in first["runs"]}
-    assert by_name["OpenRTB spec"]["new_events"] == 0          # first poll only seeds the hash
+    assert by_name["OpenRTB spec"]["new_events"] == 0
     assert by_name["SDK releases"]["new_events"] == 1 and by_name["SDK releases"]["produced"] == 1
-    assert "notes" in by_name["News"] and by_name["News"]["events_detected"] == 0  # no search key: honest note
+    assert "notes" in by_name["News"] and by_name["News"]["events_detected"] == 0
     drafts = list((root / "drafts").glob("*.md"))
     assert len(drafts) == 1
     meta, body = publication.read_post(drafts[0])
@@ -191,7 +190,7 @@ def test_seers_spec_change_and_github_release(tmp_path, monkeypatch, capsys, fak
     second = _run(seers_mod, cfg, ["--publication", "adsinllms", "--force"], monkeypatch, capsys)
     by_name = {r["seer"]: r for r in second["runs"]}
     assert by_name["OpenRTB spec"]["new_events"] == 1 and "2.7" in by_name["OpenRTB spec"]["events"][0]["title"] or by_name["OpenRTB spec"]["new_events"] == 1
-    assert by_name["SDK releases"]["new_events"] == 0  # deduped
+    assert by_name["SDK releases"]["new_events"] == 0
     suggestions = pubstate.load_json(pubstate.state_path(cfg, "suggestions", "adsinllms"))
     kinds = {i["source_type"] for i in suggestions["items"]}
     assert kinds == {"seer:github_release", "seer:spec_change"}

@@ -73,7 +73,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_publication.py" --from-domain thra
 python3 "${CLAUDE_SKILL_DIR}/scripts/build_site.py" --publication llm-billboard
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_site.py" --publication llm-billboard
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_site.py" --url https://llmbillboard.com --max-pages 6
-cd publications/llm-billboard && vercel deploy dist/   # preview; promote to production from the Vercel CLI/dashboard after validation
+cd publications/llm-billboard && vercel deploy dist/
 ```
 
 Flags: `scaffold_publication.py` `--name`, `--slug`, `--site-url` (required), `--tagline`,

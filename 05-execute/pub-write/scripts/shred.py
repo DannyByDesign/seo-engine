@@ -49,16 +49,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import random  # noqa: E402
-import re  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+import random
+import re
+from typing import Any
 
-from scripts.lib import article, http_util, llm, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import article, http_util, llm, publication, pubstate
+from scripts.lib.config import Config
 
 REWRITE_SYSTEM = (
     "Rewrite the given sentence in different words with exactly the same meaning, register and length (within 40%). "
@@ -85,7 +85,7 @@ def content_ok(before: str, after: str) -> str:
         return f"length {lb}->{la}"
     before_nouns = {n for n in _PROPER_RE.findall(before) if len(n) > 2}
     lost = {n for n in before_nouns if n not in after}
-    if lost - {before.split()[0].strip(".,")}:  # first word capitalization is not a noun
+    if lost - {before.split()[0].strip(".,")}:
         return f"proper nouns lost: {sorted(lost)[:3]}"
     return ""
 

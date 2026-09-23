@@ -15,10 +15,6 @@ from scripts.lib.http_util import HttpError
 URL = "https://api.test/v1/data"
 
 
-# ---------------------------------------------------------------------------
-# sanitize_url / sanitize_text
-# ---------------------------------------------------------------------------
-
 @pytest.mark.parametrize("param", sorted(http_util.SENSITIVE_PARAMS))
 def test_sanitize_url_redacts_each_sensitive_param(param):
     url = f"https://api.test/p?{param}=hunter2"
@@ -58,10 +54,6 @@ def test_sanitize_text_handles_none():
     assert http_util.sanitize_text(None) == ""
 
 
-# ---------------------------------------------------------------------------
-# raise_for_status
-# ---------------------------------------------------------------------------
-
 def test_raise_for_status_noop_below_400(make_response):
     assert http_util.raise_for_status(make_response(status=200)) is None
     assert http_util.raise_for_status(make_response(status=301)) is None
@@ -93,16 +85,11 @@ def test_raise_for_status_body_excerpt_capped_at_300_chars(make_response):
     assert "B" * 301 not in msg
 
 
-# ---------------------------------------------------------------------------
-# Retry matrix
-# ---------------------------------------------------------------------------
-
 def test_get_500_retried_then_final_response_returned(fake_transport, sleep_calls):
     fake_transport.queue(500, 500, 500, 500)
     resp = http_util.get(URL, min_interval=0)
     assert resp.status_code == 500
     assert len(fake_transport.calls) == 4
-    # Capped exponential backoff, and NO sleep after the final attempt.
     assert sleep_calls == [2, 4, 8]
 
 
@@ -151,7 +138,6 @@ def test_get_connection_error_retried_then_sanitized_httperror(fake_transport, s
     with pytest.raises(HttpError) as ei:
         http_util.get(URL + "?token=TVALUE", min_interval=0)
     assert len(fake_transport.calls) == 4
-    # Connection-error backoff schedule; no sleep after the final attempt.
     assert sleep_calls == [1, 2, 4]
     err = ei.value
     assert err.__cause__ is None
@@ -182,7 +168,7 @@ def test_retry_after_unparseable_falls_back_to_capped_exponential(fake_transport
     fake_transport.queue({"status": 503, "headers": {"Retry-After": "tomorrow"}}, 200)
     resp = http_util.get(URL, min_interval=0)
     assert resp.status_code == 200
-    assert sleep_calls == [2]  # min(2**0 * 2, 30)
+    assert sleep_calls == [2]
 
 
 def test_returned_response_urls_sanitized(fake_transport):
@@ -203,7 +189,7 @@ def test_check_true_raises_on_4xx(fake_transport):
     with pytest.raises(HttpError) as ei:
         http_util.get(URL, min_interval=0, check=True)
     assert ei.value.status == 404
-    assert len(fake_transport.calls) == 1  # 404 is not retryable
+    assert len(fake_transport.calls) == 1
 
 
 def test_invalid_retry_mode_raises_value_error(fake_transport):
@@ -212,20 +198,16 @@ def test_invalid_retry_mode_raises_value_error(fake_transport):
     assert fake_transport.calls == []
 
 
-# ---------------------------------------------------------------------------
-# Disk cache
-# ---------------------------------------------------------------------------
-
 def test_cache_writes_atomically_and_serves_within_ttl(fake_transport, tmp_path):
     cdir = tmp_path / "cache"
     fake_transport.queue({"status": 200, "body": b"payload", "headers": {"X-Custom": "1"}})
     r1 = http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
     assert r1.content == b"payload"
     assert len(list(cdir.glob("*.json"))) == 1
-    assert list(cdir.glob("*.tmp-*")) == []  # no atomic-write residue
+    assert list(cdir.glob("*.tmp-*")) == []
 
     r2 = http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
-    assert len(fake_transport.calls) == 1  # served from cache, no second send
+    assert len(fake_transport.calls) == 1
     assert r2.status_code == 200
     assert r2.content == b"payload"
     assert r2.headers["X-Custom"] == "1"
@@ -257,7 +239,7 @@ def test_corrupt_cache_entry_is_deleted_and_treated_as_miss(fake_transport, tmp_
     resp = http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
     assert resp.content == b"second"
     assert len(fake_transport.calls) == 2
-    json.loads(entry.read_text())  # entry was rewritten as valid JSON
+    json.loads(entry.read_text())
 
 
 def test_cache_round_trips_body_bytes_exactly(fake_transport, tmp_path):
@@ -272,7 +254,7 @@ def test_cache_round_trips_body_bytes_exactly(fake_transport, tmp_path):
 
     r2 = http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
     assert len(fake_transport.calls) == 1
-    assert r2.content == body  # bytes replayed exactly
+    assert r2.content == body
     assert r2.headers["Content-Type"] == "text/html; charset=ISO-8859-1"
 
 
@@ -284,7 +266,7 @@ def test_cache_replay_decodes_declared_charset(fake_transport, tmp_path):
     })
     http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
     replayed = http_util.get(URL, cache_dir=cdir, cache_ttl=600, min_interval=0)
-    assert replayed.text == "café"  # declared charset must survive replay
+    assert replayed.text == "café"
 
 
 def test_stream_bypasses_cache(fake_transport, tmp_path):
@@ -293,7 +275,7 @@ def test_stream_bypasses_cache(fake_transport, tmp_path):
     http_util.get(URL, cache_dir=cdir, cache_ttl=600, stream=True, min_interval=0)
     http_util.get(URL, cache_dir=cdir, cache_ttl=600, stream=True, min_interval=0)
     assert len(fake_transport.calls) == 2
-    assert not cdir.exists()  # never written
+    assert not cdir.exists()
 
 
 def test_prune_cache_removes_only_stale_entries(tmp_path):

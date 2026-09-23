@@ -27,8 +27,6 @@ import re
 from typing import Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-#: Dropped by name-prefix match on the parameter NAME (bare `ref` is NOT
-#: stripped — it is a functional parameter on some sites).
 TRACKING_PARAMS = ("utm_", "fbclid", "gclid", "msclkid", "mc_eid", "igshid")
 
 _PCT_RE = re.compile(r"%[0-9a-fA-F]{2}")

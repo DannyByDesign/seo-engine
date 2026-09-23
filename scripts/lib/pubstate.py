@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 try:
     import yaml
-except ImportError:  # pragma: no cover
+except ImportError:
     yaml = None
 
 STOPWORDS = {
@@ -81,8 +81,6 @@ def load_json(path: Path, default: Any = None) -> Any:
 def save_json(path: Path, data: Any) -> Path:
     return atomic_text(path, json.dumps(data, indent=2, ensure_ascii=False))
 
-
-# ---------- publication-local files ----------
 
 def strategy_path(root: Path) -> Path:
     return Path(root) / "strategy.yml"
@@ -160,8 +158,6 @@ def find_spoke(topic_map: dict[str, Any], spoke_id: str) -> Optional[dict[str, A
     return None
 
 
-# ---------- .seo-engine/state ----------
-
 def state_path(cfg: Any, name: str, slug: str) -> Path:
     return Path(cfg.state_dir) / f"pub-{name}-{slug}.json"
 
@@ -170,8 +166,6 @@ def report_path(cfg: Any, name: str, slug: str) -> Path:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return Path(cfg.reports_dir) / f"pub-{name}-{slug}-{stamp}.json"
 
-
-# ---------- text overlap ----------
 
 def tokens(text: str) -> Counter:
     return Counter(w for w in _WORD_RE.findall((text or "").lower()) if w not in STOPWORDS and len(w) > 2)

@@ -22,10 +22,6 @@ def sitemapindex(*urls: str) -> str:
             f"{locs}</sitemapindex>")
 
 
-# ---------------------------------------------------------------------------
-# discover
-# ---------------------------------------------------------------------------
-
 def test_discover_defaults_without_policy():
     assert sitemaps.discover(SITE) == [
         f"{SITE}/sitemap.xml",
@@ -38,15 +34,11 @@ def test_discover_puts_robots_sitemaps_first_and_dedupes():
     policy = RobotsPolicy(sitemaps=[f"{SITE}/custom.xml", "/sitemap.xml"])
     assert sitemaps.discover(SITE, policy) == [
         f"{SITE}/custom.xml",
-        f"{SITE}/sitemap.xml",       # relative robots entry, resolved + deduped
+        f"{SITE}/sitemap.xml",
         f"{SITE}/sitemap_index.xml",
         f"{SITE}/wp-sitemap.xml",
     ]
 
-
-# ---------------------------------------------------------------------------
-# fetch_url_set
-# ---------------------------------------------------------------------------
 
 def test_plain_urlset_found(fake_transport):
     fake_transport.route("GET", f"{SITE}/sitemap.xml",
@@ -57,7 +49,6 @@ def test_plain_urlset_found(fake_transport):
     assert result["sitemaps_read"] == [f"{SITE}/sitemap.xml"]
     assert result["truncated"] is False
     assert result["errors"] == []
-    # first candidate won: nothing else was fetched
     assert fake_transport.urls == [f"{SITE}/sitemap.xml"]
 
 
@@ -98,7 +89,7 @@ def test_non_xml_body_is_unknown_kind_and_falls_through(fake_transport):
 
 def test_fetch_error_recorded_and_next_candidate_tried(fake_transport):
     fake_transport.route("GET", f"{SITE}/sitemap.xml",
-                         requests.ConnectionError("nope"))  # retried, then HttpError
+                         requests.ConnectionError("nope"))
     fake_transport.route("GET", f"{SITE}/sitemap_index.xml",
                          {"body": urlset(f"{SITE}/a")})
     result = sitemaps.fetch_url_set(SITE)
@@ -125,7 +116,7 @@ def test_child_sitemap_cap_notes_error(fake_transport, monkeypatch):
     assert result["found"] is True
     assert result["truncated"] is True
     assert result["page_urls"] == [f"{SITE}/a", f"{SITE}/b"]
-    assert f"{SITE}/c2.xml" not in fake_transport.urls  # capped child never fetched
+    assert f"{SITE}/c2.xml" not in fake_transport.urls
     assert any("child sitemaps" in e for e in result["errors"])
 
 

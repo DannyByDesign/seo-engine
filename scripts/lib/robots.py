@@ -33,21 +33,20 @@ from . import http_util
 
 @dataclass
 class Group:
-    agents: list[str] = field(default_factory=list)   # lowercased tokens
-    rules: list[tuple[str, str]] = field(default_factory=list)  # (kind, pattern)
+    agents: list[str] = field(default_factory=list)
+    rules: list[tuple[str, str]] = field(default_factory=list)
     crawl_delay: Optional[float] = None
 
 
 @dataclass
 class RobotsPolicy:
     source_status: int = 200
-    allow_all: bool = False       # no restrictions (e.g. robots.txt 404)
-    disallow_all: bool = False    # unreadable (5xx/network) -> conservative
+    allow_all: bool = False
+    disallow_all: bool = False
     groups: list[Group] = field(default_factory=list)
     sitemaps: list[str] = field(default_factory=list)
     fetch_error: str = ""
 
-    # -- matching ----------------------------------------------------------
 
     def _matching_groups(self, user_agent: str) -> list[Group]:
         token = _product_token(user_agent)
@@ -147,7 +146,7 @@ def parse(body: str, source_status: int = 200) -> RobotsPolicy:
             current.agents.append(value.lower())
         elif key in ("allow", "disallow"):
             if current is None:
-                continue  # rules before any User-agent line are undefined
+                continue
             current.rules.append((key, value))
             seen_rules_in_current = True
         elif key == "crawl-delay":

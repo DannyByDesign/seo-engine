@@ -1,4 +1,3 @@
-# Secrets — never commit real keys
 .env
 .env.local
 .env.*.local
@@ -6,25 +5,18 @@
 service-account*.json
 credentials/
 
-# Python
 __pycache__/
 *.pyc
 .venv/
 venv/
 
-# Node
 node_modules/
 
-# Tool output / caches
 .seo-cache/
 reports/
 *.log
 .DS_Store
 
-# Local session/harness artifacts (this repo is a source folder to be copied
-# into a target repo's own .claude/skills/ via install.sh — it doesn't need
-# its own .claude/ state)
 .claude/
 
-# Target-repo state this folder writes when a skill runs against a real site
 .seo-engine/

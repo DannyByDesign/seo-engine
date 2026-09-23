@@ -45,15 +45,15 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+import re
+from datetime import datetime, timezone
+from typing import Any
 
-from scripts.lib import publication, pubstate  # noqa: E402
+from scripts.lib import publication, pubstate
 
 _YEAR_NEAR_NUMBER = re.compile(r"(?:\$?\d[\d,.]*%?\s+\w+\s+(?:in|for|of)\s+(20\d\d)\b)|(?:\b(20\d\d)\b[^.\n]{0,40}\$?\d[\d,.]*%)")
 

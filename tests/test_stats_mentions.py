@@ -19,7 +19,7 @@ def test_mentions_basic_and_alias_longest_first():
 def test_mentions_ignore_urls_but_count_link_labels():
     text = "See [Vercel](https://vercel.com/docs) and https://vercel.com for hosting."
     hit = mentions.detect_mention(text, ["Vercel"])
-    assert hit["count"] == 1  # label counts, target and bare URL do not
+    assert hit["count"] == 1
     address_only = "Source: [vercel.com](https://vercel.com)"
     assert not mentions.detect_mention(address_only, ["Vercel"])["mentioned"]
 

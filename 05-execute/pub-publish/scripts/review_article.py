@@ -25,7 +25,7 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
 import argparse
 import hashlib

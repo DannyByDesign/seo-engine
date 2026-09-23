@@ -72,11 +72,11 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import pagerules, snapshots, urlnorm  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import pagerules, snapshots, urlnorm
 
 DEFAULT_MAX_CANDIDATES = 5
-DEFAULT_MIN_SCORE = 0.08  # below this, overlap is too thin to be a genuine signal
+DEFAULT_MIN_SCORE = 0.08
 SNAPSHOT_MAX_AGE_HOURS = 24
 
 STOPWORDS = {
@@ -166,14 +166,6 @@ def find_candidates(
     for key, page in pages_by_key.items():
         if key == target_key:
             continue
-        # Note: this function does not itself filter out candidate pages that
-        # are orphaned/unreachable -- a link inserted on a page nobody can
-        # find doesn't help discovery. That check is deliberately left to the
-        # human/agent review step (see human_review_checklist in
-        # build_suggestion(), item 4: cross-check analyze_link_graph.py's
-        # link_graph_depths for the candidate URL) rather than silently
-        # filtered here, since this script does not require analyze_link_graph.py's
-        # output to run in --target-url mode.
         candidate_terms = _weighted_terms(page)
         score, shared_terms = _overlap_score(target_terms, candidate_terms)
         if score >= min_score:
@@ -346,8 +338,6 @@ def main() -> None:
     if args.target_url:
         key, target_page = lookup(args.target_url)
         if target_page is None:
-            # Distinguish "not crawled" from "crawled but not indexable
-            # (e.g. noindex)" so the caller gets an honest reason.
             crawled = any(
                 urlnorm.resolve_alias(
                     urlnorm.canonical_key(r.get("final_url") or r.get("url", "")),
@@ -380,8 +370,6 @@ def main() -> None:
     skipped_noindex = 0
     for raw_url, key, target_page, finding_type in targets:
         if target_page is None:
-            # In the snapshot's non-indexable set (noindex/non-200) or absent
-            # from the crawl (e.g. an orphan_candidate that was never fetched).
             skipped_noindex += 1
             suggestions.append(_skipped_suggestion(
                 raw_url, finding_type,

@@ -102,7 +102,6 @@ def test_elapsed_review_window_and_published_resume(tmp_path, monkeypatch, capsy
     assert 'publish' in [p['step'] for p in out['plan']]
     (root / 'drafts/ready.md').rename(root / 'posts/ready.md')
     out = t._run(t.pipeline_mod, cfg, ['--publication', root.name, '--slug', 'ready', '--dry-run'], monkeypatch, capsys)
-    # A recovery build does not require renewed approval of already-published content.
     assert [p['step'] for p in out['plan']] == ['relink', 'build']
 
 

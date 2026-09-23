@@ -28,8 +28,8 @@ shred_mod = _load(REPO / "skills/pub-write/scripts/shred.py")
 enhance_mod = _load(REPO / "skills/pub-enhance/scripts/enhance_article.py")
 relink_mod = _load(REPO / "skills/pub-enhance/scripts/relink.py")
 
-from scripts.lib import article, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import article, publication, pubstate
+from scripts.lib.config import Config
 
 SOURCE_TEXT = ("US spending on AI search ads is set to jump from $2.08 billion in 2026, just 1.3% of total US search ad spending, "
                "to $25.93 billion by 2029, when it will make up 13.6% of the market, according to eMarketer. " * 6)
@@ -77,7 +77,7 @@ def test_article_helpers():
     out, changed = article.anchor_number(p, "$2.08 billion", "https://e.com/x")
     assert changed and "[$2.08 billion](https://e.com/x)" in out
     out2, changed2 = article.anchor_number(out, "$2.08 billion", "https://e.com/x")
-    assert not changed2  # already linked / url present
+    assert not changed2
     phrase = article.find_anchor_phrase("Most teams still run keyword taxonomies to intent-topic frameworks badly.",
                                         "Keyword Taxonomies to Intent-Topic Frameworks for Search Advertisers")
     assert phrase and phrase.lower().startswith("keyword taxonomies")
@@ -89,7 +89,6 @@ def test_article_helpers():
 
 def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_transport):
     cfg, root = _repo(tmp_path, ANTHROPIC_API_KEY="sk", FIRECRAWL_API_KEY="fc")
-    # research: plan -> search -> read pages -> directions -> synthesize
     fake_transport.route("POST", "https://api.firecrawl.dev/v2/search", {"body": json.dumps({"data": [
         {"url": "https://www.emarketer.com/content/ai-search-ads", "title": "AI search ads surge"},
         {"url": "https://www.thrad.ai/content/other-page", "title": "thrad other"}]})})
@@ -119,9 +118,8 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
     assert meta["title"].startswith("Advertiser Readiness") and [s["url"] for s in meta["sources"]] == [
         "https://www.thrad.ai/content/integrating-ads", "https://www.emarketer.com/content/ai-search-ads"]
     assert meta["research"]["sources"][0]["origin"] == "client_landing"
-    assert all("other-page" not in s["url"] for s in meta["research"]["sources"])  # non-landing client URL excluded
+    assert all("other-page" not in s["url"] for s in meta["research"]["sources"])
 
-    # write: opening + 2 sections x (candidates + judge)
     slug = "advertiser-readiness-for-the-ai-search-transition"
     sec1 = ("Legacy search runs on a keyword that triggers a slot. ChatGPT launched ads in February 2026 at $25 to $60 CPM, "
             "and AI search will make up 13.6% of the market by 2029, per eMarketer. " * 5)
@@ -142,7 +140,6 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
     calls = [c for c in fake_transport.calls if 'api.anthropic.com' in c[1]]
     assert any('FROZEN HUMAN WRITING REFERENCES' in json.dumps(c[2]) for c in calls)
 
-    # enhance: links to a published post, sources, diagrams, verify catches an unsourced number
     publication.write_post(root / "posts" / "keyword-to-prompt.md", {
         "title": "Keyword Taxonomies to Intent-Topic Frameworks for Search Advertisers", "slug": "keyword-to-prompt", "dek": "Translate keywords into prompts.",
         "section": "AI Search", "author": "ezra-mbeki", "published_at": "2026-08-29T20:00:00Z"}, "## Intent topic frameworks\n\nBody about keyword taxonomies.")
@@ -159,7 +156,6 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
     strict = _run(enhance_mod, cfg, ["--publication", "llm-billboard", "--slug", slug, "--stages", "verify", "--strict-verify"], monkeypatch, capsys)
     assert strict["_exit"] == 1
 
-    # mention policy: with degree off the client link is stripped
     strategy = pubstate.load_strategy(root)
     strategy["mention"]["degree"] = "off"
     pubstate.save_strategy(root, strategy)
@@ -169,7 +165,7 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
         {"candidates": ["Closing. The share is 1.3% today. " * 8]},
     ])
     w2 = _run(write_mod, cfg, ["--publication", "llm-billboard", "--slug", slug, "--candidates", "1", "--force"], monkeypatch, capsys)
-    assert w2["mention"]["allowed"] is False and w2["mention"]["stripped"] == 8  # every client link the model wrote is removed
+    assert w2["mention"]["allowed"] is False and w2["mention"]["stripped"] == 8
     _, body2 = publication.read_post(root / "drafts" / f"{slug}.md")
     assert "thrad.ai" not in body2
 
@@ -207,7 +203,6 @@ def test_shred_keeps_facts_and_structure(tmp_path, monkeypatch, capsys, fake_tra
     body = ("## Heading stays\n\nSpending will reach $25.93 billion by 2029, per [eMarketer](https://e.com/x). Buyers should plan for that shift now. "
             "A third sentence describes the auction mechanics in plain words.\n\n- list item stays\n")
     publication.write_post(root / "drafts" / "piece.md", {"title": "Piece", "slug": "piece", "composition": {"provider": "anthropic"}}, body)
-    # openai (rotation avoids anthropic first) returns: a bad rewrite (number lost) then good ones
     fake_transport.route("POST", "https://api.openai.com/v1/responses",
                          {"body": json.dumps({"output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps({"sentence": "Spending will reach a lot by 2029, per [eMarketer](https://e.com/x)."})}]}], "usage": {}})},
                          {"body": json.dumps({"output": [{"type": "message", "content": [{"type": "output_text", "text": json.dumps({"sentence": "Buyers ought to plan for that shift today."})}]}], "usage": {}})},
@@ -219,6 +214,6 @@ def test_shred_keeps_facts_and_structure(tmp_path, monkeypatch, capsys, fake_tra
     assert out["summary"]["kept_original"] + out["summary"]["shredded"] == 3
     _, new_body = publication.read_post(root / "drafts" / "piece.md")
     assert "## Heading stays" in new_body and "- list item stays" in new_body and "$25.93 billion" in new_body and "https://e.com/x" in new_body
-    assert "a lot by 2029" not in new_body  # content-loss rewrite discarded
+    assert "a lot by 2029" not in new_body
     log = pubstate.load_json(pubstate.state_path(cfg, "shred", "llm-billboard"))
     assert log["runs"][-1]["status"] == "shredded"

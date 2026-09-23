@@ -52,14 +52,14 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import json
+from typing import Any, Optional
 
-from scripts.lib import dataforseo, http_util, llm, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import dataforseo, http_util, llm, publication, pubstate
+from scripts.lib.config import Config
 
 DUPLICATE_THRESHOLD = 0.6
 COVERED_THRESHOLD = 0.7
@@ -86,7 +86,7 @@ def _pillars_from_site(pub: publication.Publication, strategy: dict[str, Any], e
             "is_priority": old.get("is_priority", pubstate.overlap(s["name"] + " " + s.get("description", ""), priority_terms) > 0.1 or not priority_terms),
             "is_muted": old.get("is_muted", False), "spokes": list(old.get("spokes", [])),
         })
-    for slug, old in by_slug.items():  # pillars removed from site.yml keep their spokes, muted
+    for slug, old in by_slug.items():
         if slug not in {p["slug"] for p in pillars}:
             old["is_muted"] = True
             pillars.append(old)

@@ -166,7 +166,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/traffic_report.py" --before baseline.json -
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage create --brief-file brief.json
-# Implement the documented change in the original website source, then:
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage validate --id deployment-guide
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage deploy --id deployment-guide --approve-deploy
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage verify --id deployment-guide

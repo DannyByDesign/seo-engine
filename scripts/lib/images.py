@@ -87,6 +87,6 @@ def generate_image(cfg: Config, prompt: str, *, provider: Optional[str] = None, 
         payload, mime = (_openai if name == "openai" else _gemini)(cfg, prompt, model, size)
     except ImageError:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise ImageError(f"{name}/{model}: {http_util.sanitize_text(str(exc))}") from None
     return {"bytes": payload, "mime": mime, "provider": name, "model": model}

@@ -78,14 +78,10 @@ candidate (`copyright_year` boilerplate is `auto_fixable`; others are not).
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# First run on a site: archives a baseline snapshot, produces no candidates yet.
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py"
 
-# Re-run later (default refuses a baseline younger than 30 days -- a short
-# window mostly just confirms "hasn't changed yet", not "has gone stale").
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py" --min-days-old 30
 
-# Tune crawl size and how many unchanged-content pages get live-refetched.
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py" --max-pages 300 --fetch-limit 40
 ```
 

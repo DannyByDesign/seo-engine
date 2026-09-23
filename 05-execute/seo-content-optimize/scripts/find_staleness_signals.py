@@ -71,28 +71,23 @@ def _find_engine_root(start: Path) -> Path:
     )
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import json  # noqa: E402
-import re  # noqa: E402
-import time  # noqa: E402
-from collections import defaultdict  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import json
+import re
+import time
+from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Any
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-from scripts.lib import http_util, linkgraph, pagerules, snapshots, urlnorm  # noqa: E402
+from scripts.lib import http_util, linkgraph, pagerules, snapshots, urlnorm
 
 SECONDS_PER_DAY = 86400
 BOILERPLATE_MIN_PAGES = 5
-BOILERPLATE_MIN_FRACTION = 0.5  # strictly more than half of scanned pages
+BOILERPLATE_MIN_FRACTION = 0.5
 
-# A hardcoded four-digit year in a plausible "real calendar year" range.
-# Intentionally does not fire on unrelated 4-digit numbers (e.g. a product
-# SKU or a phone extension) by requiring a leading word boundary and a
-# 20xx-range year, since this system's staleness concern is specifically
-# about content asserting a recent/current year.
 YEAR_RE = re.compile(r"\b(20[0-9]{2})\b")
 
 RELATIVE_TIME_RE = re.compile(
@@ -101,11 +96,6 @@ RELATIVE_TIME_RE = re.compile(
     re.IGNORECASE,
 )
 
-# A version reference is EITHER an explicit version token ("version 2.3",
-# "ver. 1.0.4", "v2.3") OR a CapitalizedProductToken followed by a dotted
-# number ("Python 3.11", "Django 4.2.1"). A bare decimal ("4.8", "rated 4.8
-# stars", "$49.99") is NOT a version — see _reject_price_rating_context for
-# the second layer of defense.
 VERSION_RE = re.compile(
     r"(?i:\b(?:version|ver\.?|v)\s?\d+(?:\.\d+){1,3}\b)"
     r"|\b[A-Z][A-Za-z0-9+#.]{1,20}\s+\d+\.\d+(?:\.\d+)?\b"
@@ -113,15 +103,11 @@ VERSION_RE = re.compile(
 
 COPYRIGHT_RE = re.compile(r"(?:©|\(c\)|copyright)\s*(20[0-9]{2})", re.IGNORECASE)
 
-# Markers that mean a version-shaped match is actually a price or a rating.
 PRICE_RATING_MARKERS = (
     "$", "€", "£", "rated", "stars", "out of", "price", "per month",
 )
-PRICE_RATING_WINDOW = 20  # chars of context on each side of the match
+PRICE_RATING_WINDOW = 20
 
-# Current calendar year, computed at run time so "flag anything year-like
-# that is not this year or later" stays correct without hardcoding a year
-# that will itself go stale.
 _CURRENT_YEAR = datetime.now(timezone.utc).year
 
 
@@ -159,9 +145,6 @@ def _find_staleness_language(text: str) -> list[dict[str, Any]]:
 
     for match in YEAR_RE.finditer(text):
         year = int(match.group(1))
-        # Only a year OLDER than the current year is a staleness candidate --
-        # a page correctly citing the current year is not stale by definition,
-        # and a page citing a future year is out of scope for this check.
         if year < _CURRENT_YEAR:
             findings.append({
                 "kind": "hardcoded_year",
@@ -246,10 +229,6 @@ def main() -> None:
     cfg = config_module.load()
     site_url = cfg.site_url
 
-    # ALWAYS crawl fresh: the diff below is only meaningful between two
-    # independently-taken crawls. (The previous implementation reused an
-    # existing file as "current" and then diffed it against its own byte
-    # copy, reporting every page as "unchanged for N days".)
     current = snapshots.new_crawl(cfg, "seo-content-optimize", max_pages=args.max_pages)
     crawl_summary = current.meta.get("crawl_summary") or {}
 
@@ -308,9 +287,6 @@ def main() -> None:
 
     pages = list(current.pages())
 
-    # Indexable pages of the current crawl, one per folded final-destination
-    # identity (urlnorm.canonical_key) so /about vs /about/ or a www alias
-    # never breaks the hash comparison.
     current_by_key: dict[str, dict[str, Any]] = {}
     for rec in pages:
         if not pagerules.is_indexable_html(rec):
@@ -332,10 +308,6 @@ def main() -> None:
         if cur_hash and baseline_hash_by_key.get(key) == cur_hash:
             unchanged_keys.append(key)
 
-    # Bound how many pages get a live re-fetch for the regex scan -- prioritize
-    # pages with more inbound internal links (more consequential if stale) so
-    # a --fetch-limit cap still surfaces the pages that matter most first.
-    # linkgraph.build_graph counts DISTINCT inbound sources after alias folding.
     graph = linkgraph.build_graph(pages)
     unchanged_keys.sort(key=lambda k: -graph.inbound.get(k, 0))
     to_fetch = unchanged_keys[: args.fetch_limit]
@@ -351,7 +323,6 @@ def main() -> None:
         try:
             resp = http_util.get(url, min_interval=1.0)
         except http_util.HttpError as exc:
-            # HttpError text is already credential-sanitized by http_util.
             fetch_errors.append({"url": url, "error": str(exc)})
             continue
         if resp.status_code != 200 or "text/html" not in resp.headers.get("Content-Type", ""):
@@ -362,8 +333,6 @@ def main() -> None:
         if matches:
             page_matches[key] = matches
 
-    # ---- site-level boilerplate filter: a match string on >50% of scanned
-    # pages (and >=5 of them) is a template artifact, not N stale pages. ----
     match_pages: dict[str, set] = defaultdict(set)
     match_example: dict[str, dict[str, Any]] = {}
     for key, matches in page_matches.items():
@@ -403,7 +372,6 @@ def main() -> None:
             "auto_fixable": example["kind"] == "copyright_year",
         })
 
-    # ---- per-page candidates, boilerplate excluded ----
     candidates: list[dict[str, Any]] = []
     for key, matches in page_matches.items():
         kept = [m for m in matches if _normalized_match(m) not in boilerplate_norms]

@@ -43,13 +43,13 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-from typing import Optional  # noqa: E402
+import argparse
+import json
+from typing import Optional
 
-from scripts.lib import indexnow, snapshots  # noqa: E402
+from scripts.lib import indexnow, snapshots
 
 
 def _fail(result: dict, error_type: str, message: str) -> None:
@@ -104,7 +104,6 @@ def main() -> None:
     cfg = config_module.load()
     result: dict = {}
 
-    # --- resolve the target directory --------------------------------------
     configured_static = str(cfg.site.get("static_source_dir") or "").strip()
     configured_build = str(cfg.site.get("build_output_dir") or "").strip()
 
@@ -143,7 +142,6 @@ def main() -> None:
             "static_source_dir in .seo-engine/config.yml (see seo-setup)."
         ))
 
-    # --- reuse an existing, VALID key file when possible --------------------
     if not args.force:
         candidates = []
         if args.existing_key_file:
@@ -182,7 +180,6 @@ def main() -> None:
             snapshots.prune(cfg)
             return
 
-    # --- generate fresh ------------------------------------------------------
     key = indexnow.generate_key()
     written_path = indexnow.write_key_file(target_dir, key)
 

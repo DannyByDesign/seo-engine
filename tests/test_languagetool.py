@@ -31,7 +31,7 @@ def test_proofreading_wire_unicode_and_immutable_source(tmp_path, fake_transport
     assert wire['allow_redirects'] is False
     assert wire['data']['text'] == '😀 This is an test.'
     assert 'private-test-key' not in Path(result['output']).read_text()
-    assert 'Hidden typo' in original  # checker returns suggestions, never rewritten source
+    assert 'Hidden typo' in original
 
 
 def test_chunk_failure_retains_partial_coverage_without_retry(tmp_path, fake_transport):

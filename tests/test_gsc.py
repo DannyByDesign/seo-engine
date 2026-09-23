@@ -17,10 +17,6 @@ def entry(site_url: str, permission: str = "siteOwner") -> dict:
     return {"siteUrl": site_url, "permissionLevel": permission}
 
 
-# ---------------------------------------------------------------------------
-# _match_property
-# ---------------------------------------------------------------------------
-
 def test_match_property_prefers_exact_url_prefix_over_sc_domain():
     entries = [entry(f"{SITE}/"), entry("sc-domain:mysite.org")]
     best, matches = gsc._match_property(SITE, entries)
@@ -35,8 +31,6 @@ def test_match_property_sc_domain_fallback_when_no_prefix_property():
 
 
 def test_match_property_sc_domain_parent_label_candidate_for_subdomain():
-    # blog.mysite.org has no direct property, but sc-domain:mysite.org (the
-    # parent) is visible and should match.
     entries = [entry("sc-domain:mysite.org")]
     best, matches = gsc._match_property("https://blog.mysite.org", entries)
     assert best == "sc-domain:mysite.org"
@@ -72,18 +66,10 @@ def test_match_property_no_overlapping_entries_returns_none():
     assert matches == []
 
 
-# ---------------------------------------------------------------------------
-# gsc_today
-# ---------------------------------------------------------------------------
-
 def test_gsc_today_returns_a_date():
     today = gsc.gsc_today()
     assert isinstance(today, datetime.date)
 
-
-# ---------------------------------------------------------------------------
-# search_analytics_query_all — pagination
-# ---------------------------------------------------------------------------
 
 def test_pagination_concatenates_rows_across_full_pages_then_short_page(monkeypatch):
     calls = []
@@ -125,10 +111,6 @@ def test_pagination_empty_first_page_returns_no_rows_not_hit_cap(monkeypatch):
     assert rows == []
     assert hit_cap is False
 
-
-# ---------------------------------------------------------------------------
-# resolve_property
-# ---------------------------------------------------------------------------
 
 def test_resolve_property_cached_value_skips_list_sites(monkeypatch, tmp_repo):
     cfg = tmp_repo.make_config(site={"site_url": SITE, "gsc_property": f"{SITE}/"})

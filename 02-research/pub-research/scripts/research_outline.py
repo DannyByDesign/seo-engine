@@ -55,20 +55,20 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import difflib  # noqa: E402
-import hashlib  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import difflib
+import hashlib
+import json
+import re
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-from scripts.lib import firecrawl, http_util, llm, publication, pubstate, sociavault  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import firecrawl, http_util, llm, publication, pubstate, sociavault
+from scripts.lib.config import Config
 
 MAX_SOURCE_URLS = 20
 MAX_MUST_INCLUDE = 40
@@ -103,8 +103,6 @@ SYNTH_SYSTEM = (
 )
 
 
-# ---------- helpers ----------
-
 def _draft_path(root: Path, slug: str) -> Path:
     return root / "drafts" / f"{slug}.md"
 
@@ -128,7 +126,7 @@ def fetch_text(cfg: Config, url: str) -> tuple[str, str]:
             text = re.sub(r"\s+", " ", main.get_text(" ", strip=True))
         elif resp.status_code == 200 and "text/plain" in ctype:
             text = resp.text
-    except Exception as exc:  # noqa: BLE001 — a dead source is dropped, not fatal
+    except Exception as exc:
         text = ""
         title = f"(fetch failed: {http_util.sanitize_text(str(exc))[:80]})"
     if len(text.split()) < MIN_SOURCE_WORDS and cfg.integration_available("firecrawl"):
@@ -138,14 +136,12 @@ def fetch_text(cfg: Config, url: str) -> tuple[str, str]:
             if len(md.split()) > len(text.split()):
                 text = re.sub(r"\s+", " ", md)
                 title = title or (data.get("data", data) or {}).get("metadata", {}).get("title", "")
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
     return title, text
 
 
 def verify_quote(quote: str, source_text: str) -> bool:
-    # Exact normalized quotation matching only. Matching an excerpt does NOT
-    # establish entailment of its associated claim; editorial review owns that.
     q, source = _normalize(quote), _normalize(source_text)
     return bool(q and source and q in source)
 
@@ -158,8 +154,6 @@ def landing_candidates(strategy: dict[str, Any], topic: str, brief: str) -> list
             out.append({"url": landing["url"], "title": landing.get("context", "")[:120], "origin": "client_landing", "score": round(score, 3)})
     return sorted(out, key=lambda x: -x["score"])[:2]
 
-
-# ---------- phases ----------
 
 def plan(cfg: Config, topic: str, brief: str, angle: str, strategy: dict[str, Any], must_include: list[str]) -> dict[str, Any]:
     user = (f"Topic: {topic}\nAngle: {angle or '-'}\nBrief: {brief or '-'}\nPublication direction: {strategy.get('direction')}\n"
@@ -180,7 +174,7 @@ def gather(cfg: Config, queries: list[str], seed_urls: list[str], client_domain:
                 try:
                     for r in firecrawl.search(cfg, q, limit=6):
                         candidates.append({"url": r["url"], "title": r.get("title") or "", "origin": f"search:{q}"})
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     notes.append(f"search failed for {q!r}: {http_util.sanitize_text(str(exc))[:100]}")
         elif cfg.integration_available("sociavault"):
             for q in queries:
@@ -190,7 +184,7 @@ def gather(cfg: Config, queries: list[str], seed_urls: list[str], client_domain:
                         n = sociavault.normalize("google", r)
                         if n.get("url"):
                             candidates.append({"url": n["url"], "title": n.get("title") or "", "origin": f"search:{q}"})
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     notes.append(f"search failed for {q!r}: {http_util.sanitize_text(str(exc))[:100]}")
         else:
             notes.append("no search provider (FIRECRAWL_API_KEY or SOCIAVAULT_API_KEY) — only seed URLs are read")
@@ -202,7 +196,7 @@ def gather(cfg: Config, queries: list[str], seed_urls: list[str], client_domain:
         if not key.startswith("http") or key in seen:
             continue
         if client_domain and host.endswith(client_domain) and c["origin"] != "client_landing" and c["origin"] != "seed":
-            continue  # the client is cited only through its landings (mention policy)
+            continue
         if re.search(r"\.(pdf|png|jpe?g|gif|zip)$", key, re.I) or any(b in host for b in ("youtube.com", "twitter.com", "x.com", "facebook.com", "linkedin.com")):
             continue
         seen.add(key)
@@ -218,7 +212,6 @@ def read(cfg: Config, candidates: list[dict[str, Any]], max_sources: int, cache_
         title, text = fetch_text(cfg, c["url"])
         if len(text.split()) < MIN_SOURCE_WORDS and c["origin"] != "client_landing":
             continue
-        # Keep reviewed evidence stable when the same URL changes during a refresh.
         digest = hashlib.sha256((c["url"] + "\0" + text).encode("utf-8")).hexdigest()
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_path = cache_dir / f"{digest}.txt"
@@ -283,8 +276,6 @@ def verify(outline: dict[str, Any], sources: list[dict[str, Any]]) -> dict[str, 
     return {"kept": kept, "dropped": dropped, "paper_trail": paper_trail}
 
 
-# ---------- main ----------
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Research a topic and write a verified, sourced outline into a draft.")
     parser.add_argument("--publication", help="Publication slug")
@@ -336,7 +327,6 @@ def main() -> int:
     result: dict[str, Any] = {"checked": True, "publication": root.name, "draft": str(path), "topic": topic, "notes": []}
     cache_dir = cfg.state_dir / "pub-research" / root.name / slug
 
-    # resume from a direction gate
     if research.get("status") == "awaiting_direction" and (args.direction or args.choice is not None):
         sources = research.get("sources", [])
         plan_data = research.get("plan", {})

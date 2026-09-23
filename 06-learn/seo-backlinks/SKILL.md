@@ -83,23 +83,17 @@ Runs `scripts/monitor_backlinks.py`:
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Standard run: fetch current profile, diff vs. last snapshot, flag broken links
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py"
 
-# Force a specific provider instead of auto-selecting
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --provider ahrefs
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --provider dataforseo
 
-# Raise the paginated fetch cap (provider plan limits still apply)
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --cap 2000
 
-# Skip the new/lost diff, just report current state (e.g. very first setup)
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --no-diff
 
-# Competitor-gap awareness: organic competitor set only
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --competitor-gap
 
-# Competitor-gap with a named competitor's link-source overlap (DataForSEO only)
 python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --provider dataforseo --competitor-gap competitor.com --competitor-limit 30
 ```
 
@@ -107,7 +101,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/monitor_backlinks.py" --provider dataforseo
 
 ```jsonc
 {
-  "provider_used": "ahrefs",              // "ahrefs" | "dataforseo" | null
+  "provider_used": "ahrefs",
   "setup_notes": [ "..." ],
   "scope_note": "This skill is READ-ONLY monitoring. It never acquires, builds, ...",
   "profile_totals": { "backlinks": 214, "referring_domains": 58, "source": "ahrefs.backlinks_stats" },

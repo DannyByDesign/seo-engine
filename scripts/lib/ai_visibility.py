@@ -28,7 +28,7 @@ from urllib.parse import urlparse
 from . import http_util
 from .config import INTEGRATION_ENV_VARS, Config
 
-LLM_TIMEOUT = 180.0  # web-search-tool calls routinely exceed ordinary timeouts
+LLM_TIMEOUT = 180.0
 
 
 def _fold_domain(value: str) -> str:
@@ -70,8 +70,6 @@ def _dedupe(citations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return unique
 
 
-# ---------- OpenAI ----------
-
 def probe_openai(cfg: Config, prompt: str, model: str = "gpt-4.1") -> dict[str, Any]:
     """Responses API with the web_search tool. Citations arrive as
     annotations of type url_citation on the output text."""
@@ -92,8 +90,6 @@ def probe_openai(cfg: Config, prompt: str, model: str = "gpt-4.1") -> dict[str, 
                     citations.append({"url": annotation.get("url"), "title": annotation.get("title")})
     return {"provider": "openai", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
 
-
-# ---------- Anthropic ----------
 
 def probe_anthropic(
     cfg: Config, prompt: str, model: str = "claude-sonnet-4-5",
@@ -135,8 +131,6 @@ def probe_anthropic(
     return {"provider": "anthropic", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
 
 
-# ---------- Perplexity ----------
-
 def probe_perplexity(cfg: Config, prompt: str, model: str = "sonar") -> dict[str, Any]:
     key = cfg.require("PERPLEXITY_API_KEY", "Get a key at perplexity.ai/settings/api.")
     resp = http_util.post(
@@ -147,15 +141,11 @@ def probe_perplexity(cfg: Config, prompt: str, model: str = "sonar") -> dict[str
     )
     data = resp.json()
 
-    # The deprecated top-level `citations` and the newer `search_results`
-    # overlap heavily — dedupe so citation_count isn't double-inflated.
     citations = [{"url": u, "title": None} for u in data.get("citations", [])]
     for result in data.get("search_results", []) or []:
         citations.append({"url": result.get("url"), "title": result.get("title")})
     return {"provider": "perplexity", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
 
-
-# ---------- Google Gemini (grounding — NOT the same system as AI Overviews/AI Mode) ----------
 
 def probe_gemini(cfg: Config, prompt: str, model: str = "gemini-2.5-flash") -> dict[str, Any]:
     """Gemini API's own Google Search grounding. Distinct from AI Overviews/
@@ -178,12 +168,9 @@ def probe_gemini(cfg: Config, prompt: str, model: str = "gemini-2.5-flash") -> d
     grounding = data.get("candidates", [{}])[0].get("groundingMetadata", {})
     for chunk in grounding.get("groundingChunks", []) or []:
         web = chunk.get("web", {})
-        # web.uri is a vertexaisearch redirect; web.title carries the domain.
         citations.append({"url": web.get("uri"), "title": web.get("title")})
     return {"provider": "gemini", "prompt": prompt, "citations": _dedupe(citations), "raw": data}
 
-
-# ---------- Unified probing ----------
 
 PROBERS = {
     "openai": probe_openai,
@@ -221,7 +208,7 @@ def probe_all(cfg: Config, prompt: str, target_domain: str) -> dict[str, Any]:
                 "citation_count": len(outcome["citations"]),
                 "citations": outcome["citations"],
             }
-        except Exception as exc:  # noqa: BLE001 — surface per-provider failure, don't abort the sweep
+        except Exception as exc:
             results[name] = {
                 "configured": True,
                 "error": http_util.sanitize_text(str(exc)),
@@ -229,9 +216,6 @@ def probe_all(cfg: Config, prompt: str, target_domain: str) -> dict[str, Any]:
             }
     return {"prompt": prompt, "target_domain": target_domain, "providers": results}
 
-
-
-# ---------- answer text (for mention detection, not just citations) ----------
 
 def answer_text(provider: str, raw: dict[str, Any]) -> str:
     """The assistant's answer as plain text, per provider payload shape."""
@@ -254,11 +238,6 @@ def answer_text(provider: str, raw: dict[str, Any]) -> str:
         return "".join(p.get("text", "") for p in ((cands[0].get("content") or {}).get("parts") or []))
     return ""
 
-
-# ---------- Commercial trackers (optional, thin adapters) ----------
-# Endpoint shapes are from vendor marketing/docs pages and are NOT
-# independently verified — exercise via scripts/dev/smoke.py before relying
-# on them. Both are optional supplements to the vendor-API probing above.
 
 def profound_visibility(cfg: Config, category: Optional[str] = None) -> dict[str, Any]:
     key = cfg.require("PROFOUND_API_KEY", "Sign up at tryprofound.com; API is in beta.")

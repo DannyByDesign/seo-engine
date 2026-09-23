@@ -38,7 +38,6 @@ def test_anthropic_adapter_shapes_request_and_parses(tmp_path, fake_transport):
     assert "thinking" not in body and "temperature" not in body
     assert kwargs["headers"]["x-api-key"] == "sk-ant-test"
 
-    # cheap tier never sends effort (Haiku rejects it) and a refusal raises
     with pytest.raises(llm.LlmError):
         llm.complete(cfg, "", "x", tier="cheap", effort="high")
     assert "output_config" not in fake_transport.calls[-1][2]["json"]

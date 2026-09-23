@@ -17,7 +17,6 @@ from . import http_util, pubstate, robots, traffic, opportunities
 def fingerprint(root, brief):
     hashes = {}
     names=set(brief['source_files'])
-    # Bind all versioned dependencies in a Git repo, including files omitted from the brief.
     detected=subprocess.run(['git','rev-parse','--show-toplevel'],cwd=root,capture_output=True,text=True)
     if detected.returncode==0 and Path(detected.stdout.strip()).resolve()==root.resolve():
         listing=subprocess.run(['git','ls-files','-z','--cached','--others','--exclude-standard'],cwd=root,capture_output=True,check=True)
@@ -87,8 +86,6 @@ def create(root, brief):
             raise ValueError('select an evidenced candidate and explain why it beats the alternatives')
         if selected['page'] not in [p['path'] for p in brief.get('pages', [])]:
             raise ValueError('selected opportunity URL must belong to the intervention')
-        # Existing isolated diagnostic/legacy workflows remain usable. Once strategy is
-        # adopted, bind content work to the current positioning instead of stale briefs.
         if (root / '.seo-engine/state/strategy/understand.json').exists():
             from . import strategy
             from .config import Config
@@ -154,11 +151,9 @@ def command(brief, kind):
 
 
 def execute(root, brief, kind):
-    # No shell interpolation. Configured commands are executable project code, not a sandbox.
     started = time.monotonic()
     try:
         proc = subprocess.run(command(brief, kind), cwd=root, capture_output=True, text=True, timeout=600)
-        # Diagnostics can include secrets: provide a short sanitized tail, never credential values.
         output = http_util.sanitize_text((proc.stdout + proc.stderr)[-1500:])
         return {'command': kind, 'exit': proc.returncode, 'seconds': round(time.monotonic()-started, 2),
                 'output_sha256': hashlib.sha256((proc.stdout + proc.stderr).encode()).hexdigest(),
@@ -195,10 +190,10 @@ def deploy(root, job, approved=False, persist=None):
         raise ValueError('deployment needs existing user authorization and --approve-deploy')
     if job['status'] not in ('validated', 'deploy_failed') or fingerprint(root, job['brief']) != job.get('validated_fingerprint'):
         raise ValueError('validate the current source state before deployment')
-    command(job['brief'],'deploy')  # configuration errors cannot have deployed anything
+    command(job['brief'],'deploy')
     job.update(status='deployment_uncertain', deployment_attempted_at=pubstate.now_iso())
     if persist:
-        persist(job)  # durable intent before a potentially successful remote side effect
+        persist(job)
     result = execute(root, job['brief'], 'deploy')
     job.update(status='deployment_unverified' if result['exit'] == 0 else 'deployment_uncertain', deployment=result)
     return job
@@ -276,7 +271,6 @@ def reconcile(root, job, record):
     job.update(status='planned')
     for key in ('validated_fingerprint', 'deployment_earliest', 'first_verified_on', 'review_due', 'outcome'):
         job.pop(key, None)
-    # Keep the initial pre-intervention fingerprint: unchanged local implementation may be retried after fixing hosting.
     return job
 
 

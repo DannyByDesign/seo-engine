@@ -100,7 +100,7 @@ def fetch_url_set(
         result["sitemaps_read"].append(candidate)
         if kind == "urlset":
             page_urls.extend(locs)
-        else:  # sitemapindex — follow one level
+        else:
             for child_url in locs[:MAX_CHILD_SITEMAPS]:
                 child = read_one(child_url)
                 if child is None:
@@ -115,7 +115,7 @@ def fetch_url_set(
                     f"sitemap index {candidate} lists {len(locs)} child sitemaps; "
                     f"only the first {MAX_CHILD_SITEMAPS} were read"
                 )
-        break  # first successfully-parsed candidate wins
+        break
 
     if len(page_urls) > max_urls:
         page_urls = page_urls[:max_urls]

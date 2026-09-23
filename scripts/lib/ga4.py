@@ -48,7 +48,6 @@ def export(cfg, start, end, *, max_rows=100000):
             'filters': {'hostName': host}, 'complete': stable and len(rows) == expected,
             'sampled': sampled, 'thresholded': limited,
             'synthetic': False, 'rows': rows, 'metadata': metadata}
-    # Keep unknown landing pages observable rather than silently throwing away sessions.
     if any(not r['page'].startswith('/') for r in rows):
         data['complete'] = False
         data['coverage_note'] = 'Some sessions have no attributable landing page.'

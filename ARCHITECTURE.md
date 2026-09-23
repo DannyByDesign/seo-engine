@@ -72,46 +72,46 @@ edits, using the scripts to check handoffs; no human-authored seed list or brief
 
 ```text
 seo-engine/
-├── 01-understand/       # setup, audit, scripts/run_strategy.py
-├── 02-research/         # keywords, source research, scripts/research_market.py
-├── 03-position/         # positioning
-├── 04-choose/           # growth coordinator and topic selection
-├── 05-execute/          # copy, website code, visuals and publishing
+├── 01-understand/
+├── 02-research/
+├── 03-position/
+├── 04-choose/
+├── 05-execute/
 │   └── seo-copywriting/
-│       ├── SKILL.md     # actual inline human writing and editing workflow
-│       ├── corpus/     # local Markdown source writing and passages
-│       └── scripts/    # local sampling and LanguageTool checker
-├── 06-learn/            # monitoring, analytics, cycle runner and instructions
+│       ├── SKILL.md
+│       ├── corpus/
+│       └── scripts/
+├── 06-learn/
 ├── shared/seo-references/
-├── scripts/lib/         # common clients, state, rendering and contracts
-├── scripts/dev/         # documentation checks and opt-in API smoke checks
-├── tests/               # regression and integration tests
-├── workflow/            # workflow index/contract and old-guide aliases
-├── skills/              # compatibility symlinks only
-├── install.sh           # installs phase-owned skills into host discovery paths
-└── .env.example         # integration configuration
+├── scripts/lib/
+├── scripts/dev/
+├── tests/
+├── workflow/
+├── skills/
+├── install.sh
+└── .env.example
 ```
 
 ## State kept in the target repo
 
 ```
 .seo-engine/
-├── config.yml        # site facts incl. static_source_dir/build_output_dir/gsc_property
+├── config.yml
 ├── state/
-│   ├── crawls/       # crawl-<stamp>.jsonl + .meta.json provenance sidecars
-│   ├── http-cache/   # transient response cache
-│   └── <skill>-*.json# per-skill histories (each written & read by that skill only)
-└── reports/          # dated reports, auto-pruned
+│   ├── crawls/
+│   ├── http-cache/
+│   └── <skill>-*.json
+└── reports/
 
-publications/         # one folder per owned publication (committed)
+publications/
 └── <slug>/
-    ├── site.yml      # name, url, theme, sections, authors, disclosure, planner
-    ├── strategy.yml  # client, direction, topics, stances, targets, landings, mention policy
-    ├── topic-map.yml # pillars → spokes with status open|queued|covered|dismissed
-    ├── seers.yml     # trigger sources (news, regulation, social, GitHub, specs, Notion)
-    ├── competitors/  # scraped competitor catalogues
-    ├── drafts/ posts/ assets/<slug>/   # article lifecycle + diagrams/covers
-    └── dist/         # built static site (deploy to Vercel)
+    ├── site.yml
+    ├── strategy.yml
+    ├── topic-map.yml
+    ├── seers.yml
+    ├── competitors/
+    ├── drafts/ posts/ assets/<slug>/
+    └── dist/
 ```
 
 ## The continuous loop (`seo-maintain`)

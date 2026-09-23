@@ -33,13 +33,13 @@ def _find_engine_root(start: Path) -> Path:
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
 
-import argparse  # noqa: E402
-import tempfile  # noqa: E402
-import traceback  # noqa: E402
-from typing import Callable, Optional  # noqa: E402
+import argparse
+import tempfile
+import traceback
+from typing import Callable, Optional
 
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import http_util, urlnorm  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import http_util, urlnorm
 
 
 def check_crawl(cfg, site: str) -> str:
@@ -120,7 +120,6 @@ def check_firecrawl(cfg, site: str) -> str:
 
 
 def check_indexnow(cfg, site: str) -> str:
-    # Dry-run by design: verify the key FILE is reachable; submit nothing.
     key = cfg.require("INDEXNOW_API_KEY", "set INDEXNOW_API_KEY")
     key_url = f"{site.rstrip('/')}/{key}.txt"
     resp = http_util.get(key_url)
@@ -167,7 +166,6 @@ def check_ga4(cfg, site: str) -> str:
     return f"{len(result['rows'])} attributed landing-page rows, timezone={result['timezone']}; authentication and API shape checked, not growth"
 
 
-#: name -> (required integration key or None-for-always, check fn)
 def check_languagetool(cfg, site):
     from scripts.lib import languagetool
     result = languagetool.check(cfg, 'This is an test.', format='text', language='en-US')
@@ -181,7 +179,7 @@ CHECKS: dict[str, tuple[Optional[str], Callable]] = {
     "crawl": (None, check_crawl),
     "gsc": ("google_search_console", check_gsc),
     "ga4": ("google_analytics", check_ga4),
-    "psi": (None, check_psi),  # works keyless at shared quota
+    "psi": (None, check_psi),
     "crux": ("pagespeed_insights", check_crux),
     "ahrefs": ("ahrefs", check_ahrefs),
     "dataforseo": ("dataforseo", check_dataforseo),
@@ -225,7 +223,7 @@ def main() -> None:
         try:
             detail = fn(cfg, args.site)
             rows.append((name, "PASS", detail))
-        except Exception as exc:  # noqa: BLE001 — the whole point is surfacing real failures
+        except Exception as exc:
             failed += 1
             rows.append((name, "FAIL", http_util.sanitize_text(str(exc))[:140]))
             if args.verbose:

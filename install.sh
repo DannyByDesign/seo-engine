@@ -1,16 +1,4 @@
 #!/usr/bin/env bash
-# Installs seo-engine's skills into a target website repo's Claude Code
-# skill directory (.claude/skills/) via symlinks, so the shared scripts/lib/
-# stays co-located in one seo-engine/ folder while each skill (including the
-# seo-references knowledge skill) is independently discoverable.
-#
-# Usage (run from anywhere, pass the seo-engine folder + target repo):
-#   ./install.sh /path/to/seo-engine /path/to/target-repo
-#
-# Or, if you've already copied seo-engine/ into the target repo as a
-# subdirectory, run it from there with just the target repo path (defaults
-# to the parent of this script's location):
-#   cd my-website/seo-engine && ./install.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,7 +21,6 @@ if [ ! -d "$TARGET_REPO" ]; then
   exit 1
 fi
 
-# --- Python floor check (scripts require >= 3.9) --------------------------
 if ! command -v python3 >/dev/null 2>&1; then
   echo "error: python3 not found on PATH — seo-engine's scripts require Python 3.9+" >&2
   exit 1
@@ -47,7 +34,6 @@ if ! python3 -m pip --version >/dev/null 2>&1; then
   echo "warning: 'python3 -m pip' is unavailable — install pip before installing dependencies" >&2
 fi
 
-# --- Symlink each skill into .claude/skills/ -------------------------------
 SKILLS_DEST="$TARGET_REPO/$SKILL_PARENT/skills"
 mkdir -p "$SKILLS_DEST"
 
@@ -75,20 +61,13 @@ done
 echo ""
 echo "Linked $count skill(s) into $SKILLS_DEST"
 
-# --- .env: create an inert stub, never copy example values ----------------
 if [ ! -f "$TARGET_REPO/.env" ]; then
-  cat > "$TARGET_REPO/.env" <<EOF
-# seo-engine configuration — every key is OPTIONAL.
-# See $ENGINE_DIR/.env.example for the full documented list of supported
-# keys and how to obtain each one. Add only the keys you actually have;
-# skills report exactly which env var would unlock each missing capability.
-EOF
+  : > "$TARGET_REPO/.env"
   echo "Created $TARGET_REPO/.env (empty stub — add whichever API keys you have; all optional)."
 else
   echo "Note: $TARGET_REPO/.env already exists — see $ENGINE_DIR/.env.example for any new keys."
 fi
 
-# --- .gitignore: make sure secrets and state never get committed -----------
 GITIGNORE="$TARGET_REPO/.gitignore"
 ensure_ignored() {
   local pattern="$1"

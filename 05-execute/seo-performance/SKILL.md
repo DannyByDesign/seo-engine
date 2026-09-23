@@ -50,18 +50,14 @@ key pages and reports, per page:
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Auto-discover key pages: homepage + shared crawl snapshot + GSC top-clicked (if configured)
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py"
 
-# Audit specific URLs only (skips auto-discovery unless --include-discovered is added)
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" \
   --url https://example.com/ --url https://example.com/pricing
 
-# Desktop strategy, or both mobile and desktop in one run
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --strategy desktop
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --both-strategies
 
-# Limit discovery breadth, or disable one/both discovery sources
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --max-pages 15 --no-gsc
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --no-crawl-snapshot --no-gsc
 ```

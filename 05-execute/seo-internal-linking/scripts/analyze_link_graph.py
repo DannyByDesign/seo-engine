@@ -68,12 +68,12 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import http_util, linkgraph, pagerules, robots, snapshots, urlnorm  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import http_util, linkgraph, pagerules, robots, snapshots, urlnorm
 
-DEFAULT_MAX_DEPTH = 4  # per seo-playbook.md §6: "~3-4 clicks from the homepage"
+DEFAULT_MAX_DEPTH = 4
 SNAPSHOT_MAX_AGE_HOURS = 24
-LIVE_CONFIRM_SAMPLE = 20  # bounded, polite live check of uncrawled orphan candidates
+LIVE_CONFIRM_SAMPLE = 20
 LIVE_CONFIRM_MIN_INTERVAL = 1.0
 
 
@@ -168,7 +168,6 @@ def analyze(
     depths = _bfs_depths(graph, root)
     findings: list[dict[str, Any]] = []
 
-    # ---- crawl-only signals: valid without any URL universe ----
     for key in sorted(indexable_keys):
         if key == root:
             continue
@@ -246,7 +245,6 @@ def analyze(
                 ),
             })
 
-    # ---- orphan detection: needs a URL universe independent of the graph ----
     policy = robots.fetch(cfg.site_url)
     universe = linkgraph.known_url_universe(cfg, cfg.site_url, policy)
     orphan = linkgraph.orphan_analysis(
@@ -264,7 +262,7 @@ def analyze(
             rec = pages_by_key.get(urlnorm.resolve_alias(key, graph.alias_map)) or {}
             findings.append({
                 "type": "orphan_page",
-                "severity": entry["severity"],  # high; low when crawl truncated
+                "severity": entry["severity"],
                 "url": entry["url"],
                 "title": rec.get("title", ""),
                 "depth_from_homepage": None,
@@ -409,8 +407,6 @@ def main() -> None:
         "review the suggestion before editing any source content. See SKILL.md."
     )
 
-    # Persist state for seo-maintain's continuous-loop regression diff, and a
-    # dated human-readable report copy.
     import time
 
     reports_dir = cfg.reports_dir

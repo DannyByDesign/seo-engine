@@ -88,14 +88,10 @@ that is resolved (or explicitly deferred with a reason) dispatch `seo-metadata`.
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py"
 
-# Larger site — keep the cap CONSISTENT across scheduled runs: the diff only
-# fires against a baseline crawled with the same max_pages
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --max-pages 2000
 
-# Narrower GSC comparison window (default 28 days each side)
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --gsc-days 14
 
-# ONLY for your own localhost/staging build that blocks all bots
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --ignore-robots
 ```
 

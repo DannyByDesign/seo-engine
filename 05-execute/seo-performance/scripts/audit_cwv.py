@@ -57,27 +57,23 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import time  # noqa: E402
-from datetime import timedelta, datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import json
+import time
+from datetime import timedelta, datetime, timezone
+from typing import Any, Optional
 
-from scripts.lib import http_util, pagerules, psi, snapshots, urlnorm  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import http_util, pagerules, psi, snapshots, urlnorm
+from scripts.lib.config import Config, MissingConfigError
 
-# Google's published "good" thresholds -- seo-playbook.md section 3.
 THRESHOLDS = {
     "lcp_ms": {"good": 2500, "needs_improvement": 4000},
     "inp_ms": {"good": 200, "needs_improvement": 500},
     "cls": {"good": 0.1, "needs_improvement": 0.25},
 }
 
-# Lighthouse audit IDs worth surfacing when present. Lighthouse audit IDs have
-# shifted across versions before, so every lookup below is defensive (missing
-# key -> skipped, never a crash).
 OPPORTUNITY_AUDIT_IDS = [
     "render-blocking-resources",
     "unused-css-rules",
@@ -111,9 +107,6 @@ DIAGNOSTIC_AUDIT_IDS = [
     "lcp-discovery-insight",
 ]
 
-# Maps specific Lighthouse audit IDs to the concrete code-level fix guidance
-# this skill should surface. Kept separate from THRESHOLDS so the "what's
-# broken" and "what fixes it" concerns stay independently readable.
 FIX_GUIDANCE = {
     "render-blocking-resources": "Defer or async non-critical <script>/<link rel=stylesheet> tags; inline critical CSS for above-the-fold content. Primarily helps LCP.",
     "unused-css-rules": "Split/purge unused CSS (e.g. per-route bundles, PurgeCSS/Tailwind JIT) to shrink render-blocking payload. Helps LCP.",
@@ -172,8 +165,6 @@ def _extract_lighthouse_audits(psi_report: dict[str, Any]) -> dict[str, Any]:
             if not audit:
                 continue
             score = audit.get("score")
-            # Skip audits that passed (score 1) or are not applicable (score None
-            # with no displayValue) -- only surface things worth fixing.
             if score is not None and score >= 0.9:
                 continue
             entry = {
@@ -189,7 +180,6 @@ def _extract_lighthouse_audits(psi_report: dict[str, Any]) -> dict[str, Any]:
             if details.get("overallSavingsBytes"):
                 entry["estimated_savings_bytes"] = details["overallSavingsBytes"]
             found.append(entry)
-        # Largest estimated savings first, then unscored/informational last.
         found.sort(key=lambda e: e.get("estimated_savings_ms", 0), reverse=True)
         return found
 
@@ -243,7 +233,7 @@ def _discover_key_pages(
                         f"No reusable snapshot (<24h) found -- ran a fresh crawl "
                         f"({snap.pages_crawled} pages, snapshot {snap.path.name})."
                     )
-        except Exception as exc:  # noqa: BLE001 -- discovery is best-effort, never fatal
+        except Exception as exc:
             snap = None
             notes.append(
                 "Crawl-snapshot discovery failed, continuing without it: "
@@ -271,7 +261,7 @@ def _discover_key_pages(
             try:
                 from scripts.lib import gsc
 
-                end = gsc.gsc_today() - timedelta(days=3)  # GSC's ~3-day reporting lag
+                end = gsc.gsc_today() - timedelta(days=3)
                 start = end - timedelta(days=28)
                 result = gsc.search_analytics_query(
                     cfg, start.isoformat(), end.isoformat(),
@@ -291,7 +281,7 @@ def _discover_key_pages(
                 notes.append(f"Added {added} top-clicked page(s) from GSC (last 28 days).")
             except MissingConfigError as exc:
                 notes.append(f"GSC configured but credentials incomplete: {exc}")
-            except Exception as exc:  # noqa: BLE001 -- report, don't crash the audit
+            except Exception as exc:
                 notes.append(
                     "GSC query failed, continuing without it: "
                     f"{http_util.sanitize_text(str(exc))}"
@@ -325,12 +315,8 @@ def _save_history(cfg: Config, history: dict[str, Any]) -> Path:
 
 def audit_page(cfg: Config, url: str, strategy: str) -> dict[str, Any]:
     try:
-        # run_pagespeed defaults to categories=["performance"] -- the only
-        # Lighthouse category this script consumes (all OPPORTUNITY/DIAGNOSTIC
-        # audit IDs are performance-category audits). Requesting fewer
-        # categories keeps keyless-quota usage down.
         report = psi.run_pagespeed(cfg, url, strategy=strategy)
-    except Exception as exc:  # noqa: BLE001 -- one bad page must not kill the whole audit
+    except Exception as exc:
         return {"url": url, "strategy": strategy, "error": http_util.sanitize_text(str(exc))}
 
     field = psi.core_web_vitals(report)
@@ -406,7 +392,7 @@ def main() -> None:
             "(same key also unlocks the dedicated CrUX API) and set GOOGLE_PSI_API_KEY."
         )
 
-    explicit_urls = list(dict.fromkeys(args.url))  # de-dup, preserve order
+    explicit_urls = list(dict.fromkeys(args.url))
     discovery_notes: list[str] = []
     if explicit_urls and not args.include_discovered:
         urls = explicit_urls
@@ -428,8 +414,6 @@ def main() -> None:
             result = audit_page(cfg, url, strategy)
             pages_result.append(result)
 
-            # Only touch history for successful PSI fetches -- an errored call
-            # must not create/pad an empty entry (state pollution).
             if "error" not in result:
                 key = f"{url}::{strategy}"
                 history.setdefault(key, [])
@@ -441,7 +425,7 @@ def main() -> None:
                     "overall_category": result["field_data"]["overall_category"],
                     "lab_performance_score": result["lab_diagnostics"]["lab_performance_score"],
                 })
-                history[key] = history[key][-52:]  # cap ~1yr of weekly runs per URL/strategy
+                history[key] = history[key][-52:]
 
     history_path = _save_history(cfg, history)
 

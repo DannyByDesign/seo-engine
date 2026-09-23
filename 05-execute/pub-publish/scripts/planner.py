@@ -53,16 +53,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import hashlib  # noqa: E402
-import json  # noqa: E402
-import random  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import hashlib
+import json
+import random
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
 
-from scripts.lib import publication, pubstate  # noqa: E402
+from scripts.lib import publication, pubstate
 
 DEFAULT_PLANNER = {"enabled": True, "cadence_per_week": 6, "sourcing_mode": "curate_first", "approval_mode": "manual",
                    "review_window_hours": 24, "publish_hour_utc": None, "jitter_minutes": 45, "launch_burst": 4}
@@ -72,7 +72,7 @@ def planner_config(pub: publication.Publication) -> dict[str, Any]:
     conf = dict(DEFAULT_PLANNER)
     conf.update({k: v for k, v in (pub.site.get("planner") or {}).items() if v is not None})
     if conf.get("publish_hour_utc") is None:
-        conf["publish_hour_utc"] = 12 + int(hashlib.sha256(pub.slug.encode()).hexdigest(), 16) % 10  # 12..21 UTC
+        conf["publish_hour_utc"] = 12 + int(hashlib.sha256(pub.slug.encode()).hexdigest(), 16) % 10
     return conf
 
 

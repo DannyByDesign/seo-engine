@@ -6,7 +6,6 @@ from datetime import date
 
 from scripts.lib import gsc_trends
 
-# 2024-01-01 and 2024-01-08 are Mondays.
 W1, W2 = "2024-01-01", "2024-01-08"
 
 
@@ -21,15 +20,11 @@ def wk(start: str, pos: float, impressions: int = 100) -> dict:
             "avg_position": pos}
 
 
-# ---------------------------------------------------------------------------
-# weekly_series
-# ---------------------------------------------------------------------------
-
 def test_rows_bucket_into_iso_weeks_chronologically():
     rows = [
-        row("2024-01-08", clicks=3, impressions=40, position=7.0),  # week 2 first
+        row("2024-01-08", clicks=3, impressions=40, position=7.0),
         row("2024-01-01", clicks=1, impressions=30, position=5.0),
-        row("2024-01-02", clicks=2, impressions=20, position=5.0),  # Tue -> same week
+        row("2024-01-02", clicks=2, impressions=20, position=5.0),
     ]
     series = gsc_trends.weekly_series(rows)
     weeks = series["q"]
@@ -46,17 +41,15 @@ def test_avg_position_is_impression_weighted():
         row("2024-01-02", impressions=10, position=10.0),
     ]
     series = gsc_trends.weekly_series(rows)
-    # (5*90 + 10*10) / 100 = 5.5
     assert series["q"][0]["avg_position"] == 5.5
 
 
 def test_zero_impression_day_gets_weight_one():
     rows = [
-        row("2024-01-01", impressions=0, position=100.0),   # weight 1, not 0
+        row("2024-01-01", impressions=0, position=100.0),
         row("2024-01-02", impressions=99, position=1.0),
     ]
     series = gsc_trends.weekly_series(rows)
-    # (100*1 + 1*99) / max(99, 1) = 199/99 = 2.01
     assert series["q"][0]["avg_position"] == 2.01
     assert series["q"][0]["impressions"] == 99
 
@@ -64,12 +57,12 @@ def test_zero_impression_day_gets_weight_one():
 def test_window_end_trims_partial_trailing_week():
     rows = [
         row("2024-01-01", impressions=10, position=5.0),
-        row("2024-01-08", impressions=10, position=9.0),  # Mon of window_end week
-        row("2024-01-09", impressions=10, position=9.0),  # Tue of window_end week
+        row("2024-01-08", impressions=10, position=9.0),
+        row("2024-01-09", impressions=10, position=9.0),
     ]
     series = gsc_trends.weekly_series(rows, window_end=date(2024, 1, 9))
     weeks = series["q"]
-    assert [w["week_start"] for w in weeks] == [W1]  # partial trailing week dropped
+    assert [w["week_start"] for w in weeks] == [W1]
 
 
 def test_window_end_keeps_complete_trailing_week():
@@ -91,10 +84,6 @@ def test_key_empty_after_trim_is_omitted():
     assert "solid" in series
 
 
-# ---------------------------------------------------------------------------
-# detect_drops
-# ---------------------------------------------------------------------------
-
 def test_drop_flagged_when_delta_beats_threshold_and_stdev():
     series = {"q": [wk(f"2024-01-{d:02d}", 5.0) for d in (1, 8, 15, 22)]
               + [wk("2024-01-29", 10.0)]}
@@ -111,8 +100,6 @@ def test_drop_flagged_when_delta_beats_threshold_and_stdev():
 
 
 def test_wobble_within_stdev_not_flagged_even_if_over_threshold():
-    # Baseline [2, 10, 2, 10]: mean 6, pstdev 4. Latest 10 -> delta 4 >= 3
-    # but NOT > stdev, so it is ordinary volatility, not a finding.
     series = {"q": [wk(W1, 2.0), wk(W2, 10.0), wk("2024-01-15", 2.0),
                     wk("2024-01-22", 10.0), wk("2024-01-29", 10.0)]}
     drops, improvements = gsc_trends.detect_drops(series)
@@ -131,7 +118,7 @@ def test_improvement_lands_in_improvements():
 
 def test_min_impressions_floor_skips_low_volume_latest_week():
     series = {"q": [wk(W1, 5.0), wk(W2, 5.0),
-                    wk("2024-01-15", 50.0, impressions=5)]}  # huge drop, 5 impressions
+                    wk("2024-01-15", 50.0, impressions=5)]}
     drops, improvements = gsc_trends.detect_drops(series, min_impressions=10)
     assert drops == [] and improvements == []
 
@@ -147,10 +134,10 @@ def test_sort_orders_largest_drop_and_biggest_improvement_first():
                 wk("2024-01-22", latest)]
 
     series = {
-        "small-drop": key_series(14.0),   # delta +4
-        "big-drop": key_series(18.0),     # delta +8
-        "small-gain": key_series(6.0),    # delta -4
-        "big-gain": key_series(2.0),      # delta -8
+        "small-drop": key_series(14.0),
+        "big-drop": key_series(18.0),
+        "small-gain": key_series(6.0),
+        "big-gain": key_series(2.0),
     }
     drops, improvements = gsc_trends.detect_drops(series)
     assert [e["key"] for e in drops] == ["big-drop", "small-drop"]

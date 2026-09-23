@@ -49,16 +49,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import math  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+import math
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from scripts.lib import http_util, llm, publication, pubstate, sociavault  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import http_util, llm, publication, pubstate, sociavault
+from scripts.lib.config import Config
 
 WEIGHTS = {"competitor": 0.15, "geo": 0.20, "seo": 0.15, "cluster": 0.15, "authority": 0.15, "social": 0.10}
 CANNIBAL_PENALTY = 0.30
@@ -233,7 +233,7 @@ def main() -> int:
     for item in scored:
         item["score"] = total(item)
     scored.sort(key=lambda x: x["score"], reverse=True)
-    if social_on:  # only spend credits on the plausible top of the list
+    if social_on:
         for item in scored[: max(args.target * 2, 10)]:
             spoke = pubstate.find_spoke(topic_map, item["spoke_id"]) or {}
             try:
@@ -242,7 +242,7 @@ def main() -> int:
                 item["signal_breakdown"]["social"] = signal
                 item["evidence"]["social"] = note
                 item["score"] = total(item)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 item["evidence"]["social"] = http_util.sanitize_text(str(exc))[:120]
         pubstate.save_json(pubstate.state_path(cfg, "social-cache", root.name), social_cache)
         scored.sort(key=lambda x: x["score"], reverse=True)

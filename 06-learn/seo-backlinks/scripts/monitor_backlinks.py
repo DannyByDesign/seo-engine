@@ -86,31 +86,22 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import time  # noqa: E402
-from datetime import date, datetime, timedelta, timezone  # noqa: E402
-from typing import Any, Callable, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import time
+from datetime import date, datetime, timedelta, timezone
+from typing import Any, Callable, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import http_util, snapshots  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import http_util, snapshots
+from scripts.lib.config import Config
 
-#: Max rows per provider API call while paginating up to --cap.
 PAGE_SIZE = 1000
-#: A backlink absent from the previous snapshot only counts as "new" when its
-#: first_seen falls within this many days before the previous run.
 NEW_BACKLINK_RECENCY_DAYS = 7
-#: A backlink missing (without a provider is_lost flag) must be absent this
-#: many consecutive runs before it is reported as lost.
 LOST_CONFIRM_RUNS = 2
 
-
-# ---------------------------------------------------------------------------
-# Provider selection
-# ---------------------------------------------------------------------------
 
 def choose_provider(cfg: Config, forced: Optional[str]) -> tuple[Optional[str], list[str]]:
     """Returns (provider_name_or_None, setup_notes). Ahrefs preferred over
@@ -155,10 +146,6 @@ def choose_provider(cfg: Config, forced: Optional[str]) -> tuple[Optional[str], 
     return None, notes
 
 
-# ---------------------------------------------------------------------------
-# Small parsing helpers (provider fields are not trusted to be well-typed)
-# ---------------------------------------------------------------------------
-
 def _as_int(value: Any) -> Optional[int]:
     """Tolerant int coercion -- providers sometimes return status codes and
     counts as strings, floats, or junk. Never raises."""
@@ -199,15 +186,6 @@ def _parse_date_prefix(value: Any) -> Optional[date]:
     except ValueError:
         return None
 
-
-# ---------------------------------------------------------------------------
-# Normalization -- both providers get flattened to the same shape so the
-# diff logic and report format don't need to branch on provider identity.
-# Normalized backlink dict shape:
-#   { "url_from": str, "url_to": str, "first_seen": str|None,
-#     "domain_rating_source": float|int|None, "link_type": str|None,
-#     "is_lost": bool|None, "source_domain": str }
-# ---------------------------------------------------------------------------
 
 def _registrable_domain(url: str) -> str:
     host = urlparse(url if "//" in url else f"//{url}").netloc.lower()
@@ -303,10 +281,6 @@ def normalize_dataforseo_broken(items: list[dict[str, Any]]) -> list[dict[str, A
     return normalized
 
 
-# ---------------------------------------------------------------------------
-# Fetch (per provider) -- deterministic first_seen-ascending pagination
-# ---------------------------------------------------------------------------
-
 def _paginate(fetch_page: Callable[[int, int], list[dict[str, Any]]], cap: int) -> list[dict[str, Any]]:
     """Accumulate raw provider rows page by page (limit, offset) up to `cap`,
     deduping on the url_from||url_to key in case the index shifts between
@@ -359,17 +333,9 @@ def fetch_dataforseo(cfg: Config, target: str, cap: int) -> dict[str, Any]:
     items = _paginate(_page, cap)
     return {
         "current_backlinks": normalize_dataforseo_backlinks(items),
-        # DataForSEO's live backlinks/backlinks endpoint is the only source
-        # available for this -- reuse the fetched rows and filter for bad
-        # status codes rather than calling a second endpoint that doesn't
-        # exist for this purpose (see api-reference.md, DataForSEO Backlinks).
         "broken_backlinks": normalize_dataforseo_broken(items),
     }
 
-
-# ---------------------------------------------------------------------------
-# Profile totals (the refuse-to-diff guard)
-# ---------------------------------------------------------------------------
 
 def _extract_ahrefs_totals(raw: dict[str, Any]) -> tuple[Optional[int], Optional[int]]:
     metrics = raw.get("metrics") if isinstance(raw.get("metrics"), dict) else raw
@@ -397,10 +363,6 @@ def fetch_profile_totals(cfg: Config, provider: str, target: str) -> tuple[Optio
     from scripts.lib import dataforseo
     return _extract_dataforseo_totals(dataforseo.backlinks_summary(cfg, target))
 
-
-# ---------------------------------------------------------------------------
-# Snapshot + diff
-# ---------------------------------------------------------------------------
 
 def _backlink_key(bl: dict[str, Any]) -> str:
     return f"{bl.get('url_from', '')}||{bl.get('url_to', '')}"
@@ -469,7 +431,6 @@ def diff_backlinks(
         if prev_generated else None
     )
 
-    # Rows the provider itself flags as lost are not part of the live set.
     provider_lost_keys = {k for k, bl in current_by_key.items() if bl.get("is_lost")}
     live_keys = set(current_by_key) - provider_lost_keys
 
@@ -506,7 +467,7 @@ def diff_backlinks(
 
     for k, bl in prev_links.items():
         if k in live_keys:
-            continue  # still present and live
+            continue
         if k in provider_lost_keys:
             lost.append({**current_by_key[k], "lost_evidence": "provider_is_lost"})
         elif bl.get("is_lost"):
@@ -518,7 +479,7 @@ def diff_backlinks(
         if not isinstance(entry, dict) or k in prev_links:
             continue
         if k in live_keys:
-            continue  # reappeared -- streak cleared, nothing to report
+            continue
         bl = entry.get("backlink") or {}
         if k in provider_lost_keys:
             lost.append({**current_by_key[k], "lost_evidence": "provider_is_lost"})
@@ -526,7 +487,7 @@ def diff_backlinks(
         streak = (_as_int(entry.get("missing_streak")) or 1) + 1
         _track_missing(k, bl, streak)
 
-    sort_key = lambda bl: (bl.get("url_from", ""), bl.get("url_to", ""))  # noqa: E731
+    sort_key = lambda bl: (bl.get("url_from", ""), bl.get("url_to", ""))
     lost.sort(key=sort_key)
     possibly_lost.sort(key=sort_key)
 
@@ -603,11 +564,6 @@ def diff_referring_domains(
     }
 
 
-# ---------------------------------------------------------------------------
-# Broken-backlink reporting (actionable, via seo-redirects -- fixing your own
-# site's response to an existing link, not acquiring anything new)
-# ---------------------------------------------------------------------------
-
 def build_broken_backlink_findings(broken: list[dict[str, Any]]) -> list[dict[str, Any]]:
     findings = []
     for bl in broken:
@@ -644,10 +600,6 @@ def build_broken_backlink_findings(broken: list[dict[str, Any]]) -> list[dict[st
     return findings
 
 
-# ---------------------------------------------------------------------------
-# Competitor-gap AWARENESS (never an outreach/acquisition target list)
-# ---------------------------------------------------------------------------
-
 def competitor_gap_ahrefs(cfg: Config, target: str, competitor: Optional[str], limit: int) -> dict[str, Any]:
     from scripts.lib import ahrefs
 
@@ -675,10 +627,6 @@ def competitor_gap_dataforseo(cfg: Config, target: str, competitor: Optional[str
         result["domain_intersection"] = dataforseo.domain_intersection(cfg, target, competitor)
     return result
 
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def _emit_report(report: dict[str, Any], cfg: Config, today: str) -> None:
     """Write the dated report copy (ALWAYS -- including not-configured and
@@ -757,7 +705,6 @@ def main() -> None:
         _emit_report(report, cfg, today)
         return
 
-    # -- Refuse-to-diff guard (a): provider profile totals first -------------
     total: Optional[int] = None
     referring_domains: Optional[int] = None
     try:
@@ -767,7 +714,7 @@ def main() -> None:
                 f"{provider} profile summary returned no recognizable live-backlink "
                 "total -- cap enforcement falls back to the fetched-row count."
             )
-    except Exception as exc:  # noqa: BLE001 -- degrade, don't crash: totals gate the diff, not the fetch
+    except Exception as exc:
         warnings.append(http_util.sanitize_text(
             f"{provider} profile-summary call failed ({exc}) -- profile totals unknown. "
             "An empty fetch cannot be confirmed as real and will not overwrite state; "
@@ -785,7 +732,7 @@ def main() -> None:
             fetched = fetch_ahrefs(cfg, target, args.cap)
         else:
             fetched = fetch_dataforseo(cfg, target, args.cap)
-    except Exception as exc:  # noqa: BLE001 -- report the failure, don't crash uninformatively
+    except Exception as exc:
         report["error"] = http_util.sanitize_text(f"{provider} API call failed: {exc}")
         report["current_backlink_count"] = 0
         report["diff"] = {
@@ -811,8 +758,6 @@ def main() -> None:
     previous = load_previous_snapshot(cfg, snapshot_path)
     prev_streaks: dict[str, Any] = dict((previous or {}).get("missing_streaks") or {})
 
-    # -- Refuse-to-diff guard (b): an empty fetch is only real if the provider
-    #    summary agrees the profile is ~0. Otherwise never overwrite state. --
     write_snapshot = True
     new_streaks: dict[str, Any] = prev_streaks
     exceeds_cap = (total is not None and total > args.cap) or (
@@ -839,7 +784,6 @@ def main() -> None:
     elif args.no_diff:
         diff = {"is_baseline": None, "note": "--no-diff passed; skipped."}
     elif exceeds_cap:
-        # Guard (a): link-level diff over a truncated window fabricates churn.
         diff = diff_referring_domains(previous, current_backlinks)
         diff["skipped_reason"] = "backlink_count_exceeds_cap"
         diff["note"] = (
@@ -879,7 +823,7 @@ def main() -> None:
     report["diff"] = diff
     report["broken_backlink_count"] = len(broken_findings)
     report["broken_backlinks"] = broken_findings
-    report["findings"] = broken_findings  # top-level alias for callers that scan `findings` uniformly
+    report["findings"] = broken_findings
 
     if args.competitor_gap is not None:
         try:
@@ -893,7 +837,7 @@ def main() -> None:
                 "outreach or acquisition."
             )
             report["competitor_gap"] = gap
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             report["competitor_gap"] = {
                 "error": http_util.sanitize_text(f"{provider} competitor-gap call failed: {exc}"),
             }

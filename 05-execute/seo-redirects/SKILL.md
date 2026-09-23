@@ -77,22 +77,17 @@ findings that are really just "wrong file checked."
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Symptom-level audit only, fresh crawl
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_redirects.py"
 
-# Reuse the shared crawl snapshot from any prior run
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_redirects.py" --skip-crawl
 
-# Cross-check declared config against live behavior
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_redirects.py" --skip-crawl \
   --redirect-config /path/to/target-repo/next.config.js
 
-# Pre-migration launch-blocker check
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_redirects.py" --skip-crawl \
   --redirect-config /path/to/target-repo/vercel.json \
   --old-urls-file /path/to/old-urls.txt
 
-# Read-only analysis of one specific snapshot file, never overwritten
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_redirects.py" --snapshot .seo-engine/state/crawls/crawl-<UTC-stamp>.jsonl
 ```
 

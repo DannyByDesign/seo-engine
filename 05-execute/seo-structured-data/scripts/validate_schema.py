@@ -75,27 +75,27 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import fnmatch  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-import time  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import fnmatch
+import json
+import re
+import time
+from datetime import datetime, timezone
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import http_util  # noqa: E402
-from scripts.lib import pagerules  # noqa: E402
-from scripts.lib import robots  # noqa: E402
-from scripts.lib import schema_validate  # noqa: E402
-from scripts.lib import snapshots  # noqa: E402
-from scripts.lib import urlnorm  # noqa: E402
+from scripts.lib import http_util
+from scripts.lib import pagerules
+from scripts.lib import robots
+from scripts.lib import schema_validate
+from scripts.lib import snapshots
+from scripts.lib import urlnorm
 
 try:
     from bs4 import BeautifulSoup
-except ImportError:  # pragma: no cover
+except ImportError:
     BeautifulSoup = None
 
 
@@ -105,9 +105,6 @@ _EXTRUCT_REMEDIATION = (
     "seo-engine root), then re-run this script."
 )
 
-# URL-pattern / heading heuristics for "this page probably wants schema but has
-# none." Deliberately conservative: only flags the clearest, lowest-false-
-# -positive cases. Order matters — first match wins.
 CONTENT_TYPE_HINTS: list[tuple[re.Pattern, str, str]] = [
     (re.compile(r"/blog/|/posts?/|/news/|/articles?/", re.I), "BlogPosting",
      "URL path suggests a blog/news/article page (BlogPosting, or Article/NewsArticle "
@@ -168,7 +165,7 @@ def _infer_expected_type(
 def _validation_to_dict(outcome: schema_validate.ValidationResult) -> dict[str, Any]:
     return {
         "url": outcome.url,
-        "ok": outcome.ok,  # errors only — warnings/info never flip this
+        "ok": outcome.ok,
         "node_count": outcome.node_count,
         "types_found": outcome.types_found,
         "issue_counts": outcome.counts(),
@@ -213,8 +210,6 @@ def _check_page(
     outcome = schema_validate.validate_html(html, url)
     page_result = _validation_to_dict(outcome)
 
-    # missing_schema_suggestion fires ONLY on pages with zero JSON-LD nodes —
-    # a page that already ships markup gets validation issues, never this.
     if outcome.node_count == 0:
         if not title or h1_list is None:
             if BeautifulSoup is not None:
@@ -258,7 +253,7 @@ def validate_live(
             return results, notes
         try:
             resp = http_util.get(single_url, min_interval=1.0, check=True)
-        except Exception as exc:  # noqa: BLE001 -- surfaced as a page-level error
+        except Exception as exc:
             results.append(_error_page_entry(
                 single_url,
                 f"Fetch failed during validation pass: {http_util.sanitize_text(str(exc))}",
@@ -317,7 +312,7 @@ def validate_live(
             continue
         try:
             resp = http_util.get(fetch_url, min_interval=fetch_interval, check=True)
-        except Exception as exc:  # noqa: BLE001 -- one bad page must not kill the run
+        except Exception as exc:
             results.append(_error_page_entry(
                 display_url,
                 f"Fetch failed during validation pass: {http_util.sanitize_text(str(exc))}",
@@ -336,10 +331,6 @@ def validate_live(
 def validate_local_files(
     paths: list[Path], scan_root: Optional[Path] = None,
 ) -> list[dict[str, Any]]:
-    # The homepage→Organization hint applies only to the index.html sitting at
-    # the SCAN ROOT (--files-dir mode). Explicit --files lists have no known
-    # root, so the hint never fires for them; nor for index.html at depth
-    # (pretty-URL builds emit one per page).
     root_index: Optional[Path] = None
     if scan_root is not None:
         for name in ("index.html", "index.htm"):
@@ -355,7 +346,6 @@ def validate_local_files(
         except OSError as exc:
             results.append(_error_page_entry(str(path), f"Could not read file: {exc}"))
             continue
-        # Use the file path as a pseudo-URL for reporting + heuristics.
         pseudo_url = "/" + str(path.as_posix()).lstrip("/")
         is_homepage = root_index is not None and path.resolve() == root_index
         results.append(_check_page(pseudo_url, html, is_homepage=is_homepage))
@@ -437,7 +427,7 @@ def main() -> int:
         if args.live:
             if not args.url:
                 try:
-                    _ = cfg.site_url  # fail fast with a clean hint before any crawl
+                    _ = cfg.site_url
                 except config_module.MissingConfigError as exc:
                     print(json.dumps({
                         "error": str(exc),
@@ -460,8 +450,6 @@ def main() -> int:
             results = validate_local_files(file_list, scan_root=scan_root)
             mode_label = "files"
     except RuntimeError as exc:
-        # schema_validate raises RuntimeError when extruct is missing — the
-        # upfront check should have caught it, but never leak a raw traceback.
         if "extruct" in str(exc):
             print(json.dumps({
                 "error": "Missing dependency: extruct.",
@@ -488,8 +476,6 @@ def main() -> int:
     }
 
     if not args.no_report:
-        # Retention housekeeping — every main() prunes; skipped only when the
-        # user asked us not to touch .seo-engine at all.
         snapshots.prune(cfg)
         timestamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
         report_path = cfg.reports_dir / f"schema-validation-{timestamp}.json"

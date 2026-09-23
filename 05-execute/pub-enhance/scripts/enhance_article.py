@@ -55,18 +55,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import re
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-from scripts.lib import article, http_util, llm, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import article, http_util, llm, publication, pubstate
+from scripts.lib.config import Config
 
 ALL_STAGES = ["links", "sources", "anchors", "diagrams", "keywords", "verify", "meta", "voice", "language"]
 DEFAULT_STAGES = [s for s in ALL_STAGES if s != "voice"]
@@ -177,7 +177,6 @@ def stage_diagrams(root: Path, slug: str, body: str, research: dict[str, Any]) -
         spec_path.write_text(json.dumps({"type": d.get("type") or "stat_callout", "title": d["title"], "brief": d.get("brief"),
                                          "data": d.get("data") or {}, "alt": alt}, indent=2, ensure_ascii=False), encoding="utf-8")
         written.append(str(spec_path))
-        # place after the section whose heading+text overlaps the brief most
         best_i, best = None, 0.0
         for i, b in enumerate(items):
             if b["kind"] == "heading":
@@ -190,7 +189,6 @@ def stage_diagrams(root: Path, slug: str, body: str, research: dict[str, Any]) -
             items.append({"kind": "blank", "text": ""})
             items.append(image)
         else:
-            # after the last paragraph of that section
             j = best_i + 1
             while j < len(items) and items[j]["kind"] != "heading":
                 j += 1
@@ -225,7 +223,7 @@ def stage_verify(cfg: Config, body: str, research: dict[str, Any], *, check_link
                     soup = BeautifulSoup(resp.text, "lxml")
                     texts.append(re.sub(r"\s+", " ", soup.get_text(" ", strip=True)))
                     fetched += 1
-                except Exception:  # noqa: BLE001
+                except Exception:
                     continue
     corpus = " ".join(texts)
     corpus_numbers = article.numbers_in(corpus)

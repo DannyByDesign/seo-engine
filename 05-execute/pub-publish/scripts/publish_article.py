@@ -43,17 +43,17 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import subprocess  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import subprocess
+from datetime import datetime, timedelta, timezone
+from typing import Any
+from urllib.parse import urlparse
 
-from scripts.lib import article, editorial, indexnow, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import article, editorial, indexnow, publication, pubstate
+from scripts.lib.config import Config
 
 from scripts.lib.paths import skill
 
@@ -141,7 +141,6 @@ def main() -> int:
         return 1
     meta, body = publication.read_post(draft)
     problems = gate(meta, body, strategy, min_words=args.min_words, min_sources=args.min_sources)
-    # No override for content that was never reviewed or changed after review.
     if not editorial.valid_review(meta, body, root):
         print(json.dumps({"checked": True, "published": False, "gate": problems + ["missing or stale editorial review"],
                           "approval": "run review_article.py on the final prepared draft"}))
@@ -175,7 +174,7 @@ def main() -> int:
             counts = {a["slug"]: 0 for a in authors}
             for p in pub.posts:
                 counts[pub.author_for(p)["slug"]] = counts.get(pub.author_for(p)["slug"], 0) + 1
-            meta["author"] = min(authors, key=lambda a: counts.get(a["slug"], 0))["slug"]  # spread bylines evenly
+            meta["author"] = min(authors, key=lambda a: counts.get(a["slug"], 0))["slug"]
     target = root / "posts" / f"{args.slug}.md"
     if target.exists() and meta.get("refresh_of") != args.slug:
         print(json.dumps({"checked": False, "error": "post already exists; queue an explicit refresh"}))
@@ -214,7 +213,7 @@ def main() -> int:
             try:
                 status = indexnow.submit(cfg, [url, pub.url("/sitemap.xml")])
                 result["hooks"].append({"script": "indexnow", "status": status})
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result["hooks"].append({"script": "indexnow", "error": str(exc)[:200]})
         else:
             result["hooks"].append({"script": "indexnow", "skipped": "INDEXNOW_API_KEY not set (Bing feeds ChatGPT — geo-playbook §10)"})

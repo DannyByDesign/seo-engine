@@ -24,8 +24,8 @@ def _load(script: Path) -> ModuleType:
 diagram_mod = _load(REPO / "skills/pub-visuals/scripts/render_diagram.py")
 cover_mod = _load(REPO / "skills/pub-visuals/scripts/gen_cover.py")
 
-from scripts.lib import images, publication  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import images, publication
+from scripts.lib.config import Config
 
 PNG_1X1 = bytes.fromhex("89504e470d0a1a0a0000000d494844520000060000000384080600000000" + "00" * 8)
 

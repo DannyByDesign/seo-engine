@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.lib import config, http_util  # noqa: E402
+from scripts.lib import config, http_util
 
 
 def _make_response(
@@ -39,10 +39,9 @@ def _make_response(
     resp = requests.Response()
     resp.status_code = status
     resp._content = body
-    resp._content_consumed = True  # so resp.close() never touches resp.raw (None)
+    resp._content_consumed = True
     if headers:
         resp.headers.update(headers)
-    # Mimic HTTPAdapter.build_response: derive encoding from the headers.
     resp.encoding = requests.utils.get_encoding_from_headers(resp.headers)
     resp.url = url
     req = requests.PreparedRequest()
@@ -74,7 +73,6 @@ class FakeSender:
         self._queue: list = []
         self._routes: list[dict] = []
 
-    # -- programming --------------------------------------------------------
 
     def queue(self, *items) -> None:
         self._queue.extend(items)
@@ -84,13 +82,11 @@ class FakeSender:
             {"method": method.upper(), "prefix": prefix, "items": list(items), "i": 0}
         )
 
-    # -- inspection ----------------------------------------------------------
 
     @property
     def urls(self) -> list[str]:
         return [url for _, url, _ in self.calls]
 
-    # -- the transport -------------------------------------------------------
 
     def __call__(self, method: str, url: str, **kwargs) -> requests.Response:
         self.calls.append((method.upper(), url, kwargs))
@@ -134,7 +130,6 @@ def sleep_calls(monkeypatch):
     """No test ever really sleeps. Recorded values back backoff assertions."""
     calls: list[float] = []
     monkeypatch.setattr(http_util.time, "sleep", lambda seconds: calls.append(seconds))
-    # Fresh per-host politeness table so tests don't leak rate-limit state.
     monkeypatch.setattr(http_util, "_last_request_at", {})
     return calls
 

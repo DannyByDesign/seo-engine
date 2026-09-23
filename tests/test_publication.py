@@ -100,7 +100,7 @@ def _ld(html: str) -> list:
 def test_load_and_build_reproduces_anatomy(tmp_path):
     root = _make_pub(tmp_path)
     pub = pubmod.load_publication(root)
-    assert [p.slug for p in pub.posts] == ["funnel-positions", "linguistic-markers"]  # newest first, draft skipped
+    assert [p.slug for p in pub.posts] == ["funnel-positions", "linguistic-markers"]
     assert any("not-yet" in w for w in pub.warnings)
     manifest = pubmod.build_site(pub, build_time=datetime(2026, 9, 8, tzinfo=timezone.utc))
     dist = Path(manifest["out_dir"])
@@ -117,11 +117,9 @@ def test_load_and_build_reproduces_anatomy(tmp_path):
     assert 'max-image-preview:large' in article and 'og:type" content="article"' in article
     assert 'article:published_time" content="2026-09-01T21:24:29.257Z"' in article
     assert 'og:image:width" content="1462"' in article and 'og:image:height" content="1350"' in article
-    # inline external citation is nofollow, internal absolute link is root-relative, Sources are followed
     assert re.search(r'<a href="https://www\.emarketer\.com/content/multi-prompt"[^>]*rel="noopener noreferrer nofollow"[^>]*target="_blank"', article)
     assert 'href="/posts/funnel-positions"' in article
     assert re.search(r'<section class="sources">.*?<a href="https://verve\.com/blog/llm-intent" target="_blank" rel="noopener noreferrer">verve\.com</a>', article, re.S)
-    # TOC + heading ids + diagram handling + table wrap + 'Updated' byline
     assert 'href="#the-distribution-problem-most-prompts-are-not-buying-signals"' in article
     assert 'src="/assets/linguistic-markers/diagram-1.png"' in article and 'loading="lazy"' in article and 'width="1462"' in article
     assert '<div class="table-wrap"><table>' in article and "Updated" in article and "min read" in article

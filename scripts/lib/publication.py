@@ -46,12 +46,12 @@ from bs4 import BeautifulSoup
 
 try:
     import yaml
-except ImportError:  # pragma: no cover
+except ImportError:
     yaml = None
 
 try:
     import markdown as _markdown
-except ImportError:  # pragma: no cover
+except ImportError:
     _markdown = None
 
 WORDS_PER_MINUTE = 220
@@ -62,7 +62,6 @@ RSS_LIMIT = 50
 HOME_LIMIT = 12
 RELATED_LIMIT = 3
 
-# ---------- themes (CSS custom properties set on <html>) ----------
 
 def _theme(**tokens: Any) -> dict[str, Any]:
     base = {
@@ -82,7 +81,6 @@ def _theme(**tokens: Any) -> dict[str, Any]:
 
 
 THEMES: dict[str, dict[str, Any]] = {
-    # The three themes observed live on Letterstory phantoms, tokens verbatim.
     "signal": _theme(
         bg="#ffffff", surface="#edeae3", surface_alt="#1b1b24", fg="#1a1a1a", muted="#9a9aa6",
         border="#2a2a34", primary="#ff4d1c", primary_fg="#ffffff", secondary="#1a1a2e", accent="#00e5b4",
@@ -113,7 +111,6 @@ THEMES: dict[str, dict[str, Any]] = {
         radius="0.375rem", content_width="42rem", container_width="58rem", color_scheme="light",
         google_fonts=["Inter:wght@400;500;600;700", "JetBrains+Mono"],
     ),
-    # House themes.
     "gazette": _theme(
         bg="#fbfaf6", surface="#f1eee6", surface_alt="#e9e4d8", fg="#141414", muted="#5f5b54",
         border="#dcd6c8", primary="#8b0000", primary_fg="#ffffff", secondary="#2b2b2b", accent="#b8860b",
@@ -195,8 +192,6 @@ def icon_svg(name: str, color: str) -> str:
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">'
             f'<rect width="32" height="32" rx="7" fill="{color}"/>{body}</svg>\n')
 
-
-# ---------- small pure helpers ----------
 
 def slugify(text: str, max_len: int = HEADING_ID_MAX) -> str:
     text = (text or "").lower()
@@ -305,8 +300,6 @@ def _jsonld(obj: Any) -> str:
             + json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
             + "</script>")
 
-
-# ---------- model ----------
 
 def asset_name(meta: dict, slug: str) -> str:
     name = str(meta.get('asset_slug') or slug)
@@ -516,11 +509,9 @@ def load_publication(root: Path, *, include_drafts: bool = False) -> Publication
             continue
         pub.posts.append(post)
     pub.posts.sort(key=lambda p: p.published_at, reverse=True)
-    # bylines that are not in the author bank still get a profile page (no dangling byline links)
     for p in pub.posts:
         a = pub.author_for(p)
         pub.authors.setdefault(a["slug"], {"expertise": [], "same_as": [], **a})
-    # sections seen only in posts become sections too (so nav never dangles)
     known = {s["slug"] for s in pub.sections}
     for p in pub.posts:
         sec = str(p.meta.get("section") or "").strip()
@@ -557,8 +548,6 @@ def find_publication(cfg: Any, slug: Optional[str]) -> Path:
     raise FileNotFoundError(
         f"Pass --publication <slug>; publications under {publications_root(cfg)}: {[p.name for p in pubs] or 'none'}")
 
-
-# ---------- rendering ----------
 
 def render_markdown(body_md: str) -> str:
     if _markdown is None:
@@ -638,8 +627,6 @@ def cover_of(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Optiona
             "alt": str(cover.get("alt") or f"Cover illustration for “{post.title}”"),
             "credit": cover.get("credit"), "width": cover.get("width"), "height": cover.get("height")}
 
-
-# ---------- JSON-LD ----------
 
 def graph_ld(pub: Publication) -> dict[str, Any]:
     org: dict[str, Any] = {
@@ -728,8 +715,6 @@ def collection_ld(pub: Publication, section: dict[str, Any], posts: list[Post]) 
             "url": pub.url(f"/sections/{section['slug']}"), "name": section["name"], "isPartOf": {"@id": pub.url("/#website")},
             "hasPart": [_post_stub(pub, p) for p in posts]}
 
-
-# ---------- HTML ----------
 
 def theme_style_attr(theme: dict[str, Any]) -> str:
     keys = ["bg", "surface", "surface_alt", "fg", "muted", "border", "primary", "primary_fg", "secondary", "accent",
@@ -1003,8 +988,6 @@ def render_search(pub: Publication, build_year: int) -> str:
                  ld=[graph_ld(pub)], og=og, build_year=build_year, noindex=True)
 
 
-# ---------- feeds ----------
-
 def render_rss(pub: Publication) -> str:
     items = []
     for p in pub.posts[:RSS_LIMIT]:
@@ -1053,8 +1036,6 @@ def render_sitemap(pub: Publication) -> str:
 def render_robots(pub: Publication) -> str:
     return f"User-Agent: *\nAllow: /\n\nHost: {pub.site_url}\nSitemap: {pub.url('/sitemap.xml')}\n"
 
-
-# ---------- build ----------
 
 def build_site(pub: Publication, out_dir: Optional[Path] = None, *, build_time: Optional[datetime] = None) -> dict[str, Any]:
     """Render the whole publication into dist/ (or out_dir). Returns a

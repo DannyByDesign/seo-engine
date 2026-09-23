@@ -53,12 +53,6 @@ def _find_engine_root(start: Path) -> Path:
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
 
 
-# Framework signal definitions, ordered by specificity — the first match wins
-# where signals could overlap (e.g. Next.js also ships a package.json dep on
-# "react", but "next" is checked first).
-#
-# static_source_dir: deployed verbatim (safe to write files that must ship).
-# build_output_dir: wiped/regenerated every build (NEVER write files there).
 FRAMEWORK_SIGNALS = [
     {
         "framework": "next.js",
@@ -95,8 +89,6 @@ FRAMEWORK_SIGNALS = [
         "framework": "sveltekit",
         "config_globs": ["svelte.config.js", "svelte.config.mjs", "svelte.config.cjs"],
         "package_deps": ["@sveltejs/kit"],
-        # svelte.config.* alone is NOT SvelteKit — plain Svelte + Vite ships the
-        # same config filename. The @sveltejs/kit dependency is required.
         "require_dep": True,
         "static_source_dir": "static",
         "build_output_dir": "build",
@@ -118,8 +110,6 @@ FRAMEWORK_SIGNALS = [
         "config_globs": ["hugo.toml", "hugo.yaml", "hugo.yml",
                          "config.toml", "config.yaml", "config.yml"],
         "package_deps": [],
-        # config.toml/config.yml are generic filenames shared by many tools —
-        # only claim Hugo when the Hugo project structure is present too.
         "generic_configs_require_dirs": {
             "configs": {"config.toml", "config.yaml", "config.yml"},
             "dirs": ["content", "layouts"],
@@ -164,8 +154,6 @@ FRAMEWORK_SIGNALS = [
     },
 ]
 
-# Fallback package.json dependency checks when no config file matched, ordered
-# by specificity (framework metapackages checked before bare-library deps).
 PACKAGE_DEP_FALLBACKS = [
     ("react", {
         "static_source_dir": "public",
@@ -232,8 +220,6 @@ def _signal_matches(signal: dict, repo_root: Path,
     if not (matched_config or matched_dep):
         return False, []
     if signal.get("require_dep") and not matched_dep:
-        # e.g. svelte.config.js without @sveltejs/kit = plain Svelte/Vite,
-        # not SvelteKit — fall through so the vite signal can claim it.
         return False, []
     gate = signal.get("generic_configs_require_dirs")
     if gate and matched_config in gate["configs"] and not matched_dep:
@@ -294,7 +280,6 @@ def detect_framework(repo_root: Path) -> dict:
                 "notes": fallback["note"],
             }
 
-    # Bare static site: an index.html with no JS framework signal at all.
     if (repo_root / "index.html").is_file() and not pkg:
         return {
             "framework": "static-html",
@@ -343,9 +328,6 @@ SITEMAP_CANDIDATE_PATHS = [
     "src/sitemap.xml",
 ]
 
-# Frameworks that generate sitemap.xml dynamically via a route/plugin rather
-# than a static file checked into the repo — grep for the generator pattern
-# instead of a literal file.
 DYNAMIC_SITEMAP_SIGNALS = {
     "next.js": [("app/sitemap.ts", "Next.js App Router sitemap route (MetadataRoute.Sitemap)"),
                 ("app/sitemap.js", "Next.js App Router sitemap route (MetadataRoute.Sitemap)"),
@@ -471,10 +453,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Intentionally independent of scripts.lib.config's repo-root resolution:
-    # this script scans literally the directory it's invoked from (or --dir),
-    # per the seo-setup contract of operating on "the host repo root, not the
-    # seo-engine folder itself."
     scan_dir = Path(args.dir).resolve() if args.dir else Path.cwd().resolve()
 
     if not scan_dir.is_dir():

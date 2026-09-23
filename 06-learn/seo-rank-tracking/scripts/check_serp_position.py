@@ -56,15 +56,15 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+from datetime import datetime, timezone
+from typing import Any
 
-from scripts.lib import http_util, snapshots, urlnorm  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import http_util, snapshots, urlnorm
+from scripts.lib.config import Config, MissingConfigError
 
 HISTORY_FILENAME = "serp-check-history.json"
 
@@ -93,8 +93,6 @@ def _check_via_dataforseo(
 
     matched = None
     for item in organic_items:
-        # Subdomain-aware host match: a result on blog.example.com counts for
-        # example.com (urlnorm folds www/case; exact-host compare would miss it).
         candidate = item.get("url") or item.get("domain") or ""
         if candidate and urlnorm.same_site(candidate, domain, include_subdomains=True):
             matched = item
@@ -130,16 +128,6 @@ def _check_via_dataforseo(
 def _check_via_ahrefs(cfg: Config, keyword: str, domain: str) -> dict[str, Any]:
     from scripts.lib import ahrefs
 
-    # Ahrefs' v3 client in this system exposes organic_keywords() (keywords a
-    # domain ranks for), not a dedicated single-keyword live-SERP endpoint --
-    # so the Ahrefs path answers "what position does Ahrefs' own index have on
-    # file for this domain+keyword" rather than a synchronous live SERP fetch.
-    # This is still a useful cross-check against GSC (different data source,
-    # different methodology) even though it is not as "live" as DataForSEO's
-    # serp_live().
-    # ahrefs.organic_keywords selects the fields
-    # keyword,best_position,volume,sum_traffic,best_position_url -- row
-    # parsing below must match that select list.
     result = ahrefs.organic_keywords(cfg, domain, limit=1000)
     rows = result.get("keywords", result.get("data", [])) or []
     matched = next((r for r in rows if (r.get("keyword") or "").lower() == keyword.lower()), None)
@@ -235,7 +223,7 @@ def main() -> None:
         }
         json.dump(result, sys.stdout, indent=2)
         print()
-        sys.exit(0)  # not an error state for the overall skill -- this check is optional
+        sys.exit(0)
 
     try:
         if use_dataforseo:
@@ -246,7 +234,7 @@ def main() -> None:
         json.dump({"error": str(exc)}, sys.stdout, indent=2)
         print()
         sys.exit(1)
-    except Exception as exc:  # noqa: BLE001 -- surface the provider failure clearly rather than a raw traceback
+    except Exception as exc:
         json.dump({
             "error": http_util.sanitize_text(
                 f"SERP check via {'dataforseo' if use_dataforseo else 'ahrefs'} failed: {exc}"
@@ -266,7 +254,7 @@ def main() -> None:
         "position": check.get("position"),
         "found": check.get("found"),
     })
-    history[key] = history[key][-200:]  # cap -- this is an ad-hoc check log, not a dense daily series
+    history[key] = history[key][-200:]
     history_path = _save_history(cfg, history)
 
     report = {

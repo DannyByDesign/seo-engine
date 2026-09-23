@@ -12,10 +12,6 @@ from scripts.lib.robots import Group, RobotsPolicy
 SITE = "https://mysite.org"
 
 
-# ---------------------------------------------------------------------------
-# parse
-# ---------------------------------------------------------------------------
-
 def test_parse_consecutive_ua_lines_merge_into_one_group():
     policy = robots.parse("User-agent: GPTBot\nUser-agent: ClaudeBot\nDisallow: /x\n")
     assert len(policy.groups) == 1
@@ -67,10 +63,6 @@ def test_parse_ignores_rules_before_any_user_agent():
     assert policy.groups[0].rules == [("disallow", "/x")]
 
 
-# ---------------------------------------------------------------------------
-# rules_for — the RFC 9309 all-matching-groups merge
-# ---------------------------------------------------------------------------
-
 B14 = """
 User-agent: PerplexityBot
 Disallow: /private/
@@ -89,7 +81,6 @@ def test_rules_for_merges_separate_groups_for_same_agent():
         ("disallow", "/private/"),
         ("disallow", "/internal/"),
     ]
-    # And both rules are live in evaluation:
     assert not policy.allowed("PerplexityBot", f"{SITE}/private/page")
     assert not policy.allowed("PerplexityBot", f"{SITE}/internal/page")
     assert policy.allowed("PerplexityBot", f"{SITE}/public/page")
@@ -117,10 +108,6 @@ def test_rules_for_matched_token_does_not_inherit_star_rules():
     assert not policy.allowed("OtherBot", f"{SITE}/all/page")
 
 
-# ---------------------------------------------------------------------------
-# _evaluate via allowed()
-# ---------------------------------------------------------------------------
-
 def test_longest_match_wins():
     policy = robots.parse("User-agent: *\nDisallow: /\nAllow: /public\n")
     assert policy.allowed("bot", f"{SITE}/public/x")
@@ -133,9 +120,6 @@ def test_tie_goes_to_allow():
 
 
 def test_empty_allow_pattern_matches_nothing():
-    # The empty-Allow-nullifies-Disallow bug: `Allow:` (no value) must be a
-    # no-op, not a zero-length always-match that out-competes nothing and
-    # definitely not a blanket allow.
     policy = robots.parse("User-agent: *\nDisallow: /\nAllow:\n")
     assert not policy.allowed("bot", f"{SITE}/anything")
 
@@ -158,10 +142,6 @@ def test_query_string_is_part_of_matched_path():
     assert not policy.allowed("bot", f"{SITE}/search?q=stuff")
     assert policy.allowed("bot", f"{SITE}/search")
 
-
-# ---------------------------------------------------------------------------
-# fetch semantics (through the fake transport)
-# ---------------------------------------------------------------------------
 
 def test_fetch_200_parses_body(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", {
@@ -201,7 +181,7 @@ def test_fetch_4xx_means_allow_all(fake_transport, status):
 
 
 def test_fetch_5xx_means_disallow_all_with_fetch_error(fake_transport):
-    fake_transport.route("GET", f"{SITE}/robots.txt", 500)  # repeats across retries
+    fake_transport.route("GET", f"{SITE}/robots.txt", 500)
     policy = robots.fetch(SITE)
     assert policy.disallow_all is True
     assert policy.allow_all is False
@@ -216,13 +196,9 @@ def test_fetch_network_failure_means_disallow_all_with_fetch_error(fake_transpor
     policy = robots.fetch(SITE)
     assert policy.disallow_all is True
     assert policy.source_status == -1
-    assert policy.fetch_error  # carries the sanitized HttpError message
+    assert policy.fetch_error
     assert not policy.allowed("anybot", f"{SITE}/anything")
 
-
-# ---------------------------------------------------------------------------
-# policy accessors
-# ---------------------------------------------------------------------------
 
 def test_allowed_short_circuits_on_allow_all_and_disallow_all():
     blocked_group = Group(agents=["*"], rules=[("disallow", "/")])

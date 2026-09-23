@@ -65,8 +65,8 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import pagerules, snapshots, urlnorm  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import pagerules, snapshots, urlnorm
 
 TITLE_MIN = 30
 TITLE_MAX = 60
@@ -90,11 +90,11 @@ def _tokens(text: str) -> set[str]:
 @dataclass
 class PageIssue:
     url: str
-    severity: str  # "high" | "medium" | "low"
+    severity: str
     problem: str
     detail: str
     current_value: Optional[str] = None
-    affected_urls: Optional[list[str]] = None  # set on site-level duplicate findings
+    affected_urls: Optional[list[str]] = None
 
 
 @dataclass
@@ -150,7 +150,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
         if description:
             descriptions_by_value[description].append(url)
 
-        # ---- missing title/description: highest priority, zero SERP control ----
         if not title:
             result.add(url, "high", "missing_title",
                        "No <title> element found. Google will synthesize one "
@@ -162,7 +161,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
                        "a snippet from page content, which is frequently a "
                        "poor summary and loses a click-through opportunity.")
 
-        # ---- length bounds ----
         if title:
             length = len(title)
             if length > TITLE_MAX:
@@ -193,7 +191,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
                            "opportunity to summarize/entice in the SERP snippet.",
                            current_value=description)
 
-        # ---- Open Graph ----
         if not og.get("og:title"):
             result.add(url, "low", "missing_og_title",
                        "No og:title found -- social shares and link-preview "
@@ -209,7 +206,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
                        "messaging apps render as a bare text link with no "
                        "preview image, which measurably suppresses click-through.")
 
-        # ---- Twitter Card ----
         if not (twitter.get("twitter:card") or "").strip():
             result.add(url, "low", "missing_twitter_card",
                        "No twitter:card meta tag found (or its content is "
@@ -219,7 +215,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
                        "(usually 'summary' or 'summary_large_image') in the "
                        "same template that emits the OG tags.")
 
-        # ---- H1 / title mismatch ----
         if title and h1_list:
             h1_text = " ".join(h1_list)
             title_tokens = _tokens(title)
@@ -245,10 +240,6 @@ def audit(records: list[dict[str, Any]], site_url: str, snapshot_path: str) -> A
                        "the title/H1 relevance check and is itself a "
                        "content-structure signal.")
 
-    # ---- duplicates across the whole site: ONE finding per duplicated value,
-    # listing every affected URL. Pages are already deduplicated by folded
-    # final-destination identity, so every URL in these lists is a genuinely
-    # distinct page, not a slash/www/scheme alias of another entry. ----
     for value, urls in titles_by_value.items():
         if len(urls) > 1:
             result.add(urls[0], "high", "duplicate_title",

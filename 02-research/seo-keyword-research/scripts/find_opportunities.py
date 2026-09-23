@@ -82,24 +82,17 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import time  # noqa: E402
-from datetime import timedelta, datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import json
+import time
+from datetime import timedelta, datetime, timezone
+from typing import Any, Optional
 
-from scripts.lib import gsc, http_util, snapshots  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import gsc, http_util, snapshots
+from scripts.lib.config import Config, MissingConfigError
 
-# A widely-replicated organic CTR-by-position curve (multiple independent
-# industry CTR studies broadly agree on the shape: steep drop-off from #1,
-# long shallow tail past #10). This is a rough band-based *expectation*, not a
-# claim about any specific SERP -- it exists only to catch rows where CTR is
-# unusually low for the position already achieved (e.g. a irrelevant/weak
-# title or snippet undercutting a position that should otherwise earn clicks),
-# distinct from rows that are simply ranking outside the top 10 entirely.
 EXPECTED_CTR_BY_POSITION_BAND = [
     (1, 2, 0.25),
     (2, 3, 0.15),
@@ -129,7 +122,7 @@ def _fetch_gsc_rows(
     a row segmented to one country/device carries the same metrics a
     server-side dimensionFilterGroups filter would return for it."""
     notes: list[str] = []
-    end = gsc.gsc_today() - timedelta(days=3)  # GSC data has a reporting lag of ~2-3 days
+    end = gsc.gsc_today() - timedelta(days=3)
     start = end - timedelta(days=days)
 
     dimensions = ["query", "page"]
@@ -214,10 +207,6 @@ def _flag_near_misses(
             row_out["expected_ctr_for_position"] = round(expected_ctr, 4)
             row_out["ctr_vs_expected_ratio"] = round(ctr_gap_ratio, 2)
             row_out["flag_reason"] = reason
-            # Headroom: rough "clicks left on the table" if this row reached
-            # its position band's expected CTR (or, for out-of-target-position
-            # rows, if it reached the #5-8 band's expected CTR as a
-            # conservative "made the first page properly" reference point).
             reference_ctr = expected_ctr if reason == "ctr_below_position_expectation" else EXPECTED_CTR_BY_POSITION_BAND[3][2]
             headroom_clicks = max(0.0, row["impressions"] * reference_ctr - row["clicks"])
             row_out["estimated_headroom_clicks"] = round(headroom_clicks, 1)
@@ -271,15 +260,11 @@ def _attach_ahrefs_context(cfg: Config, queries: list[str]) -> tuple[dict[str, d
 
     notes: list[str] = []
     context: dict[str, dict[str, Any]] = {}
-    batch_size = 100  # keep well under any single-request row/unit ceiling
+    batch_size = 100
     try:
         for i in range(0, len(queries), batch_size):
             batch = queries[i:i + batch_size]
             result = ahrefs.keywords_overview(cfg, batch)
-            # Row fields track ahrefs.keywords_overview's select list exactly:
-            # keyword, volume, keyword_difficulty, cpc. (The renamed Ahrefs v3
-            # fields best_position/sum_traffic/best_position_url belong to
-            # organic_keywords, which this script does not call.)
             for item in result.get("keywords", result.get("data", [])) or []:
                 kw = item.get("keyword")
                 if kw:
@@ -292,7 +277,7 @@ def _attach_ahrefs_context(cfg: Config, queries: list[str]) -> tuple[dict[str, d
         notes.append(f"Attached Ahrefs keyword-volume/difficulty context for {len(context)} of {len(queries)} queries.")
     except MissingConfigError as exc:
         notes.append(f"Ahrefs configured but credentials incomplete: {exc}")
-    except Exception as exc:  # noqa: BLE001 -- keyword context is an enhancement, not a hard dependency
+    except Exception as exc:
         notes.append(
             "Ahrefs keywords_overview() call failed, continuing without it: "
             f"{http_util.sanitize_text(str(exc))}"
@@ -305,7 +290,7 @@ def _attach_dataforseo_context(cfg: Config, queries: list[str]) -> tuple[dict[st
 
     notes: list[str] = []
     context: dict[str, dict[str, Any]] = {}
-    batch_size = 1000  # DataForSEO search_volume max per request
+    batch_size = 1000
     try:
         for i in range(0, len(queries), batch_size):
             batch = queries[i:i + batch_size]
@@ -324,13 +309,11 @@ def _attach_dataforseo_context(cfg: Config, queries: list[str]) -> tuple[dict[st
     except MissingConfigError as exc:
         notes.append(f"DataForSEO configured but credentials incomplete: {exc}")
     except dataforseo.DataForSeoError as exc:
-        # The client raises this for application-level failures DataForSEO
-        # hides inside HTTP 200 (auth/task errors) -- degrade, never crash.
         notes.append(
             "DataForSEO reported an application-level error, continuing without "
             f"keyword context: {http_util.sanitize_text(str(exc))}"
         )
-    except Exception as exc:  # noqa: BLE001 -- keyword context is an enhancement, not a hard dependency
+    except Exception as exc:
         notes.append(
             "DataForSEO search_volume() call failed, continuing without it: "
             f"{http_util.sanitize_text(str(exc))}"
@@ -410,7 +393,7 @@ def main() -> None:
         print()
         sys.exit(1)
 
-    snapshots.prune(cfg)  # retention housekeeping -- state must not grow unbounded
+    snapshots.prune(cfg)
 
     try:
         rows, gsc_notes, gsc_hit_cap = _fetch_gsc_rows(
@@ -421,12 +404,10 @@ def main() -> None:
         print()
         sys.exit(1)
     except gsc.GscPropertyError as exc:
-        # resolve_property() found no matching GSC property -- the exception
-        # message already lists the visible properties and remediation.
         json.dump({"error": str(exc)}, sys.stdout, indent=2)
         print()
         sys.exit(1)
-    except Exception as exc:  # noqa: BLE001 -- GSC is a hard dependency; fail with clean JSON
+    except Exception as exc:
         json.dump({
             "error": "GSC query failed: " + http_util.sanitize_text(str(exc)),
             "remediation": (
@@ -468,12 +449,8 @@ def main() -> None:
 
     for opp in opportunities:
         ctx = keyword_context.get(opp["query"])
-        opp["keyword_context"] = ctx  # None if not available/not looked up
+        opp["keyword_context"] = ctx
 
-    # Sort again with keyword context folded in: prioritize by a simple
-    # composite of realistic upside (headroom, from GSC's own signal -- the
-    # primary driver) and search volume (secondary tie-breaker context only,
-    # never the primary driver, per this skill's SKILL.md).
     def _priority_key(opp: dict[str, Any]) -> tuple[float, float]:
         headroom = opp["total_estimated_headroom_clicks"]
         volume = 0
@@ -495,7 +472,7 @@ def main() -> None:
             "best_position": opp["best_position"],
             "total_estimated_headroom_clicks": opp["total_estimated_headroom_clicks"],
         })
-        history[key] = history[key][-52:]  # cap ~1yr of weekly runs per query+page
+        history[key] = history[key][-52:]
     history_path = _save_history(cfg, history)
 
     report = {

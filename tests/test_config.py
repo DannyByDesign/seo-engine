@@ -19,16 +19,12 @@ def _cfg(env=None, site=None, root=UNUSED_ROOT):
     return Config(repo_root=root, env=dict(env or {}), site=dict(site or {}))
 
 
-# ---------------------------------------------------------------------------
-# Placeholder detection (via has/require, the public surface)
-# ---------------------------------------------------------------------------
-
 @pytest.mark.parametrize("value,ok", [
     ("your-key", False),
     ("<KEY>", False),
     ("/path/to/creds.json", False),
     ("changeme", False),
-    ("CHANGEME-NOW", False),                    # case-insensitive marker
+    ("CHANGEME-NOW", False),
     ("https://your-site.example.com", False),
     ("", False),
     ("   ", False),
@@ -57,10 +53,6 @@ def test_require_rejects_placeholder_value():
         _cfg(env={"K": "your-key-here"}).require("K", "hint")
 
 
-# ---------------------------------------------------------------------------
-# site_url
-# ---------------------------------------------------------------------------
-
 def test_site_url_valid_https_and_trailing_slash_rstripped():
     assert _cfg(env={"SEO_SITE_URL": "https://mysite.org/"}).site_url == "https://mysite.org"
 
@@ -86,10 +78,6 @@ def test_site_config_value_takes_precedence_over_env():
                site={"site_url": "https://from-site.org"})
     assert cfg.site_url == "https://from-site.org"
 
-
-# ---------------------------------------------------------------------------
-# find_repo_root
-# ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("marker,is_dir", [
     (".git", True),
@@ -131,10 +119,6 @@ def test_seo_repo_root_pointing_at_nonexistent_dir_raises(tmp_path, monkeypatch)
     assert ei.value.key == "SEO_REPO_ROOT"
 
 
-# ---------------------------------------------------------------------------
-# Config.load env layering: engine .env < repo .env < process environ
-# ---------------------------------------------------------------------------
-
 def test_load_env_precedence(tmp_path, monkeypatch):
     engine = tmp_path / "engine"
     engine.mkdir()
@@ -154,9 +138,9 @@ def test_load_env_precedence(tmp_path, monkeypatch):
 
     cfg = Config.load(repo)
     assert cfg.repo_root == repo.resolve()
-    assert cfg.env["SEOTEST_A"] == "engine-a"  # engine .env fallback (quotes stripped)
-    assert cfg.env["SEOTEST_B"] == "repo-b"    # repo .env beats engine .env
-    assert cfg.env["SEOTEST_C"] == "process-c" # process environ beats both
+    assert cfg.env["SEOTEST_A"] == "engine-a"
+    assert cfg.env["SEOTEST_B"] == "repo-b"
+    assert cfg.env["SEOTEST_C"] == "process-c"
 
 
 def test_load_reads_site_yaml(tmp_path, monkeypatch):
@@ -170,10 +154,6 @@ def test_load_reads_site_yaml(tmp_path, monkeypatch):
     assert cfg.site == {"site_url": "https://loaded.org"}
     assert cfg.site_url == "https://loaded.org"
 
-
-# ---------------------------------------------------------------------------
-# INTEGRATION_ENV_VARS semantics
-# ---------------------------------------------------------------------------
 
 def test_gsc_available_with_either_var():
     assert _cfg(env={"GOOGLE_APPLICATION_CREDENTIALS": "/Users/me/creds.json"}) \
@@ -206,10 +186,6 @@ def test_available_integrations_covers_every_entry():
     assert set(_cfg().available_integrations()) == set(config.INTEGRATION_ENV_VARS)
 
 
-# ---------------------------------------------------------------------------
-# save_site_config
-# ---------------------------------------------------------------------------
-
 def test_save_site_config_merges_into_existing_yaml(tmp_repo):
     cfg = tmp_repo.make_config(site={"site_url": "https://old.org", "keep": 1})
     path = cfg.repo_root / ".seo-engine" / "config.yml"
@@ -219,8 +195,8 @@ def test_save_site_config_merges_into_existing_yaml(tmp_repo):
     assert out == path
     data = yaml.safe_load(path.read_text())
     assert data == {"site_url": "https://new.org", "keep": 1, "extra": "x"}
-    assert cfg.site == data                          # refreshed in place
-    assert list(path.parent.glob("*.tmp")) == []     # atomic, no residue
+    assert cfg.site == data
+    assert list(path.parent.glob("*.tmp")) == []
 
 
 def test_save_site_config_creates_dirs_when_absent(tmp_path):

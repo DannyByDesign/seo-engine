@@ -37,9 +37,9 @@ from bs4 import BeautifulSoup
 
 from . import http_util, robots, urlnorm
 
-CRAWL_DELAY_SECONDS = 1.0  # polite default; robots.txt crawl-delay overrides upward
+CRAWL_DELAY_SECONDS = 1.0
 DEFAULT_MAX_PAGES = 500
-MAX_BODY_BYTES = 2 * 1024 * 1024  # never read more than 2 MB of any one response
+MAX_BODY_BYTES = 2 * 1024 * 1024
 SCHEMA_VERSION = 2
 
 _HTML_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
@@ -52,8 +52,8 @@ class PageRecord:
     fetched_at: float
     status: int
     error: str = ""
-    error_type: str = ""  # too_many_redirects | timeout | connection | ssl | other
-    redirect_chain: list[dict] = field(default_factory=list)  # per hop: {url, status, location}
+    error_type: str = ""
+    redirect_chain: list[dict] = field(default_factory=list)
     final_url: str = ""
     content_type: str = ""
     title: str = ""
@@ -76,7 +76,7 @@ class PageRecord:
     word_count: int = 0
     content_hash: str = ""
     depth: int = 0
-    discovered_from: str = ""  # first referrer that linked here (crawl provenance)
+    discovered_from: str = ""
 
 
 def normalize_url(base: str, href: str) -> Optional[str]:
@@ -126,7 +126,6 @@ def _fetch(url: str, delay: float) -> PageRecord:
         record.error = str(exc)
         record.error_type = exc.error_type or "other"
         if exc.response is not None:
-            # A TooManyRedirects error carries the partial hop history.
             record.redirect_chain = [
                 {"url": r.url, "status": r.status_code,
                  "location": r.headers.get("Location", "")}
@@ -150,8 +149,8 @@ def _fetch(url: str, delay: float) -> PageRecord:
         too_big = declared_len.isdigit() and int(declared_len) > MAX_BODY_BYTES
         if record.status == 200 and is_html and not too_big:
             body = _read_capped_body(resp)
-            resp._content = body  # let .text decode the capped bytes with the declared charset
-            record._body_text = resp.text  # type: ignore[attr-defined]
+            resp._content = body
+            record._body_text = resp.text
     finally:
         resp.close()
     return record
@@ -162,7 +161,7 @@ def _extract(record: PageRecord, root_host: str, include_subdomains: bool) -> Pa
     body_text = getattr(record, "_body_text", None)
     if body_text is None:
         return record
-    del record._body_text  # type: ignore[attr-defined]
+    del record._body_text
     if not body_text:
         return record
 
@@ -248,7 +247,7 @@ def _extract(record: PageRecord, root_host: str, include_subdomains: bool) -> Pa
 
 def _drop_pending_body(record: PageRecord) -> None:
     if getattr(record, "_body_text", None) is not None:
-        del record._body_text  # type: ignore[attr-defined]
+        del record._body_text
 
 
 def _robots_status(policy: robots.RobotsPolicy) -> str:
@@ -298,8 +297,6 @@ def crawl(
         if crawl_delay:
             delay = max(delay, float(crawl_delay))
         if policy.disallow_all:
-            # Unreadable robots.txt (5xx/network): conservative no-crawl,
-            # surfaced explicitly — never a silent empty snapshot.
             stats["all_blocked"] = True
             return
 
@@ -321,13 +318,12 @@ def crawl(
 
         follow_links = record.status == 200
         if follow_links and policy is not None and record.final_url:
-            # A redirect can land on a path robots forbids — don't harvest it.
             if not policy.allowed(http_util.USER_AGENT, record.final_url):
                 stats["blocked_by_robots"] += 1
                 follow_links = False
         if follow_links and record.final_url and not urlnorm.same_site(
                 record.final_url, root_host, include_subdomains=include_subdomains):
-            follow_links = False  # redirected off-site: keep the record, not the links
+            follow_links = False
 
         if follow_links:
             record = _extract(record, root_host, include_subdomains)

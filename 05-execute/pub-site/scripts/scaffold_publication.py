@@ -29,20 +29,20 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import hashlib  # noqa: E402
-import json  # noqa: E402
-import random  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import hashlib
+import json
+import random
+from datetime import datetime, timezone
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-import yaml  # noqa: E402
+import yaml
 
-from scripts.lib import http_util, llm, publication  # noqa: E402
-from scripts.lib.config import Config, save_site_config  # noqa: E402
+from scripts.lib import http_util, llm, publication
+from scripts.lib.config import Config, save_site_config
 
 DEFAULT_SECTIONS = ["Features", "Analysis"]
 DEFAULT_AUTHOR_COUNT = 1
@@ -74,7 +74,7 @@ def read_homepage(domain: str) -> dict[str, str]:
 def propose_identity(cfg: Config, client_domain: str, client_name: str, direction: str) -> dict[str, Any]:
     try:
         home = read_homepage(client_domain)
-    except Exception as exc:  # noqa: BLE001 — an unreadable homepage is survivable when a direction is given
+    except Exception as exc:
         home = {"title": "", "description": "", "h1": "", "error": http_util.sanitize_text(str(exc))}
     user = (f"Client company: {client_name or client_domain} ({client_domain})\n"
             f"Client homepage title: {home.get('title')}\nClient homepage description: {home.get('description')}\n"

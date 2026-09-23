@@ -41,7 +41,7 @@ def collect(cfg, provider, operation, *, query=None, target=None, location=2840,
         if budget['attempts'] >= cap: raise ValueError('daily research call limit reached; reuse evidence or wait for next UTC day')
         if configured:
             budget['attempts'] += 1
-            pubstate.save_json(budget_path, budget)  # Reserve before egress; uncertain calls remain charged.
+            pubstate.save_json(budget_path, budget)
     result = {'provider': provider, 'operation': operation, 'query': query, 'target': target,
               'location_code': location, 'language': language, 'country': country, 'limit': limit,
               'observed_on': now.date().isoformat(), 'collected_at': now.isoformat(),
@@ -91,7 +91,6 @@ def collect(cfg, provider, operation, *, query=None, target=None, location=2840,
         if not result['complete']: result['error'] = 'No completed provider result; do not infer no demand'
     except (ValueError, KeyError, TypeError, OSError, RuntimeError) as exc:
         result['error'] = http_util.sanitize_text(str(exc))
-    # Never persist a provider echo of a configured secret.
     text = json.dumps(result, ensure_ascii=False)
     for key, value in cfg.env.items():
         if value and len(value) >= 4 and any(part in key for part in ('KEY', 'TOKEN', 'PASSWORD', 'SECRET')):

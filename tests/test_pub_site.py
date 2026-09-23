@@ -88,7 +88,6 @@ def _write_posts(pub_dir: Path, authors: list[str]) -> None:
         published="2026-08-29T20:11:45.769Z", para=PARA, other="advertiser-readiness"), encoding="utf-8")
 
 
-    # Synthetic source/reviewer fixture for production review gates; not real evidence.
     from scripts.lib import editorial, publication
     for path in (pub_dir / 'posts').glob('*.md'):
         meta, body = publication.read_post(path)
@@ -116,7 +115,6 @@ def test_scaffold_build_validate_roundtrip(repo: Path):
     assert plan["site"]["authors"][0]["type"] == "Organization" and "Based in" not in bio
     assert not (repo / "publications").exists()
 
-    # the naming rule
     bad = run("scaffold_publication.py", repo, "--name", "Thrad Review", "--site-url", "https://x.com",
               "--client-name", "thrad", "--deterministic-authors", "--dry-run")
     assert bad.returncode != 0 and "contains the client name" in (bad.stderr + bad.stdout)
@@ -147,7 +145,6 @@ def test_scaffold_build_validate_roundtrip(repo: Path):
     assert validated.returncode == 0 and report["posts_checked"] == 2
     assert (repo / ".seo-engine" / "reports").glob("pub-site-validate-*.json")
 
-    # planted defects are caught
     (pub_dir / "dist" / "robots.txt").write_text("User-agent: *\nAllow: /\n\nUser-agent: OAI-SearchBot\nDisallow: /\n"
                                                  "\nUser-agent: GPTBot\nDisallow: /\n")
     post_html = pub_dir / "dist" / "posts" / "advertiser-readiness" / "index.html"
@@ -174,5 +171,4 @@ def test_validator_accepts_the_real_letterstory_article(tmp_path: Path):
     errors = [f for f in report["findings"] if f["severity"] == "error"]
     assert errors == [], errors
     assert report["posts_checked"] == 1 and result.returncode == 0
-    # the two things their template lacks show up as warnings, not errors
     assert any(f["check"] == "img-dimensions" for f in report["findings"])

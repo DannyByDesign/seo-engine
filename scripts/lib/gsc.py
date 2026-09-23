@@ -38,7 +38,7 @@ from . import urlnorm
 from .config import Config, MissingConfigError, save_site_config
 
 SCOPES = ["https://www.googleapis.com/auth/webmasters"]
-MAX_ROWS_PER_REQUEST = 25_000  # API maximum for searchanalytics.query
+MAX_ROWS_PER_REQUEST = 25_000
 
 _HINT = (
     "Create a Google Cloud service account, download its JSON key, then add "
@@ -99,8 +99,6 @@ def _service(cfg: Config):
     return build("searchconsole", "v1", credentials=_credentials(cfg), cache_discovery=False)
 
 
-# ---------- property resolution ----------
-
 def list_sites(cfg: Config) -> list[dict[str, Any]]:
     """Properties visible to the service account: [{siteUrl, permissionLevel}]."""
     service = _service(cfg)
@@ -122,10 +120,9 @@ def _match_property(site_url: str, entries: list[dict[str, Any]]) -> tuple[Optio
     available = set(verified)
 
     exact_prefix = site_url.rstrip("/") + "/"
-    folded_host = urlnorm.host_key(site_url)  # lowercased, www-folded
+    folded_host = urlnorm.host_key(site_url)
     raw_host = site_url.split("//", 1)[-1].split("/", 1)[0].lower()
 
-    # sc-domain candidates: the www-stripped host, then each parent domain.
     labels = raw_host.removeprefix("www.").split(".") if raw_host else []
     sc_candidates = [
         "sc-domain:" + ".".join(labels[i:]) for i in range(max(len(labels) - 1, 0))
@@ -172,7 +169,7 @@ def resolve_property(cfg: Config, site_url: Optional[str] = None, *, force: bool
         )
     try:
         save_site_config(cfg, {"gsc_property": best, "gsc_property_candidates": matches})
-    except Exception:  # noqa: BLE001 — persistence is an optimization, not a requirement
+    except Exception:
         pass
     return best
 
@@ -198,8 +195,6 @@ def _call(cfg: Config, property_id: Optional[str], fn: Callable[[str], Any]) -> 
             raise
         return fn(refreshed)
 
-
-# ---------- search analytics ----------
 
 def search_analytics_query(
     cfg: Config,
@@ -260,8 +255,6 @@ def search_analytics_query_all(
     return rows, True
 
 
-# ---------- URL inspection ----------
-
 def inspect_url(cfg: Config, inspection_url: str, *,
                 property_id: Optional[str] = None) -> dict[str, Any]:
     """Index status, selected canonical, mobile usability, and rich-results
@@ -272,8 +265,6 @@ def inspect_url(cfg: Config, inspection_url: str, *,
                  service.urlInspection().index().inspect(
                      body={"inspectionUrl": inspection_url, "siteUrl": prop}).execute())
 
-
-# ---------- sitemaps ----------
 
 def list_sitemaps(cfg: Config, *, property_id: Optional[str] = None) -> dict[str, Any]:
     service = _service(cfg)

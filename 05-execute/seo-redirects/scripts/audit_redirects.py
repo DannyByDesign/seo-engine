@@ -73,8 +73,8 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import crawler, redirect_analysis, snapshots, urlnorm  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import crawler, redirect_analysis, snapshots, urlnorm
 
 
 def load_pages(jsonl_path: Path) -> list[dict]:
@@ -93,23 +93,6 @@ def _norm(url: str) -> str:
     Full-URL identity comparisons use urlnorm.canonical_key instead."""
     return (url or "").rstrip("/")
 
-
-# ---------------------------------------------------------------------------
-# Chain/loop analysis: shared taxonomy from scripts.lib.redirect_analysis
-# (the previous private detector flagged every /foo -> /foo/ slash-normalizing
-# redirect as a critical "loop" — tripping launch blockers on healthy sites —
-# while genuine loops raise TooManyRedirects upstream and never reached it)
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-# Redirect-config file parsers
-#
-# Conservative, line/regex-based extraction of (source, destination, status)
-# triples from each framework's conventional redirect declaration shape.
-# Not a full parser for any of these languages — anything that doesn't match
-# a recognized pattern is reported in `parse_warnings`, never silently
-# dropped or guessed at.
-# ---------------------------------------------------------------------------
 
 def _detect_config_format(path: Path) -> str:
     name = path.name.lower()
@@ -136,10 +119,6 @@ def parse_nextjs_redirects(text: str) -> dict:
     rules = []
     warnings = []
 
-    # Locate `return [` inside a redirects() function, then take the array by
-    # BRACKET-DEPTH scanning — a non-greedy regex would truncate at the first
-    # `]` inside a nested array (e.g. a `has: [...]` matcher), silently
-    # dropping every later rule.
     fn_match = re.search(r"(?:async\s+)?redirects\s*\(\s*\)\s*(?::\s*[^\{]+)?\{", text)
     return_match = re.search(r"return\s*\[", text[fn_match.end():]) if fn_match else None
     if not fn_match or not return_match:
@@ -151,7 +130,7 @@ def parse_nextjs_redirects(text: str) -> dict:
         )
         return {"rules": rules, "parse_warnings": warnings}
 
-    array_start = fn_match.end() + return_match.end() - 1  # index of the "["
+    array_start = fn_match.end() + return_match.end() - 1
     bracket_depth = 0
     array_end = None
     for idx in range(array_start, len(text)):
@@ -168,7 +147,6 @@ def parse_nextjs_redirects(text: str) -> dict:
         return {"rules": rules, "parse_warnings": warnings}
 
     array_text = text[array_start:array_end]
-    # Split into top-level object blocks by tracking brace depth.
     blocks = []
     depth = 0
     current = ""
@@ -223,7 +201,6 @@ def parse_vercel_json(text: str) -> dict:
             continue
         status = entry.get("statusCode")
         if status is None:
-            # Vercel's documented default for an absent `permanent` is false.
             status = 308 if entry.get("permanent") else 307
         rules.append({
             "source": entry["source"],
@@ -385,10 +362,6 @@ def parse_redirect_config(path: Path) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Cross-check: declared config rules vs. what the crawl actually observed
-# ---------------------------------------------------------------------------
-
 def _path_matches_source(source: str, url_path: str) -> bool:
     """Loose match: exact path match, or a simple wildcard/:param pattern
     treated as a prefix match up to the first wildcard/param token. This is
@@ -509,8 +482,6 @@ def crosscheck_config_vs_crawl(rules: list[dict], pages: list[dict], site_url: s
                 "observed_final_url": observed_final,
             })
 
-    # Live redirects observed in the crawl with no declared rule matching
-    # their source path at all.
     declared_sources = [
         (urlparse(r["source"]).path if r["source"].startswith("http") else r["source"])
         for r in rules
@@ -547,10 +518,6 @@ def crosscheck_config_vs_crawl(rules: list[dict], pages: list[dict], site_url: s
     }
 
 
-# ---------------------------------------------------------------------------
-# Migration-safety: every "old URL" must have live coverage
-# ---------------------------------------------------------------------------
-
 def check_migration_coverage(old_urls: list[str], pages: list[dict], config_rules: list[dict]) -> dict:
     """For each URL slated to stop existing in a migration, confirm it
     either still resolves 200 (not actually being removed / not yet) or has
@@ -574,7 +541,6 @@ def check_migration_coverage(old_urls: list[str], pages: list[dict], config_rule
         page = by_key.get(urlnorm.canonical_key(old_url))
 
         if page and page.get("error_type") == "too_many_redirects":
-            # A redirect exists but it LOOPS — worse than no coverage.
             missing.append({
                 "old_url": old_url,
                 "reason": "redirect_loops",
@@ -632,10 +598,6 @@ def check_migration_coverage(old_urls: list[str], pages: list[dict], config_rule
     }
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def main() -> None:
     import argparse
 
@@ -664,7 +626,6 @@ def main() -> None:
     site_url = cfg.site_url
 
     if args.snapshot:
-        # Analyze an explicitly named snapshot, read-only — never overwrite it.
         snapshot_path = Path(args.snapshot)
         if not snapshot_path.is_file():
             json.dump({"error": f"--snapshot path does not exist: {snapshot_path}"}, sys.stdout, indent=2)
@@ -705,7 +666,6 @@ def main() -> None:
     all_findings = (loop_findings + chain_findings
                     + canonicalization_findings + link_to_redirect_findings)
 
-    # --- optional config cross-check ---
     config_result = {"checked": False, "reason": "No --redirect-config path supplied."}
     crosscheck_result = None
     if args.redirect_config:
@@ -724,7 +684,6 @@ def main() -> None:
                 for u in crosscheck_result["undeclared_live_redirects"]:
                     all_findings.append(u)
 
-    # --- optional migration-safety check ---
     migration_result = {"checked": False, "reason": "No --old-urls-file supplied."}
     if args.old_urls_file:
         old_urls_path = Path(args.old_urls_file)
@@ -794,8 +753,6 @@ def main() -> None:
             "crosscheck": crosscheck_result,
         },
         "migration_safety": migration_result,
-        # Only genuinely destination-unreachable problems block a launch:
-        # real loops and unredirected migration URLs — never chain hygiene.
         "launch_blocker": bool(migration_result.get("launch_blocker")) or len(loop_findings) > 0,
         "findings": all_findings,
     }

@@ -14,10 +14,6 @@ def hop(url: str, status: int = 301, location: str = "") -> dict:
     return {"url": url, "status": status, "location": location}
 
 
-# ---------------------------------------------------------------------------
-# classify_record
-# ---------------------------------------------------------------------------
-
 def test_too_many_redirects_error_is_critical_redirect_loop():
     record = {
         "url": f"{SITE}/loop",
@@ -91,7 +87,6 @@ def test_three_hop_chain_is_high_severity():
 
 
 def test_multi_hop_all_normalizing_is_canonicalization_chain_low():
-    # http -> https -> www, same page identity throughout.
     record = {
         "url": "http://mysite.org/page",
         "redirect_chain": [
@@ -110,14 +105,7 @@ def test_no_redirect_chain_returns_none():
     assert ra.classify_record({"url": f"{SITE}/plain"}) is None
 
 
-# ---------------------------------------------------------------------------
-# classify_snapshot
-# ---------------------------------------------------------------------------
-
 def test_link_to_redirect_emitted_for_internal_links_to_substantive_redirect():
-    # classify_record(target) must itself be a finding (not None, not
-    # normalizing) for link_to_redirect to fire — a single substantive hop
-    # classifies as None ("normal moved page"), so use a 2-hop chain here.
     pages = [
         {
             "url": f"{SITE}/",
@@ -183,18 +171,18 @@ def test_link_to_redirect_not_emitted_for_normalizing_redirect_targets():
 
 def test_classify_snapshot_counts_dict_tallies_all_types():
     pages = [
-        {  # redirect_loop
+        {
             "url": f"{SITE}/loop",
             "error_type": "too_many_redirects",
             "redirect_chain": [hop(f"{SITE}/loop")],
         },
-        {  # redirect_chain (2 hops, medium)
+        {
             "url": f"{SITE}/a",
             "redirect_chain": [hop(f"{SITE}/a", location=f"{SITE}/b"),
                                 hop(f"{SITE}/b", location=f"{SITE}/c")],
             "final_url": f"{SITE}/c",
         },
-        {  # not a redirect at all
+        {
             "url": f"{SITE}/plain",
             "status": 200,
         },
@@ -205,10 +193,6 @@ def test_classify_snapshot_counts_dict_tallies_all_types():
     assert result["counts"]["canonicalization_chain"] == 0
     assert result["counts"]["normalizing_redirect"] == 0
 
-
-# ---------------------------------------------------------------------------
-# new_redirect_regressions
-# ---------------------------------------------------------------------------
 
 def test_new_redirect_regression_cross_host_is_high():
     prev = {f"{SITE}/page": {"status": 200, "redirect_chain": []}}

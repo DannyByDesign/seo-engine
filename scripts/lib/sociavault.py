@@ -33,7 +33,6 @@ _HINT = "Get a key at sociavault.com/dashboard (50 free credits; pay-as-you-go a
 
 DEFAULT_PLATFORMS = ("reddit", "twitter", "tiktok", "youtube")
 
-#: recency vocabularies differ per platform; "day" | "week" | "month".
 _RECENCY = {
     "reddit": {"day": "day", "week": "week", "month": "month"},
     "tiktok": {"day": "yesterday", "week": "this-week", "month": "this-month"},
@@ -93,8 +92,6 @@ def _iso(value: Any) -> Optional[str]:
     except (ValueError, OSError, OverflowError):
         return None
 
-
-# ---------- endpoints ----------
 
 def credits(cfg: Config) -> dict[str, Any]:
     return _get(cfg, "/credits")
@@ -157,8 +154,6 @@ def tiktok_transcript(cfg: Config, url: str, *, language: str = "en", ai_fallbac
     return _get(cfg, "/scrape/tiktok/transcript",
                 {"url": url, "language": language, "use_ai_as_fallback": str(ai_fallback).lower()})
 
-
-# ---------- normalization ----------
 
 def _first(d: dict[str, Any], *keys: str, default: Any = None) -> Any:
     for k in keys:
@@ -281,7 +276,7 @@ def search_conversations(
                 continue
             credits_used += int(payload.get("credits_used") or 0)
             posts.extend(normalize(platform, item) for item in raw[:limit])
-        except Exception as exc:  # noqa: BLE001 — one platform must not sink the sweep
+        except Exception as exc:
             errors[platform] = http_util.sanitize_text(str(exc))[:300]
     return {"query": query, "recency": recency, "posts": posts, "errors": errors,
             "credits_used": credits_used}

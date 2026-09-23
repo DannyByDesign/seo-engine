@@ -7,36 +7,21 @@ import pytest
 from scripts.lib import urlnorm
 
 
-# ---------------------------------------------------------------------------
-# canonical_key
-# ---------------------------------------------------------------------------
-
 @pytest.mark.parametrize("url,expected", [
-    # scheme fold
     ("http://mysite.org/a", "https://mysite.org/a"),
-    # host case + www fold
     ("https://WWW.MySite.ORG/a", "https://mysite.org/a"),
-    # trailing dot on host
     ("https://mysite.org./x", "https://mysite.org/x"),
-    # default ports dropped, non-default kept
     ("https://mysite.org:443/x", "https://mysite.org/x"),
     ("http://mysite.org:80/x", "https://mysite.org/x"),
     ("https://mysite.org:8080/x", "https://mysite.org:8080/x"),
-    # trailing slash folded on non-root paths only
     ("https://mysite.org/about/", "https://mysite.org/about"),
     ("https://mysite.org/", "https://mysite.org/"),
-    # %XX escapes uppercased (path case otherwise preserved)
     ("https://mysite.org/a%2fb", "https://mysite.org/a%2Fb"),
-    # tracking params dropped ...
     ("https://mysite.org/x?utm_source=tw&utm_medium=s&fbclid=1&gclid=2", "https://mysite.org/x"),
-    # ... but functional params that merely resemble them are KEPT
     ("https://mysite.org/x?ref=nav", "https://mysite.org/x?ref=nav"),
     ("https://mysite.org/x?refresh=1", "https://mysite.org/x?refresh=1"),
-    # query pairs sorted
     ("https://mysite.org/x?b=2&a=1", "https://mysite.org/x?a=1&b=2"),
-    # fragment dropped
     ("https://mysite.org/x#section", "https://mysite.org/x"),
-    # degenerate input never raises
     ("", ""),
     ("http://[junk", "http://[junk"),
 ])
@@ -56,10 +41,6 @@ def test_canonical_key_pct_escape_case_variants_fold_together():
 def test_canonical_key_trailing_dot_with_explicit_port():
     assert urlnorm.canonical_key("https://WWW.MySite.ORG.:443/a") == "https://mysite.org/a"
 
-
-# ---------------------------------------------------------------------------
-# host_key / same_site / is_cross_host_canonical
-# ---------------------------------------------------------------------------
 
 def test_host_key_on_bare_hostname():
     assert urlnorm.host_key("WWW.MySite.ORG.") == "mysite.org"
@@ -86,18 +67,14 @@ def test_same_site_unrelated_host_false():
 
 
 @pytest.mark.parametrize("canonical,page,expected", [
-    ("https://www.mysite.org/", "https://mysite.org/page", False),  # www vs apex
-    ("http://mysite.org/x", "https://mysite.org/x", False),         # scheme variant
-    ("https://evil.org/x", "https://mysite.org/x", True),           # real cross-domain
-    ("", "https://mysite.org/x", False),                            # empty canonical
+    ("https://www.mysite.org/", "https://mysite.org/page", False),
+    ("http://mysite.org/x", "https://mysite.org/x", False),
+    ("https://evil.org/x", "https://mysite.org/x", True),
+    ("", "https://mysite.org/x", False),
 ])
 def test_is_cross_host_canonical(canonical, page, expected):
     assert urlnorm.is_cross_host_canonical(canonical, page) is expected
 
-
-# ---------------------------------------------------------------------------
-# build_alias_map / resolve_alias
-# ---------------------------------------------------------------------------
 
 def test_build_alias_map_maps_redirects_and_skips_error_records():
     pages = [
@@ -105,7 +82,6 @@ def test_build_alias_map_maps_redirects_and_skips_error_records():
         {"url": "https://a.org/err", "final_url": "https://a.org/x",
          "status": 200, "error": "timeout"},
         {"url": "https://a.org/neg", "final_url": "https://a.org/y", "status": -1},
-        # www -> apex folds to the same identity: no self-alias
         {"url": "http://www.a.org/", "final_url": "https://a.org/", "status": 200},
         {"url": "https://a.org/nofinal", "final_url": "", "status": 200},
     ]

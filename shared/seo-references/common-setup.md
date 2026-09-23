@@ -58,12 +58,12 @@ account can see and what to fix.
 
 ```
 .seo-engine/
-├── config.yml            # site facts (committable)
+├── config.yml
 ├── state/
-│   ├── crawls/           # THE shared crawl snapshot store (see below)
-│   ├── http-cache/       # transient response cache
-│   └── <skill>-*.json    # per-skill history/state, produced & consumed by that skill only
-└── reports/              # dated report files, one family per skill
+│   ├── crawls/
+│   ├── http-cache/
+│   └── <skill>-*.json
+└── reports/
 ```
 
 ### Snapshot contract (the one crawl store)
@@ -95,16 +95,16 @@ A publication is content, so it lives in the target repo, committable, at
 
 ```
 publications/<slug>/
-├── site.yml          # masthead, sections, author bank, theme, disclosure, client (pub-site)
-├── strategy.yml      # positioning, ranking targets, landings, competitors, mention policy (pub-strategy)
-├── topic-map.yml     # pillars + spokes with statuses (pub-curate)
-├── seers.yml         # event monitors (pub-curate)
-├── competitors/      # scraped competitor inventories, one JSON per domain (pub-strategy)
-├── drafts/*.md       # in-flight articles: frontmatter carries research/outline/paper trail
-├── posts/*.md        # published articles (frontmatter: published_at set once, updated_at on change)
-├── assets/<post>/    # cover + diagrams referenced by relative path from the post
-├── static/           # copied verbatim into dist/ (verification files, og image)
-└── dist/             # build output — deploy this directory (gitignored)
+├── site.yml
+├── strategy.yml
+├── topic-map.yml
+├── seers.yml
+├── competitors/
+├── drafts/*.md
+├── posts/*.md
+├── assets/<post>/
+├── static/
+└── dist/
 ```
 
 `.seo-engine/config.yml → publications` is the registry (`[{slug, site_url, name}]`) the

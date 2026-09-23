@@ -59,10 +59,8 @@ here than in a pure-audit skill.
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_metadata.py"
 
-# Cap a fresh crawl (only matters when no reusable snapshot exists)
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_metadata.py" --max-pages 300
 
-# Ignore any reusable snapshot and crawl fresh
 python3 "${CLAUDE_SKILL_DIR}/scripts/audit_metadata.py" --force-recrawl
 ```
 

@@ -55,18 +55,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
+import argparse
 import json
 import hashlib
-import inspect  # noqa: E402
-import time  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import inspect
+import time
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import ai_visibility, http_util, llm, mentions, publication, pubstate, stats  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import ai_visibility, http_util, llm, mentions, publication, pubstate, stats
+from scripts.lib.config import Config
 
 PROVIDER_ORDER = ["openai", "anthropic", "perplexity", "gemini"]
 DEFAULT_VARIATIONS = 8
@@ -345,7 +345,7 @@ def main() -> int:
             for _ in range(args.replicates):
                 try:
                     outcome = ai_visibility.PROBERS[name](cfg, p["text"])
-                except Exception as exc:  # noqa: BLE001 — a provider error is an unknown, never a non-mention
+                except Exception as exc:
                     errors += 1
                     responses.append({"prompt": p["text"], "topic": p["topic"], "specificity": p.get("specificity"), "provider": name,
                                       "error": http_util.sanitize_text(str(exc))[:200]})

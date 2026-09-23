@@ -18,8 +18,6 @@ _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z\"“(\[$0-9])")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
 
 
-# ---------- blocks ----------
-
 def blocks(md: str) -> list[dict]:
     """Split markdown into blocks: {kind: heading|para|list|code|quote|image|html|blank, text}."""
     out: list[dict] = []
@@ -75,8 +73,6 @@ def word_count(md: str) -> int:
     return len(text.split())
 
 
-# ---------- numbers & links ----------
-
 def numbers_in(text: str) -> set[str]:
     """Normalized numeric tokens ('$2.08 billion' -> '2.08', '13.6%' -> '13.6%')."""
     out: set[str] = set()
@@ -89,7 +85,7 @@ def numbers_in(text: str) -> set[str]:
         if re.search(r"%|percent", raw):
             token += "%"
         if len(token.rstrip("%")) <= 1 and not token.endswith("%"):
-            continue  # skip bare single digits (list numbering, "one of 3")
+            continue
         out.add(token)
     return out
 

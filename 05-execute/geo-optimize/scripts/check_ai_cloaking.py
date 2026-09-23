@@ -65,24 +65,17 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import http_util, pagerules, snapshots  # noqa: E402
-from scripts.lib.config import MissingConfigError  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import http_util, pagerules, snapshots
+from scripts.lib.config import MissingConfigError
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-# Human-browser baseline UA. Fetched twice (first and last) to measure the
-# page's natural variance -- the self-consistency baseline every crawler-UA
-# comparison is judged against.
 HUMAN_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 )
 
-# Real, documented crawler user-agent strings (geo-playbook.md §4 / vendor
-# docs). Every one of these -- Googlebot included -- is a SPOOFED probe when
-# sent by this script: we are not fetching from the vendor's IP ranges, so
-# results carry the methodology limitation below.
 PROBE_USER_AGENTS = {
     "Googlebot": (
         "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
@@ -96,13 +89,8 @@ PROBE_USER_AGENTS = {
     "PerplexityBot": "PerplexityBot/1.0 (+https://docs.perplexity.ai/docs/perplexitybot)",
 }
 
-# Base gap-ratio threshold. The effective per-URL threshold is
-# max(BASE_GAP_RATIO_THRESHOLD, 3 * natural_variance) where natural_variance
-# is the gap between the two human-UA fetches of the same URL.
 BASE_GAP_RATIO_THRESHOLD = 0.15
 
-# WAF/bot-management challenge classification: these statuses combined with
-# any of the signatures below mean the probe was challenged, not cloaked.
 CHALLENGE_STATUSES = {403, 429, 503}
 CHALLENGE_HEADER_NAMES = ("cf-mitigated", "cf-ray")
 CHALLENGE_BODY_MARKERS = (
@@ -110,8 +98,6 @@ CHALLENGE_BODY_MARKERS = (
     "datadome", "hcaptcha", "captcha",
 )
 
-# Hard-block statuses for status_code_mismatch (only meaningful when the
-# human baseline got 200 and NO challenge signatures are present).
 HARD_BLOCK_STATUSES = {401, 403, 404, 410, 451}
 
 METHODOLOGY_LIMITATION = (
@@ -141,12 +127,11 @@ def fetch_variant(url: str, ua_label: str, ua_string: str) -> dict:
     try:
         resp = http_util.get(url, headers={"User-Agent": ua_string}, min_interval=0.5)
     except http_util.HttpError as exc:
-        return {"ua_label": ua_label, "error": str(exc)}  # pre-sanitized
+        return {"ua_label": ua_label, "error": str(exc)}
 
     body = resp.text or ""
     text = _extract_text(body) if "text/html" in resp.headers.get("Content-Type", "") else ""
 
-    # Challenge-signature detection (only meaningful on challenge statuses).
     signals: list[str] = []
     if resp.status_code in CHALLENGE_STATUSES:
         header_keys = {k.casefold() for k in resp.headers.keys()}
@@ -169,9 +154,6 @@ def fetch_variant(url: str, ua_label: str, ua_string: str) -> dict:
 
 
 def check_url(url: str) -> dict:
-    # Fetch order matters: human first, all spoofed probes, human last --
-    # the two human fetches bracket the probes so natural variance is
-    # measured over the same time window the probes ran in.
     human_first = fetch_variant(url, "human_first", HUMAN_UA)
     probes = {
         label: fetch_variant(url, label, ua_string)
@@ -255,8 +237,6 @@ def check_url(url: str) -> dict:
                 })
             continue
 
-        # Both probe and humans are 200: content comparison, judged against
-        # BOTH human fetches and the self-consistency-scaled threshold.
         if probe["content_hash"] in (human_first["content_hash"], human_last["content_hash"]):
             continue
         gap_vs_first = _gap(probe["word_count"], human_first["word_count"])
@@ -266,9 +246,6 @@ def check_url(url: str) -> dict:
                 "url": url,
                 "ai_user_agent": ai_label,
                 "issue": "content_diverges",
-                # Capped at medium by design: a word-count gap cannot
-                # establish intent (personalization, A/B tests, consent
-                # banners all produce gaps).
                 "severity": "medium",
                 "ai_word_count": probe["word_count"],
                 "human_word_counts": [human_first["word_count"], human_last["word_count"]],

@@ -12,10 +12,6 @@ from scripts.lib.config import Config
 TARGET = "mysite.org"
 
 
-# ---------------------------------------------------------------------------
-# citation_matches
-# ---------------------------------------------------------------------------
-
 def test_citation_matches_url_host():
     citation = {"url": "https://mysite.org/some/page", "title": "irrelevant"}
     assert av.citation_matches(citation, TARGET) is True
@@ -27,8 +23,6 @@ def test_citation_matches_subdomain():
 
 
 def test_citation_matches_title_only_gemini_redirect_case():
-    # Gemini's groundingChunks[].web.uri is an opaque vertexaisearch redirect;
-    # the real source domain arrives in web.title.
     citation = {
         "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/abc123",
         "title": "mysite.org",
@@ -49,10 +43,6 @@ def test_citation_no_match_different_domain():
 def test_citation_no_match_empty_citation():
     assert av.citation_matches({}, TARGET) is False
 
-
-# ---------------------------------------------------------------------------
-# _dedupe
-# ---------------------------------------------------------------------------
 
 def test_dedupe_by_url():
     citations = [
@@ -76,10 +66,6 @@ def test_dedupe_keeps_entries_with_no_url_or_title():
     assert av._dedupe(citations) == [{}, {}]
 
 
-# ---------------------------------------------------------------------------
-# _provider_configured
-# ---------------------------------------------------------------------------
-
 def test_provider_configured_true_when_key_present(tmp_repo):
     cfg = tmp_repo.make_config(env={"OPENAI_API_KEY": "sk-real-key"})
     assert av._provider_configured(cfg, "openai") is True
@@ -94,10 +80,6 @@ def test_provider_configured_false_for_placeholder_value(tmp_repo):
     cfg = tmp_repo.make_config(env={"PERPLEXITY_API_KEY": "your-key-here"})
     assert av._provider_configured(cfg, "perplexity") is False
 
-
-# ---------------------------------------------------------------------------
-# probe_all
-# ---------------------------------------------------------------------------
 
 def test_probe_all_skips_unconfigured_providers(tmp_repo, monkeypatch):
     cfg = tmp_repo.make_config(env={})
@@ -133,7 +115,6 @@ def test_probe_all_one_cited_one_errors_with_error_type(tmp_repo, monkeypatch):
     assert anthropic_result["configured"] is True
     assert anthropic_result["error_type"] == "timeout"
     assert "cited" not in anthropic_result
-    # Error text is sanitized (no leaked credential fragment).
     assert "SECRET123" not in anthropic_result["error"]
     assert "key=REDACTED" in anthropic_result["error"]
 

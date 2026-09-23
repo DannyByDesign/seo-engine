@@ -51,15 +51,15 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+from datetime import datetime, timedelta, timezone
+from typing import Any
 
-from scripts.lib import pagerules, redirect_analysis, snapshots, urlnorm  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import pagerules, redirect_analysis, snapshots, urlnorm
+from scripts.lib.config import Config
 
 try:
     from scripts.lib import gsc as gsc_module
@@ -81,10 +81,6 @@ def _index_by_key(snap: "snapshots.Snapshot") -> dict[str, dict[str, Any]]:
     return pages
 
 
-# ---------------------------------------------------------------------------
-# Crawl-diff regressions
-# ---------------------------------------------------------------------------
-
 def detect_regressions(
     previous: dict[str, dict[str, Any]],
     current: dict[str, dict[str, Any]],
@@ -105,7 +101,6 @@ def detect_regressions(
             continue
         url = cur_rec.get("url", prev_rec.get("url", ""))
 
-        # 1. New noindex on a previously indexable page (meta OR header).
         if not pagerules.is_noindex(prev_rec) and pagerules.is_noindex(cur_rec):
             regressions.append({
                 "type": "new_noindex",
@@ -122,12 +117,10 @@ def detect_regressions(
                 "human_review_required": True,
             })
 
-        # 2. Fetch/status regressions on previously-healthy pages.
         prev_ok = prev_rec.get("status") == 200 and not prev_rec.get("error")
         if prev_ok:
             cur_status = cur_rec.get("status")
             if cur_rec.get("error"):
-                # A single failed fetch can be a transient blip — never critical.
                 regressions.append({
                     "type": "fetch_error",
                     "severity": "medium",
@@ -156,7 +149,6 @@ def detect_regressions(
                     "human_review_required": False,
                 })
 
-        # 3. Canonical changes.
         prev_canonical = prev_rec.get("canonical") or ""
         cur_canonical = cur_rec.get("canonical") or ""
         if prev_canonical != cur_canonical:
@@ -197,14 +189,10 @@ def detect_regressions(
                     "human_review_required": False,
                 })
 
-    # 4. New redirects on previously-direct pages (requests follows redirects,
-    #    so these pages still report status 200 — the hop chain is the signal).
     regressions.extend(redirect_analysis.new_redirect_regressions(previous, current))
     for finding in regressions:
         finding.setdefault("dispatch_skill", "seo-redirects")
 
-    # 5. Pages that disappeared entirely (suppressed when the crawl was
-    #    truncated — disappearance is then indistinguishable from the cap).
     if not suppress_disappeared:
         for key, prev_rec in previous.items():
             if key in current:
@@ -225,9 +213,6 @@ def detect_regressions(
                 "human_review_required": True,
             })
 
-    # 6. New broken internal links: links added since the baseline whose
-    #    target now serves >= 400. Fetch errors (status -1) are excluded —
-    #    a network blip is not a broken link.
     broken_targets = {
         key for key, rec in current.items()
         if not rec.get("error") and (rec.get("status") or 0) >= 400
@@ -254,10 +239,6 @@ def detect_regressions(
     regressions.sort(key=lambda r: SEVERITY_ORDER.get(r["severity"], 9))
     return regressions
 
-
-# ---------------------------------------------------------------------------
-# Opportunity ranking (from the fresh crawl only — no baseline needed)
-# ---------------------------------------------------------------------------
 
 def detect_opportunities(current: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     """Rank improvement opportunities from the current crawl snapshot.
@@ -377,7 +358,6 @@ def detect_opportunities(current: dict[str, dict[str, Any]]) -> list[dict[str, A
             "dispatch_skill": "seo-technical-audit",
         })
 
-    # hreflang reciprocity — per red-flags.md §4 (alias-folded lookups).
     by_key = {urlnorm.canonical_key(r.get("url", "")): r for r in current.values()}
     broken_reciprocal = []
     for url, rec in ok_pages():
@@ -385,7 +365,7 @@ def detect_opportunities(current: dict[str, dict[str, Any]]) -> list[dict[str, A
             target_key = urlnorm.canonical_key(tag.get("href", ""))
             target_rec = by_key.get(target_key)
             if target_rec is None:
-                continue  # target outside crawl scope — can't verify, skip rather than guess
+                continue
             if not any(urlnorm.same_page(t.get("href", ""), url) for t in target_rec.get("hreflang", [])):
                 broken_reciprocal.append(url)
                 break
@@ -401,10 +381,6 @@ def detect_opportunities(current: dict[str, dict[str, Any]]) -> list[dict[str, A
     opportunities.sort(key=lambda o: (impact_order.get(o["impact"], 9), -o.get("count", 0)))
     return opportunities
 
-
-# ---------------------------------------------------------------------------
-# GSC-based regression checks (optional integration)
-# ---------------------------------------------------------------------------
 
 def check_gsc_regressions(cfg: Config, days: int) -> dict[str, Any]:
     """Adjacent-window GSC click comparison over FULLY PAGINATED page rows.
@@ -434,7 +410,7 @@ def check_gsc_regressions(cfg: Config, days: int) -> dict[str, Any]:
             cfg, start_prior.isoformat(), end_prior.isoformat(),
             dimensions=["page"], max_rows=100_000,
         )
-    except Exception as exc:  # noqa: BLE001 — surface any GSC failure informatively, don't crash the cycle
+    except Exception as exc:
         result["reason"] = f"GSC query failed: {exc}"
         return result
 
@@ -454,7 +430,7 @@ def check_gsc_regressions(cfg: Config, days: int) -> dict[str, Any]:
     for page in compared_pages:
         prior_clicks = prior[page].get("clicks", 0)
         if prior_clicks < 10:
-            continue  # too little volume for a percentage to mean anything
+            continue
         recent_clicks = recent.get(page, {"clicks": 0}).get("clicks", 0)
         drop_abs = prior_clicks - recent_clicks
         drop_pct = drop_abs / prior_clicks if prior_clicks else 0
@@ -482,10 +458,6 @@ def check_gsc_regressions(cfg: Config, days: int) -> dict[str, Any]:
     return result
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one seo-maintain continuous-maintenance cycle")
     parser.add_argument("--max-pages", type=int, default=500, help="max pages to crawl this cycle")
@@ -500,9 +472,8 @@ def main() -> None:
     checked: dict[str, Any] = {}
     not_checked: dict[str, str] = {}
 
-    site_url = cfg.site_url  # raises MissingConfigError with a clear message if unset
+    site_url = cfg.site_url
 
-    # 1. Fresh crawl into the shared snapshot store.
     current_snap = snapshots.new_crawl(
         cfg, "seo-maintain", max_pages=args.max_pages, ignore_robots=args.ignore_robots,
     )
@@ -517,7 +488,6 @@ def main() -> None:
     }
 
     if summary.get("all_blocked"):
-        # No pages could be crawled at all — say why, loudly, and stop.
         report = {
             "generated_at": now.isoformat(),
             "site_url": site_url,
@@ -543,7 +513,6 @@ def main() -> None:
 
     current = _index_by_key(current_snap)
 
-    # 2. Regressions first — against a COMPARABLE baseline only.
     regressions: list[dict[str, Any]] = []
     baseline = snapshots.find_baseline(cfg, current_snap, require_comparable=True)
     if baseline.snapshot is not None:
@@ -563,7 +532,6 @@ def main() -> None:
         checked["crawl"]["compared_against_previous"] = False
         not_checked["crawl_diff_regressions"] = baseline.refusal_reason or "no baseline"
 
-    # 3. GSC-based regression check (optional integration).
     integrations = cfg.available_integrations()
     if integrations.get("google_search_console"):
         gsc_result = check_gsc_regressions(cfg, args.gsc_days)
@@ -580,14 +548,10 @@ def main() -> None:
             "to unlock click/impression regression detection on top pages (see api-reference.md)."
         )
 
-    # Everything is merged now — sort ONCE so the report's ordering contract
-    # (critical -> high -> medium -> low) holds across crawl + GSC findings.
     regressions.sort(key=lambda r: SEVERITY_ORDER.get(r["severity"], 9))
 
-    # 4. Opportunities (ranked, from the fresh crawl).
     opportunities = detect_opportunities(current)
 
-    # 5. Explicit coverage notes for everything this cycle did NOT check.
     not_checked["orphan_pages"] = (
         "Orphan detection requires a URL source independent of the link graph "
         "(sitemap/GSC) — dispatch seo-internal-linking, which owns that check."

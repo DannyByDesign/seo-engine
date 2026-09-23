@@ -69,21 +69,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import time  # noqa: E402
-from datetime import timedelta, datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import time
+from datetime import timedelta, datetime, timezone
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import gsc, http_util, indexnow, robots, sitemaps, snapshots, urlnorm  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import gsc, http_util, indexnow, robots, sitemaps, snapshots, urlnorm
+from scripts.lib.config import Config, MissingConfigError
 
-# IndexNow participants per references/api-reference.md -- one key works
-# across all of these. Google and Baidu explicitly do NOT participate; this
-# script must never imply IndexNow submission does anything for Google.
 INDEXNOW_PARTICIPANTS = [
     "Bing", "Yandex", "Naver", "Seznam.cz", "Yep", "Amazon", "Yahoo (via Bing's materials)",
 ]
@@ -122,8 +119,6 @@ def sync_sitemap(cfg: Config, site_url: str, sitemap_url: Optional[str], force_r
 
     discovered_note = None
     if not sitemap_url:
-        # Auto-discover: robots.txt Sitemap: declarations, then the standard
-        # default paths (sitemap.xml / sitemap_index.xml / wp-sitemap.xml).
         policy = robots.fetch(site_url)
         found = sitemaps.fetch_url_set(site_url, policy)
         if found["found"] and found["sitemaps_read"]:
@@ -147,7 +142,7 @@ def sync_sitemap(cfg: Config, site_url: str, sitemap_url: Optional[str], force_r
         existing = gsc.list_sitemaps(cfg)
     except MissingConfigError as exc:
         return {"checked": False, "reason": str(exc)}
-    except Exception as exc:  # noqa: BLE001 -- report, don't crash the whole sync
+    except Exception as exc:
         return {"checked": False, "reason": f"GSC sitemaps.list failed: {http_util.sanitize_text(str(exc))}"}
 
     registered_paths = [s.get("path", "") for s in existing.get("sitemap", [])]
@@ -180,7 +175,7 @@ def sync_sitemap(cfg: Config, site_url: str, sitemap_url: Optional[str], force_r
             "inside it; use the URL Inspection sample below (or GSC's Coverage report) to check "
             "actual index status."
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         result["error"] = f"sitemaps.submit failed: {http_util.sanitize_text(str(exc))}"
 
     return result
@@ -220,7 +215,7 @@ def _select_inspect_urls(
                 notes.append(f"Added {added} top-clicked page(s) from GSC (last 28 days) to the inspection sample.")
             except MissingConfigError as exc:
                 notes.append(f"GSC configured but credentials incomplete: {exc}")
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 notes.append("GSC top-page query failed, continuing with homepage/explicit "
                              f"URLs only: {http_util.sanitize_text(str(exc))}")
         else:
@@ -255,7 +250,7 @@ def inspect_sample(cfg: Config, site_url: str, explicit_urls: list[str], max_url
         except MissingConfigError as exc:
             pages.append({"url": url, "error": str(exc)})
             continue
-        except Exception as exc:  # noqa: BLE001 -- one bad URL must not kill the batch
+        except Exception as exc:
             pages.append({"url": url, "error": "urlInspection.index.inspect failed: "
                           + http_util.sanitize_text(str(exc))})
             continue
@@ -340,9 +335,8 @@ def submit_to_indexnow(cfg: Config, changed_urls: list[str], key_location: Optio
     except MissingConfigError as exc:
         return {"checked": True, "submitted": False, "error": str(exc), "disclaimer": INDEXNOW_DISCLAIMER}
     except ValueError as exc:
-        # Mixed-host / off-site URLs — refused before any network call.
         return {"checked": True, "submitted": False, "error": str(exc), "disclaimer": INDEXNOW_DISCLAIMER}
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {"checked": True, "submitted": False,
                 "error": "IndexNow submit failed: " + http_util.sanitize_text(str(exc)),
                 "disclaimer": INDEXNOW_DISCLAIMER}
@@ -455,7 +449,7 @@ def main() -> None:
                 )
                 changed_urls.extend(derived)
 
-    changed_urls = list(dict.fromkeys(changed_urls))  # de-dup, preserve order
+    changed_urls = list(dict.fromkeys(changed_urls))
 
     report: dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

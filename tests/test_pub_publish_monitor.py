@@ -31,8 +31,8 @@ perf_mod = _load(REPO / "skills/pub-monitor/scripts/report_performance.py")
 refresh_mod = _load(REPO / "skills/pub-monitor/scripts/refresh_triggers.py")
 mentions_mod = _load(REPO / "skills/geo-monitor/scripts/track_brand_mentions.py")
 
-from scripts.lib import publication, pubstate, editorial  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import publication, pubstate, editorial
+from scripts.lib.config import Config
 
 
 def _repo(tmp_path: Path, **env):
@@ -88,7 +88,6 @@ def _ready_draft(root: Path, slug: str, spoke_id: str) -> None:
 
 
 def _review_draft(root, slug, reviewed_at=None):
-    # Synthetic unit evidence only; never evidence of factual or traffic outcomes.
     import hashlib
     path = root / 'drafts' / f'{slug}.md'
     meta, body = publication.read_post(path)
@@ -117,9 +116,9 @@ def test_planner_materializes_bursts_and_queues(tmp_path, monkeypatch, capsys):
     pubstate.save_json(pubstate.state_path(cfg, "suggestions", "llm-billboard"), {"items": [
         {"id": "sg-0001", "status": "suggested", "spoke_id": "sp-0002", "headline": "Intent Signal Decay in Multi-Turn AI Conversations", "why": "w", "score": 0.7, "pillar": "ai-search"}]})
     out = _run(planner_mod, cfg, ["--publication", "llm-billboard", "--materialize", "--days", "3", "--queue"], monkeypatch, capsys)
-    assert len(out["materialized"]) == 3 + 3  # launch burst of 4 on day one (3 extra) + one per day for 3 days
-    assert out["queued"][0]["headline"] == "Intent Signal Decay in Multi-Turn AI Conversations"  # suggestion first
-    assert len(out["queued"]) == 3  # then the two open spokes; the 4th+ slots stay planned
+    assert len(out["materialized"]) == 3 + 3
+    assert out["queued"][0]["headline"] == "Intent Signal Decay in Multi-Turn AI Conversations"
+    assert len(out["queued"]) == 3
     assert out["status"]["planned"] == 3 and out["status"]["queued"] == 3
     drafts = sorted(p.name for p in (root / "drafts").glob("*.md"))
     assert "intent-signal-decay-in-multi-turn-ai-conversations.md" in drafts and len(drafts) == 3
@@ -128,7 +127,7 @@ def test_planner_materializes_bursts_and_queues(tmp_path, monkeypatch, capsys):
     meta, _ = publication.read_post(root / "drafts" / "advertiser-readiness-assessment-for-the-ai-search-transition.md")
     assert meta["spoke_id"] == "sp-0001" and meta["section"] == "AI Search" and meta["brief"] == "Know your gaps."
     again = _run(planner_mod, cfg, ["--publication", "llm-billboard", "--materialize", "--days", "3"], monkeypatch, capsys)
-    assert again["materialized"] == []  # idempotent per day
+    assert again["materialized"] == []
     due = _run(planner_mod, cfg, ["--publication", "llm-billboard", "--due"], monkeypatch, capsys)
     assert isinstance(due["due"], list)
 
@@ -155,7 +154,7 @@ def test_publish_gate_then_success_with_build(tmp_path, monkeypatch, capsys):
 
     plan = _run(pipeline_mod, cfg, ["--publication", "llm-billboard", "--slug", "x", "--dry-run"], monkeypatch, capsys)
     steps = [p["step"] for p in plan["plan"]]
-    assert steps == ["research", "write", "enhance", "diagrams", "cover"]  # manual mode stops before publish; shred skipped
+    assert steps == ["research", "write", "enhance", "diagrams", "cover"]
     plan2 = _run(pipeline_mod, cfg, ["--publication", "llm-billboard", "--slug", "x", "--dry-run", "--approve", "--skip", ""], monkeypatch, capsys)
     assert plan2["_exit"] == 1 and "prepare and review" in plan2["error"]
 
@@ -183,7 +182,6 @@ def test_performance_aggregation_and_refresh_triggers(tmp_path, monkeypatch, cap
     assert len(agg["series"]) == 3 and agg["series"][1]["impressions"] == 100
     assert any("2 of 2 published posts" in i for i in agg["insights"])
 
-    # refresh triggers off synthetic history
     pubstate.save_json(pubstate.state_path(cfg, "performance", "llm-billboard"), {
         "first_impression_at": {"old-post": "2026-02-01"},
         "history": [{"period": "30d", "window": {"start": "2026-06-01", "end": "2026-06-30"}, "posts": {"old-post": {"clicks": 30}}}, {"period": "30d", "window": {"start": "2026-07-01", "end": "2026-07-30"}, "posts": {"old-post": {"clicks": 10}}}]})
@@ -195,7 +193,7 @@ def test_performance_aggregation_and_refresh_triggers(tmp_path, monkeypatch, cap
     refresh_spokes = [s for _, s in pubstate.all_spokes(tm) if s.get("refresh_of")]
     assert {s["refresh_of"] for s in refresh_spokes} == {"old-post", "new-post"} and len(out["queued_spokes"]) == 2
     again = _run(refresh_mod, cfg, ["--publication", "llm-billboard", "--queue", "--awaiting-days", "1"], monkeypatch, capsys)
-    assert again["queued_spokes"] == []  # no duplicate refresh spokes
+    assert again["queued_spokes"] == []
 
 
 def test_brand_mentions_run_and_geo_sync(tmp_path, monkeypatch, capsys, fake_transport):

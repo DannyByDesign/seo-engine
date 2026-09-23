@@ -74,35 +74,19 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import gzip  # noqa: E402
-import ipaddress  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-import time  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import gzip
+import ipaddress
+import json
+import re
+import time
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
 
-from scripts.lib import http_util, snapshots  # noqa: E402
+from scripts.lib import http_util, snapshots
 
-# Hardcoded from references/geo-playbook.md section 4's per-vendor crawler
-# table plus the additional training-corpus crawlers from the maintained
-# ai-robots-txt/ai.robots.txt list. Each entry: the user-agent substring to
-# search for (matched CASE-INSENSITIVELY -- both sides are casefolded), the
-# vendor, a role bucket, and the purpose -- pulled straight from the playbook
-# table so an agent reading results doesn't have to cross-reference a second
-# document to know what a given crawler hit actually means.
-#
-# `role` keeps geo-playbook section 4's citation-vs-training distinction
-# explicit and machine-readable:
-#   citation_index -- builds/refreshes an index that powers live citations;
-#                     visits are a PRECONDITION for citation on that platform.
-#   live_fetch     -- fetches pages live during a user action; affects
-#                     live-fetch features, not the standing index.
-#   training_only  -- collects model-training/grounding data; presence or
-#                     absence has NO bearing on citation at all.
 KNOWN_AI_CRAWLERS: list[dict[str, str]] = [
     {"user_agent": "GPTBot", "vendor": "OpenAI", "role": "training_only",
      "purpose": "Model training only -- no effect on ChatGPT search/citation."},
@@ -128,8 +112,6 @@ KNOWN_AI_CRAWLERS: list[dict[str, str]] = [
                 "regular Applebot, which still powers Siri/Spotlight/Safari results."},
     {"user_agent": "Amazonbot", "vendor": "Amazon", "role": "citation_index",
      "purpose": "Indexing for Alexa/search answers."},
-    # The real-world UA token is lowercase `bingbot/2.0` (geo-playbook section 4
-    # writes it `Bingbot`); matching is casefolded so either capitalization hits.
     {"user_agent": "bingbot", "vendor": "Bing/Copilot", "role": "citation_index",
      "purpose": "Single unified crawler for both classic Bing results AND Copilot citations "
                 "-- no separate training-only bot exists to distinguish."},
@@ -146,9 +128,6 @@ KNOWN_AI_CRAWLERS: list[dict[str, str]] = [
                 "training only, no citation surface of its own."},
 ]
 
-# Full Common Log Format / Combined Log Format timestamp with time-of-day and
-# timezone offset, e.g. [05/Jul/2026:14:32:10 +0000]. Parsed manually (not via
-# strptime's locale-dependent %b) so English month abbreviations always work.
 _CLF_TIMESTAMP_RE = re.compile(
     r"\[(\d{1,2})/([A-Za-z]{3})/(\d{4}):(\d{2}):(\d{2}):(\d{2})\s+([+-])(\d{2})(\d{2})\]"
 )
@@ -157,11 +136,6 @@ _CLF_MONTHS = {
     "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
 }
 
-# IP masking for sample lines persisted to reports. IPv4: keep the first two
-# octets (enough to recognize a vendor netblock) and mask the host part.
-# IPv6: keep only the first hextet. Over-masking is acceptable here (e.g. a
-# UA version string that happens to look like a valid dotted quad); leaking a
-# client IP into a report is not.
 _IPV4_RE = re.compile(r"\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b")
 _IPV6_CANDIDATE_RE = re.compile(r"\b[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{0,4}){2,7}\b")
 
@@ -169,7 +143,7 @@ _IPV6_CANDIDATE_RE = re.compile(r"\b[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{0,4}){2,7}\b
 def _mask_ipv4(match: "re.Match[str]") -> str:
     octets = [int(g) for g in match.groups()]
     if any(o > 255 for o in octets):
-        return match.group(0)  # not a real IPv4 (e.g. a build/version number)
+        return match.group(0)
     return f"{match.group(1)}.{match.group(2)}.x.x"
 
 
@@ -178,7 +152,7 @@ def _mask_ipv6(match: "re.Match[str]") -> str:
     try:
         ip = ipaddress.ip_address(candidate)
     except ValueError:
-        return candidate  # e.g. a CLF time like 14:32:10 -- not an address
+        return candidate
     if ip.version != 6:
         return candidate
     return f"{candidate.split(':', 1)[0]}::x"
@@ -226,8 +200,6 @@ def scan_log(
     if since_days is not None:
         cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
 
-    # Casefold BOTH sides once: needles here, each line below. Real UA tokens
-    # don't reliably match documented capitalization (lowercase `bingbot/2.0`).
     needles = [(c["user_agent"], c["user_agent"].casefold()) for c in crawlers]
 
     counts: dict[str, int] = {c["user_agent"]: 0 for c in crawlers}
@@ -237,12 +209,6 @@ def scan_log(
     lines_excluded_by_since_days = 0
     other_bot_lines = 0
 
-    # A small, non-exhaustive set of generic bot/crawler indicators used only
-    # to report an "other_bot_traffic_lines" count for context (e.g. "there's
-    # plenty of generic-bot traffic but zero from any known AI crawler" reads
-    # very differently from "there's almost no bot traffic of any kind").
-    # This is NOT used to identify any specific AI vendor -- that's exactly
-    # what KNOWN_AI_CRAWLERS above is for, deliberately hardcoded and precise.
     generic_bot_markers = ("bot", "spider", "crawler")
 
     with _open_log(log_path) as f:
@@ -255,9 +221,6 @@ def scan_log(
                     if ts < cutoff:
                         lines_excluded_by_since_days += 1
                         continue
-                # Lines without a parseable CLF timestamp are not excluded --
-                # we can't confirm they're out of range, so err toward
-                # counting them rather than silently dropping real hits.
 
             folded_line = line.casefold()
             matched_known = False
@@ -266,7 +229,6 @@ def scan_log(
                     matched_known = True
                     counts[ua] += 1
                     if len(samples[ua]) < sample_lines:
-                        # Client IPs are masked before the sample is persisted.
                         samples[ua].append(mask_client_ips(line.rstrip("\n"))[:500])
 
             if not matched_known and any(marker in folded_line for marker in generic_bot_markers):
@@ -392,11 +354,6 @@ def main() -> None:
     scan = scan_log(log_path, KNOWN_AI_CRAWLERS, args.sample_lines, args.since_days)
     report = build_report(log_path, scan, args.since_days)
 
-    # Best-effort report write -- this script is designed to be runnable
-    # against any log file on any machine (e.g. a server, not necessarily
-    # inside the target repo checkout), so a missing/unreachable
-    # .seo-engine/reports/ directory degrades to stdout-only rather than
-    # crashing the whole script.
     try:
         cfg = config_module.load()
         snapshots.prune(cfg)
@@ -405,7 +362,7 @@ def main() -> None:
         report_path = reports_dir / f"ai-crawler-log-scan-{ts}.json"
         report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
         report["report_file"] = str(report_path)
-    except Exception as exc:  # noqa: BLE001 -- report persistence is a nice-to-have here, not required
+    except Exception as exc:
         report["report_file"] = None
         report["report_write_skipped_reason"] = http_util.sanitize_text(str(exc))
 

@@ -97,14 +97,11 @@ Both families are bound by [red-flags.md](shared/seo-references/red-flags.md):
 ## Install
 
 ```bash
-# 1. Copy this folder into the target repo (anywhere — repo root is simplest)
 cp -r seo-engine /path/to/your-website-repo/
 
-# 2. Link its skills into Claude Code's skill discovery path + scaffold .env
 cd /path/to/your-website-repo/seo-engine
 ./install.sh
 
-# 3. Install Python dependencies (Python 3.9+)
 python3 -m pip install -r requirements.txt
 ```
 
@@ -196,10 +193,9 @@ publication model the `pub-*` skills reproduce), `red-flags.md` (the veto layer)
 
 ```bash
 python3 -m pip install -r requirements.txt -r requirements-dev.txt
-python3 -m pytest tests/                 # offline unit suite (no network, sub-second)
-python3 scripts/dev/check_docs.py        # docs-vs-code contract linter
-python3 scripts/dev/smoke.py --site https://your-site.example   # opt-in LIVE harness:
-                                         # one cheapest real call per configured integration
+python3 -m pytest tests/
+python3 scripts/dev/check_docs.py
+python3 scripts/dev/smoke.py --site https://your-site.example
 ```
 
 CI (`.github/workflows/ci.yml`) runs the offline suite + the docs linter on Python 3.9 and

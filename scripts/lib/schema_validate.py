@@ -32,9 +32,6 @@ try:
 except ImportError:
     extruct = None
 
-# Required vs recommended per Google's rich-result documentation for the
-# types most sites use. Not exhaustive — a CI-safe floor, not a replacement
-# for Google's own Rich Results Test before shipping.
 GOOGLE_RICH_RESULTS: dict[str, dict[str, list[str]]] = {
     "Article": {"required": [],
                 "recommended": ["headline", "image", "datePublished", "dateModified", "author"]},
@@ -60,8 +57,6 @@ GOOGLE_RICH_RESULTS: dict[str, dict[str, list[str]]] = {
     "WebSite": {"required": ["name", "url"], "recommended": []},
 }
 
-#: Types whose rich-result visual treatment Google retired — valid markup,
-#: but adding/maintaining it should not be sold as a rich-result win.
 RETIRED_RICH_RESULTS: dict[str, str] = {
     "FAQPage": ("Google retired FAQ rich results for most sites (Aug 2023) — "
                 "the markup is valid but earns no visual treatment except for "
@@ -74,7 +69,7 @@ RETIRED_RICH_RESULTS: dict[str, str] = {
 @dataclass
 class ValidationIssue:
     node_type: str
-    severity: str  # "error" | "warning" | "info"
+    severity: str
     message: str
 
 
@@ -131,7 +126,7 @@ def validate_html(html: str, url: str) -> ValidationResult:
     result = ValidationResult(url=url)
     try:
         nodes = extract_json_ld(html, url)
-    except Exception as exc:  # extruct raises various things on broken markup
+    except Exception as exc:
         result.issues.append(ValidationIssue(
             "unknown", "error", f"JSON-LD extraction failed: {exc}"))
         return result

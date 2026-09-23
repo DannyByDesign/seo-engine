@@ -52,10 +52,6 @@ def fake_crawler(monkeypatch, pages: int):
     monkeypatch.setattr(crawler, "crawl_to_file", crawl_to_file)
 
 
-# ---------------------------------------------------------------------------
-# new_crawl
-# ---------------------------------------------------------------------------
-
 def test_new_crawl_writes_jsonl_and_provenance_sidecar(tmp_repo, monkeypatch):
     fake_crawler(monkeypatch, pages=3)
     cfg = site_cfg(tmp_repo)
@@ -70,7 +66,7 @@ def test_new_crawl_writes_jsonl_and_provenance_sidecar(tmp_repo, monkeypatch):
     assert meta["producer_skill"] == "seo-audit"
     assert meta["max_pages"] == 10
     assert meta["pages_crawled"] == 3
-    assert meta["truncated"] is False  # 3 < max_pages
+    assert meta["truncated"] is False
 
     assert list(snap.pages()) == [
         {"url": f"{SITE}/p{i}", "status": 200} for i in range(3)
@@ -84,10 +80,6 @@ def test_new_crawl_truncated_when_pages_hit_max(tmp_repo, monkeypatch):
     assert snap.truncated is True
     assert snap.pages_crawled == 10
 
-
-# ---------------------------------------------------------------------------
-# all_snapshots / latest
-# ---------------------------------------------------------------------------
 
 def test_all_snapshots_newest_first(tmp_repo):
     cfg = site_cfg(tmp_repo)
@@ -125,10 +117,6 @@ def test_latest_min_pages_skips_small_snapshot(tmp_repo):
     assert snapshots.latest(cfg, max_age_hours=24).path == small.path
     assert snapshots.latest(cfg, max_age_hours=24, min_pages=10).path == big.path
 
-
-# ---------------------------------------------------------------------------
-# find_baseline
-# ---------------------------------------------------------------------------
 
 def test_find_baseline_returns_most_recent_comparable(tmp_repo):
     cfg = site_cfg(tmp_repo)
@@ -197,10 +185,6 @@ def test_find_baseline_not_comparable_ok_when_not_required(tmp_repo):
     assert result.snapshot.path == prior.path
 
 
-# ---------------------------------------------------------------------------
-# prune
-# ---------------------------------------------------------------------------
-
 def test_prune_keeps_only_newest_keep_crawls(tmp_repo):
     cfg = site_cfg(tmp_repo)
     snaps = [
@@ -208,7 +192,7 @@ def test_prune_keeps_only_newest_keep_crawls(tmp_repo):
         for i in range(12)
     ]
     removed = snapshots.prune(cfg, keep_crawls=10, keep_days=90)
-    assert removed["crawls"] == 4  # 2 snapshots x (jsonl + sidecar)
+    assert removed["crawls"] == 4
     remaining = sorted(p.name for p in snapshots.crawl_dir(cfg).glob("*.jsonl"))
     assert len(remaining) == 10
     for oldest in snaps[10:]:
@@ -232,36 +216,27 @@ def test_prune_reports_per_family(tmp_repo):
     rdir.mkdir(parents=True, exist_ok=True)
     now = time.time()
 
-    # 35-file family "maintenance": keeps the 30 newest.
     for i in range(35):
         p = rdir / f"maintenance-2026-01-{i:02d}.json"
         p.write_text("{}")
         os.utime(p, (now - i * 3600, now - i * 3600))
-    # Two files with full timestamps group into one family "foo".
     for i in (1, 2):
         p = rdir / f"foo-2026010{i}-120000.json"
         p.write_text("{}")
         os.utime(p, (now - i, now - i))
-    # A lone file older than report_days is removed despite the count.
     old = rdir / "bar-2026-01-01.json"
     old.write_text("{}")
     os.utime(old, (now - 200 * 86400, now - 200 * 86400))
 
     removed = snapshots.prune(cfg, keep_reports=30, report_days=180)
-    assert removed["reports"] == 6  # 5 maintenance overflow + 1 stale bar
+    assert removed["reports"] == 6
     remaining = {p.name for p in rdir.iterdir()}
     maintenance = {n for n in remaining if n.startswith("maintenance-")}
     assert len(maintenance) == 30
-    # The 5 oldest (highest i) maintenance files are the ones gone.
     for i in range(30, 35):
         assert f"maintenance-2026-01-{i:02d}.json" not in remaining
     assert {"foo-20260101-120000.json", "foo-20260102-120000.json"} <= remaining
     assert "bar-2026-01-01.json" not in remaining
-
-
-# ---------------------------------------------------------------------------
-# Interrupted crawls (no .meta.json sidecar): new_crawl writes the sidecar only
-# after crawl_to_file returns, so a missing sidecar means a partial site.
 
 
 def write_fragment(cfg, stamp, *, pages=3, age_hours=0.0):
@@ -290,7 +265,7 @@ def test_latest_ignores_newer_fragment_and_returns_complete_snapshot(tmp_repo):
     newest (mtime fallback) and passes every guard — it must not win latest()."""
     cfg = site_cfg(tmp_repo)
     write_snap(cfg, "20260101T000000Z", finished_at=NOW - timedelta(hours=1), pages=333)
-    write_fragment(cfg, "20260101T010000Z", pages=118)  # newer, partial
+    write_fragment(cfg, "20260101T010000Z", pages=118)
     got = snapshots.latest(cfg, max_age_hours=24)
     assert got is not None
     assert got.pages_crawled == 333

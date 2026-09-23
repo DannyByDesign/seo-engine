@@ -47,13 +47,9 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
 
-# Human-facing metadata ONLY — env vars and configured status come from
-# config_module.INTEGRATION_ENV_VARS / cfg.available_integrations(). Any
-# integration added to config.py but missing here still gets a row (with
-# generic text), so nothing is ever silently omitted.
 INTEGRATION_DETAILS = {
     "languagetool": {
         "label": "LanguageTool proofreading",

@@ -78,7 +78,7 @@ def search_raw(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = No
 def search(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = None) -> list[dict[str, Any]]:
     """Normalized web results; use search_raw for complete collection receipts."""
     data = search_raw(cfg, query, limit, tbs)['data']
-    if isinstance(data, dict):  # v2 may group results by type
+    if isinstance(data, dict):
         data = data.get("web", []) or []
     return [{"url": d.get("url"), "title": d.get("title"), "description": d.get("description")}
             for d in data if isinstance(d, dict) and d.get("url")]

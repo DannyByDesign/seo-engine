@@ -23,10 +23,10 @@ from .pagerules import is_indexable_html
 
 @dataclass
 class LinkGraph:
-    nodes: set[str] = field(default_factory=set)            # folded page identities
+    nodes: set[str] = field(default_factory=set)
     adjacency: dict[str, set[str]] = field(default_factory=dict)
-    inbound: dict[str, int] = field(default_factory=dict)   # distinct inbound sources
-    alias_map: dict[str, str] = field(default_factory=dict)  # redirecting alias -> destination
+    inbound: dict[str, int] = field(default_factory=dict)
+    alias_map: dict[str, str] = field(default_factory=dict)
 
 
 def _node_key(rec: dict[str, Any]) -> str:
@@ -119,7 +119,7 @@ def known_url_universe(
             gsc_keys = {urlnorm.canonical_key(r["keys"][0]) for r in rows if r.get("keys")}
             urls |= gsc_keys
             sources["gsc"] = {"urls": len(gsc_keys), "hit_row_cap": hit_cap}
-        except Exception as exc:  # noqa: BLE001 — GSC is an enhancement source here
+        except Exception as exc:
             sources["gsc"] = {"error": str(exc)[:200]}
     else:
         sources["gsc"] = {"skipped": "google_search_console not configured"}

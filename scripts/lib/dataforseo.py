@@ -29,7 +29,7 @@ from .config import Config
 BASE_URL = "https://api.dataforseo.com/v3"
 _HINT = "Create API credentials in the DataForSEO dashboard (distinct from your login password)."
 
-_OK_CODES = {20000, 20100}  # Ok. / Task Created.
+_OK_CODES = {20000, 20100}
 
 
 class DataForSeoError(RuntimeError):
@@ -74,16 +74,12 @@ def _get(cfg: Config, path: str) -> dict[str, Any]:
     return _check(resp.json(), path)
 
 
-# ---------- SERP (live) ----------
-
 def serp_live(cfg: Config, keyword: str, location_code: int = 2840, language_code: str = "en") -> dict[str, Any]:
     """Live Google organic SERP. location_code 2840 = United States."""
     return _post(cfg, "/serp/google/organic/live/advanced", [{
         "keyword": keyword, "location_code": location_code, "language_code": language_code,
     }], timeout=120.0)
 
-
-# ---------- Keywords Data (live) ----------
 
 def search_volume(cfg: Config, keywords: list[str], location_code: int = 2840) -> dict[str, Any]:
     """Max 1,000 keywords per request; this endpoint is limited to 12 req/min."""
@@ -110,18 +106,16 @@ def volume_and_difficulty(cfg: Config, keywords: list[str]) -> dict[str, dict[st
         for item in (search_volume(cfg, keywords)["tasks"][0].get("result") or []):
             if item.get("keyword") in out:
                 out[item["keyword"]]["msv"] = item.get("search_volume")
-    except Exception:  # noqa: BLE001 — partial enrichment beats none
+    except Exception:
         pass
     try:
         for item in (keyword_difficulty(cfg, keywords)["tasks"][0].get("result") or []):
             if item.get("keyword") in out:
                 out[item["keyword"]]["kd"] = item.get("keyword_difficulty")
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
     return out
 
-
-# ---------- Backlinks (live-only) ----------
 
 def backlinks_summary(cfg: Config, target: str) -> dict[str, Any]:
     return _post(cfg, "/backlinks/summary/live", [{"target": target}])
@@ -138,8 +132,6 @@ def backlinks_list(
         task["order_by"] = [order_by]
     return _post(cfg, "/backlinks/backlinks/live", [task])
 
-
-# ---------- On-Page (task-based only) ----------
 
 def onpage_start_crawl(cfg: Config, target: str, max_crawl_pages: int = 100,
                        pingback_url: Optional[str] = None) -> str:
@@ -174,8 +166,6 @@ def onpage_wait_and_get_summary(cfg: Config, task_id: str, timeout: int = 600,
         time.sleep(poll_interval)
     raise TimeoutError(f"on_page task {task_id} did not finish within {timeout}s")
 
-
-# ---------- DataForSEO Labs (domain/competitor analytics, live) ----------
 
 def domain_intersection(cfg: Config, target1: str, target2: str,
                         location_code: int = 2840, language_code: str = "en") -> dict[str, Any]:

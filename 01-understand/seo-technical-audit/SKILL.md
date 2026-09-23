@@ -61,16 +61,12 @@ One run of `scripts/run_audit.py`:
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Full audit, default 500-page crawl, default samples of 5 for the optional checks
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py"
 
-# Smaller crawl, larger JS-rendering sample
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --max-pages 100 --sample-js 10
 
-# Reuse any <24h shared snapshot instead of crawling fresh
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --skip-crawl
 
-# ONLY for your own localhost/staging build that blocks all bots
 python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --ignore-robots
 ```
 

@@ -17,10 +17,6 @@ def ld_html(payload: str) -> str:
     )
 
 
-# ---------------------------------------------------------------------------
-# Article: missing recommended properties -> warnings, not errors
-# ---------------------------------------------------------------------------
-
 def test_article_missing_image_and_date_published_is_warnings_not_errors():
     html = ld_html(
         '{"@context":"https://schema.org","@type":"Article","headline":"Title"}'
@@ -34,10 +30,6 @@ def test_article_missing_image_and_date_published_is_warnings_not_errors():
     assert "image" in warning.message
     assert "datePublished" in warning.message
 
-
-# ---------------------------------------------------------------------------
-# Product: missing required "name" -> error, ok False
-# ---------------------------------------------------------------------------
 
 def test_product_missing_name_is_error_and_not_ok():
     html = ld_html('{"@context":"https://schema.org","@type":"Product"}')
@@ -73,10 +65,6 @@ def test_empty_list_required_value_counts_as_missing():
     assert any("itemListElement" in i.message for i in result.issues if i.severity == "error")
 
 
-# ---------------------------------------------------------------------------
-# FAQPage: valid markup -> info advisory (retired rich result)
-# ---------------------------------------------------------------------------
-
 def test_faqpage_valid_markup_yields_info_advisory_not_error_or_warning():
     html = ld_html(
         '{"@context":"https://schema.org","@type":"FAQPage",'
@@ -90,10 +78,6 @@ def test_faqpage_valid_markup_yields_info_advisory_not_error_or_warning():
     assert "retired" in result.issues[0].message.lower()
 
 
-# ---------------------------------------------------------------------------
-# node without @type -> error
-# ---------------------------------------------------------------------------
-
 def test_node_without_type_is_error():
     html = ld_html('{"@context":"https://schema.org","name":"No type here"}')
     result = sv.validate_html(html, URL)
@@ -102,10 +86,6 @@ def test_node_without_type_is_error():
     assert result.issues[0].severity == "error"
     assert "no @type" in result.issues[0].message
 
-
-# ---------------------------------------------------------------------------
-# @graph unwrapping
-# ---------------------------------------------------------------------------
 
 def test_graph_unwrapping_extracts_each_node():
     html = ld_html(
@@ -117,13 +97,8 @@ def test_graph_unwrapping_extracts_each_node():
     result = sv.validate_html(html, URL)
     assert result.node_count == 2
     assert result.types_found == ["Organization", "WebSite"]
-    # Organization missing recommended (url/logo) -> warning; WebSite is complete.
     assert result.counts() == {"error": 0, "warning": 1, "info": 0}
 
-
-# ---------------------------------------------------------------------------
-# counts() tally
-# ---------------------------------------------------------------------------
 
 def test_counts_tallies_across_multiple_nodes():
     html = ld_html(
@@ -135,9 +110,9 @@ def test_counts_tallies_across_multiple_nodes():
     )
     result = sv.validate_html(html, URL)
     counts = result.counts()
-    assert counts["error"] >= 1  # Product missing name
-    assert counts["warning"] >= 1  # Article missing recommended
-    assert counts["info"] == 1  # FAQPage retired advisory
+    assert counts["error"] >= 1
+    assert counts["warning"] >= 1
+    assert counts["info"] == 1
 
 
 def test_no_json_ld_yields_empty_result():

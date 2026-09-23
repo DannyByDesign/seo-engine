@@ -30,7 +30,6 @@ def select(mode='article', seed='', limit=6):
     rng = random.Random(str(seed))
     rows = [row for row in examples() if mode in row.get('modes', [])]; rng.shuffle(rows)
     selected, sources = [], set()
-    # Round-robin genres and distinct texts avoid a single work dominating the packet.
     for _ in range(limit):
         for genre in MODES[mode]:
             row = next((r for r in rows if r['genre'] == genre and r['source_id'] not in sources), None)

@@ -26,10 +26,6 @@ def robots_allow_all():
     return {"status": 200, "body": "User-agent: *\nAllow: /\n"}
 
 
-# ---------------------------------------------------------------------------
-# robots gating
-# ---------------------------------------------------------------------------
-
 def test_robots_fetched_first_with_engine_user_agent_then_pages_crawled(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())
     fake_transport.route("GET", SITE, page_resp(html("<p>hi</p>")))
@@ -61,7 +57,6 @@ def test_robots_500_blocks_everything(fake_transport):
     assert records == []
     assert stats["all_blocked"] is True
     assert stats["robots_status"] == "server_error_blocked"
-    # No page requests were made — only the robots.txt fetch (with retries).
     assert all(url == f"{SITE}/robots.txt" for _, url, _ in fake_transport.calls)
 
 
@@ -76,10 +71,6 @@ def test_robots_disallow_all_body_blocks_start_url(fake_transport):
     assert stats["blocked_by_robots"] == 1
 
 
-# ---------------------------------------------------------------------------
-# BFS link discovery
-# ---------------------------------------------------------------------------
-
 def test_bfs_enqueues_same_site_links_only(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())
     fake_transport.route("GET", f"{SITE}/about", page_resp(html("about page", title="About")))
@@ -91,8 +82,7 @@ def test_bfs_enqueues_same_site_links_only(fake_transport):
     records = list(crawler.crawl(SITE, stats=stats))
     urls = [r.url for r in records]
     assert urls == [SITE, f"{SITE}/about"]
-    assert records[1].title == "About"  # confirms the child route (not the root's) was served
-    # The off-site link was recorded but never fetched.
+    assert records[1].title == "About"
     fetched_urls = [u for _, u, _ in fake_transport.calls if not u.endswith("robots.txt")]
     assert "https://other.example/x" not in fetched_urls
 
@@ -106,9 +96,8 @@ def test_seen_set_folds_trailing_slash_variants_queues_once(fake_transport):
     stats: dict = {}
     records = list(crawler.crawl(SITE, stats=stats))
     fetched_urls = [r.url for r in records]
-    # /about and /about/ fold to the same seen-key -> only one fetch.
     assert fetched_urls.count(f"{SITE}/about") + fetched_urls.count(f"{SITE}/about/") == 1
-    assert len(records) == 2  # start + one child, not two children
+    assert len(records) == 2
     assert records[1].title == "About"
 
 
@@ -162,10 +151,6 @@ def test_discovered_from_set_to_referrer(fake_transport):
     assert records[0].discovered_from == ""
     assert records[1].discovered_from == SITE
 
-
-# ---------------------------------------------------------------------------
-# page extraction / non-HTML / errors
-# ---------------------------------------------------------------------------
 
 def test_404_page_yields_record_with_no_links_or_body(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())
@@ -228,10 +213,6 @@ def test_twitter_meta_tags_land_in_record_twitter(fake_transport):
     }
 
 
-# ---------------------------------------------------------------------------
-# redirects
-# ---------------------------------------------------------------------------
-
 def test_redirect_history_produces_chain_and_final_url(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())
     fake_transport.route("GET", SITE, {
@@ -283,10 +264,6 @@ def test_too_many_redirects_yields_error_record_with_partial_chain(fake_transpor
     ]
 
 
-# ---------------------------------------------------------------------------
-# stats / truncation
-# ---------------------------------------------------------------------------
-
 def test_stats_truncated_when_max_pages_hit_with_queue_nonempty(fake_transport):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())
     fake_transport.route("GET", f"{SITE}/a", page_resp(html("a page")))
@@ -307,10 +284,6 @@ def test_stats_not_truncated_when_crawl_exhausts_queue(fake_transport):
     assert len(records) == 1
     assert stats["truncated"] is False
 
-
-# ---------------------------------------------------------------------------
-# crawl_to_file
-# ---------------------------------------------------------------------------
 
 def test_crawl_to_file_writes_jsonl_and_v2_summary(fake_transport, tmp_path):
     fake_transport.route("GET", f"{SITE}/robots.txt", robots_allow_all())

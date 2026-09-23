@@ -54,21 +54,20 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-import xml.etree.ElementTree as ET  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urljoin, urlparse  # noqa: E402
+import argparse
+import json
+import re
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+from typing import Any, Optional
+from urllib.parse import urljoin, urlparse
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-from scripts.lib import http_util, publication, robots  # noqa: E402
+from scripts.lib import http_util, publication, robots
 
-#: Crawlers whose access gates AI citation/answers (blocking = error) vs training-only (warning).
 CITATION_CRAWLERS = ["Googlebot", "Bingbot", "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User",
                      "PerplexityBot", "Perplexity-User", "Applebot", "Amazonbot"]
 TRAINING_CRAWLERS = ["GPTBot", "ClaudeBot", "Google-Extended", "CCBot", "Bytespider", "Meta-ExternalAgent",
@@ -360,8 +359,6 @@ def check_network(ctx: dict[str, Any], pages: list[dict[str, Any]], findings: Fi
             findings.info("/about", "disclosure", "disclosure is off in site.yml but /about mentions support")
 
 
-# ---------- page sources ----------
-
 def pages_from_dist(dist: Path, site_url: str) -> tuple[list[dict[str, Any]], dict[str, Optional[str]], int]:
     pages = []
     for path in sorted(dist.rglob("*.html")):
@@ -390,7 +387,7 @@ def pages_from_url(site_url: str, max_pages: int) -> tuple[list[dict[str, Any]],
         try:
             resp = http_util.get(url, timeout=30.0)
             return resp.text if resp.status_code == 200 else None
-        except Exception:  # noqa: BLE001 — a missing feed is a finding, not a crash
+        except Exception:
             return None
 
     feeds = {n: fetch(urljoin(site_url + "/", n)) for n in ("robots.txt", "sitemap.xml", "feed.xml", "llms.txt")}
@@ -438,7 +435,7 @@ def main() -> int:
         cfg = config_module.load()
         if args.publications_dir:
             cfg.site["publications_dir"] = args.publications_dir
-    except Exception:  # noqa: BLE001 — html-dir/url modes work without a repo
+    except Exception:
         cfg = None
 
     post_count: Optional[int] = None
@@ -496,7 +493,7 @@ def main() -> int:
             out = cfg.reports_dir / f"pub-site-validate-{stamp}.json"
             out.write_text(json.dumps(report, indent=2), encoding="utf-8")
             report["report_file"] = str(out)
-        except Exception:  # noqa: BLE001 — the report on stdout is the deliverable
+        except Exception:
             pass
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 1 if report["verdict"] == "fail" else 0

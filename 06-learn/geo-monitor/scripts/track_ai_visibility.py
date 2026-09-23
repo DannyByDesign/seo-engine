@@ -109,18 +109,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import math  # noqa: E402
-import time  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import math
+import time
+from datetime import datetime, timezone
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import ai_visibility, http_util, snapshots, urlnorm  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import ai_visibility, http_util, snapshots, urlnorm
+from scripts.lib.config import Config, MissingConfigError
 
 HISTORY_FILENAME = "ai-visibility-history.jsonl"
 HISTORY_SCHEMA_VERSION = 2
@@ -282,7 +282,6 @@ def _aggregate_provider_samples(
         if sample.get("error"):
             error_samples += 1
             outcomes.append("error")
-            # probe_all already sanitizes; re-wrap defensively before persisting.
             err_text = http_util.sanitize_text(str(sample.get("error")))
             err_type = str(sample.get("error_type") or "")
             if (err_type, err_text) not in seen_errors:
@@ -314,8 +313,6 @@ def _aggregate_provider_samples(
         "cited_count": cited_count,
         "valid_samples": valid_samples,
         "error_samples": error_samples,
-        # Union across samples of citations that match the target domain,
-        # deduped by urlnorm.canonical_key (raw form displayed).
         "citation_urls": sorted(urls_by_key.values()),
         "errors": errors,
     }
@@ -366,7 +363,7 @@ def _diff_against_prior(
         prior2_state = prior2_p.get("state")
 
         if cur_state in (None, "not_configured") and prior_state in (None, "not_configured"):
-            continue  # never configured in either run -- nothing to say
+            continue
 
         entry: dict[str, Any] = {
             "state_now": cur_state,
@@ -396,7 +393,6 @@ def _diff_against_prior(
             entry["newly_lost_citation_urls"] = lost
             entry["change"] = "cited_but_different_pages" if (gained or lost) else "unchanged"
         elif cur_state == "cited":
-            # prior was not_cited or mixed -- a gain, reported immediately.
             entry["change"] = "newly_cited"
             entry["newly_gained_citation_urls"] = sorted(
                 _url_key_map(cur_p.get("citation_urls")).values()
@@ -422,9 +418,6 @@ def _diff_against_prior(
         elif cur_state == prior_state:
             entry["change"] = "unchanged"
         else:
-            # Remaining transitions involve `mixed` (intermittent citation):
-            # cited<->mixed, mixed<->not_cited. Neither a clean gain nor a
-            # clean loss -- surfaced as a state change to watch, not counted.
             entry["change"] = "state_changed"
             entry["note"] = (
                 "Transition involving the `mixed` (intermittent-citation) state -- "
@@ -453,7 +446,7 @@ def _run_trackers(cfg: Config, skip_trackers: bool) -> dict[str, Any]:
                 "vendor": "Profound (tryprofound.com)",
                 "data": ai_visibility.profound_visibility(cfg),
             }
-        except Exception as exc:  # noqa: BLE001 -- a tracker failure shouldn't abort the DIY run
+        except Exception as exc:
             trackers["profound"] = {
                 "source": "third_party_commercial_tracker",
                 "error": http_util.sanitize_text(str(exc)),
@@ -482,7 +475,7 @@ def _run_trackers(cfg: Config, skip_trackers: bool) -> dict[str, Any]:
                     "vendor": "Otterly.AI (otterly.ai)",
                     "data": ai_visibility.otterly_visibility(cfg, project_id),
                 }
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 trackers["otterly"] = {
                     "source": "third_party_commercial_tracker",
                     "error": http_util.sanitize_text(str(exc)),

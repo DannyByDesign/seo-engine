@@ -62,23 +62,22 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import firecrawl, http_util, pagerules, snapshots  # noqa: E402
-from scripts.lib.config import MissingConfigError  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import firecrawl, http_util, pagerules, snapshots
+from scripts.lib.config import MissingConfigError
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
 DEFAULT_MIN_WORDS = 100
-HIGH_SEVERITY_WORDS = 30  # under this, the raw HTML is an empty app shell
+HIGH_SEVERITY_WORDS = 30
 
-# Substring hydration markers findable in raw HTML without parsing.
 STRING_MARKERS = (
-    "__NEXT_DATA__",     # Next.js
-    "__NUXT__",          # Nuxt
-    "data-reactroot",    # React (pre-18 SSR-less mounts)
-    "ng-version",        # Angular
-    "data-sveltekit",    # SvelteKit
-    "astro-island",      # Astro islands
+    "__NEXT_DATA__",
+    "__NUXT__",
+    "data-reactroot",
+    "ng-version",
+    "data-sveltekit",
+    "astro-island",
 )
 
 REMEDIATION = (
@@ -120,9 +119,9 @@ def analyze_html(url: str, html: str) -> dict:
 def check_url_live(url: str) -> dict:
     """Fetch the raw (unrendered) HTML for one URL and analyze it."""
     try:
-        resp = http_util.get(url, min_interval=0.5)  # stream off: full raw body
+        resp = http_util.get(url, min_interval=0.5)
     except http_util.HttpError as exc:
-        return {"url": url, "error": str(exc), "flagged": False}  # pre-sanitized
+        return {"url": url, "error": str(exc), "flagged": False}
     if resp.status_code != 200:
         return {"url": url, "status": resp.status_code, "flagged": False,
                 "note": f"HTTP {resp.status_code} -- not analyzed"}
@@ -182,7 +181,7 @@ def upgrade_with_firecrawl(cfg, findings: list[dict], results_by_url: dict) -> N
         url = finding["url"]
         try:
             diff = firecrawl.diff_raw_vs_rendered(cfg, url)
-        except Exception as exc:  # per-URL degradation, sanitized
+        except Exception as exc:
             err = http_util.sanitize_text(str(exc))
             finding["rendered_diff_error"] = err
             results_by_url[url]["rendered_diff_error"] = err
@@ -279,9 +278,6 @@ def main() -> None:
         }
 
         if args.from_snapshot:
-            # The crawler's word_count IS the raw-HTML word count (it never
-            # executes JS), so the snapshot screens for free; only pages
-            # below --min-words need one live fetch for marker analysis.
             for record in snap.pages():
                 if not pagerules.is_indexable_html(record):
                     continue
@@ -295,7 +291,7 @@ def main() -> None:
                     result = flag(check_url_live(url), args.min_words)
                     result["source"] = "snapshot+live_fetch"
                     results.append(result)
-        else:  # --sample-from-crawl (default when neither mode flag is given)
+        else:
             urls = []
             for record in snap.pages():
                 if pagerules.is_indexable_html(record):

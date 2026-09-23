@@ -75,22 +75,17 @@ Merges with any explicit `--changed-url`/`--changed-urls-file` entries, deduped.
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Auto-discover sitemap + inspect homepage & GSC top pages (no IndexNow)
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py"
 
-# Derive changed URLs from the snapshot store and submit to IndexNow
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --changed-from-snapshots
 
-# Explicit changed URLs
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" \
   --changed-url https://example.com/blog/new-post --changed-url https://example.com/pricing
 
-# Feed changed URLs from a file; inspect specific pages instead of the auto sample
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --changed-urls-file changed-urls.txt
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" \
   --inspect-url https://example.com/ --inspect-url https://example.com/pricing --no-sitemap-sync
 
-# Force sitemap resubmission; skip pieces you don't need this run
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --sitemap-url https://example.com/sitemap.xml --force-resubmit
 python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --no-inspect --changed-urls-file changed-urls.txt
 ```
@@ -101,7 +96,6 @@ Flags: `--sitemap-url`, `--force-resubmit`, `--no-sitemap-sync`, `--inspect-url`
 (override when the key file isn't served at the default `https://{host}/{key}.txt`).
 
 ```bash
-# One-time IndexNow key scaffold — falls back to config's static_source_dir if --dir omitted
 python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py"
 python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py" --dir public
 python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py" --existing-key-file public/<key>.txt

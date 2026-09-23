@@ -58,18 +58,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import difflib  # noqa: E402
-import hashlib  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any, Callable  # noqa: E402
+import argparse
+import difflib
+import hashlib
+import json
+import re
+from datetime import datetime, timedelta, timezone
+from typing import Any, Callable
 
-from scripts.lib import firecrawl, http_util, llm, publication, pubstate, sociavault  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import firecrawl, http_util, llm, publication, pubstate, sociavault
+from scripts.lib.config import Config
 
 PROVIDERS = ("news_trend", "regulation_change", "social_trend", "github_release", "github_pr", "spec_change", "notion_activity")
 DEFAULT_INTERVAL = {"news_trend": 720, "regulation_change": 1440, "social_trend": 720, "github_release": 360,
@@ -88,8 +88,6 @@ def _event(seer: dict[str, Any], key: str, title: str, url: str, summary: str, *
     return {"seer": seer["name"], "provider": seer["provider"], "dedupe_key": key, "title": title, "url": url,
             "summary": summary, "detected_at": pubstate.now_iso(), **extra}
 
-
-# ---------- providers ----------
 
 def news_trend(cfg: Config, seer: dict[str, Any], cursor: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
     conf = seer.get("config") or {}
@@ -185,7 +183,7 @@ def spec_change(cfg: Config, seer: dict[str, Any], cursor: dict[str, Any]) -> tu
     for url in urls:
         try:
             resp = http_util.get(url, timeout=30.0, check=True)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             notes.append(f"{url}: {http_util.sanitize_text(str(exc))[:120]}")
             continue
         soup = BeautifulSoup(resp.text, "lxml")
@@ -233,8 +231,6 @@ HANDLERS: dict[str, Callable[..., tuple[list[dict[str, Any]], list[str]]]] = {
 }
 
 
-# ---------- produce ----------
-
 def headline_for(cfg: Config, event: dict[str, Any], strategy: dict[str, Any]) -> tuple[str, str]:
     if not llm.configured_providers(cfg):
         return event["title"][:110], f"Detected by seer {event['seer']}."
@@ -266,7 +262,7 @@ def produce(cfg: Config, root: Path, pub: publication.Publication, strategy: dic
                 publication.write_post(path, {"title": headline, "slug": slug, "status": "draft", "section": section,
                                               "brief": why, "source": {"seer": seer["name"], "provider": seer["provider"], "url": ev["url"]},
                                               "source_urls": [ev["url"]], "created_at": pubstate.now_iso()},
-                                       f"<!-- brief: {why} -->\n<!-- signal: {ev['title']} — {ev['url']} -->\n")
+                                       "")
                 item["draft"] = str(path)
         produced.append(item)
     return produced
@@ -355,7 +351,7 @@ def main() -> int:
             continue
         try:
             events, notes = HANDLERS[seer["provider"]](cfg, seer, st["cursor"])
-        except Exception as exc:  # noqa: BLE001 — one seer must not stop the others
+        except Exception as exc:
             runs.append({"seer": seer["name"], "error": http_util.sanitize_text(str(exc))[:200]})
             continue
         seen = set(st.get("seen", []))

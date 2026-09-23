@@ -71,13 +71,13 @@ Keep observed sitemap paths; do not invent one. Derive target-topic hypotheses t
 ### Step 3 — write `.seo-engine/config.yml`
 
 ```yaml
-site_url: "https://example.com"                  # required, no trailing slash
-sitemap_url: "https://example.com/sitemap.xml"    # optional but recommended
-framework: "next.js"                              # from detect_stack.py's suggested_config
-static_source_dir: "public"                       # from suggested_config — deploys verbatim
-build_output_dir: ".next"                         # from suggested_config — wiped every build
-target_topics: []                                 # empty scaffold; fill in later
-locales: []                                       # empty scaffold; fill in later
+site_url: "https://example.com"
+sitemap_url: "https://example.com/sitemap.xml"
+framework: "next.js"
+static_source_dir: "public"
+build_output_dir: ".next"
+target_topics: []
+locales: []
 ```
 
 `static_source_dir` is the only safe place for a later skill to write a file that must ship

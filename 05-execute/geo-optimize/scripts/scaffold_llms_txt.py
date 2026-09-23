@@ -67,13 +67,10 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import pagerules, snapshots  # noqa: E402
-from scripts.lib.config import MissingConfigError  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import pagerules, snapshots
+from scripts.lib.config import MissingConfigError
 
-# llms.txt is markdown: H1 first (the informal convention), THEN the honest-
-# scope disclaimer as a `> Note:` blockquote. Same anti-hype text the old
-# HTML comment carried, in a form markdown readers actually render.
 DISCLAIMER_LINES = [
     "> Note: This file is a machine-readable page map for AGENTIC BROWSING /",
     "> agent-to-agent use (a coding agent or automation reading this site's",
@@ -110,8 +107,6 @@ def build_llms_txt(site_url: str, pages: list[dict]) -> str:
     parsed = urlparse(site_url)
     site_name = parsed.netloc or site_url
 
-    # Group by first path segment so the output has some structure beyond a
-    # flat dump -- purely for machine/agent readability, not SEO.
     groups: dict[str, list[dict]] = {}
     for record in pages:
         path = urlparse(record.get("final_url") or record.get("url") or "").path.strip("/")
@@ -215,9 +210,6 @@ def main() -> None:
     if warning:
         result["warning"] = warning
 
-    # Never write into the build output directory: the next build wipes or
-    # regenerates it, silently deleting the file (same failure mode as the
-    # IndexNow key-file placement bug this engine already fixed).
     build_dir = str((cfg.site or {}).get("build_output_dir") or "").strip()
     if build_dir:
         build_path = _resolve_dir(cfg.repo_root, build_dir)
@@ -253,9 +245,6 @@ def main() -> None:
         print()
         return
 
-    # Crawl via the shared snapshot store: reuse a recent snapshot when one
-    # exists, else crawl fresh. --ignore-robots always crawls fresh (a reused
-    # robots-respecting snapshot is not what the caller asked for).
     if args.ignore_robots:
         snap = snapshots.new_crawl(cfg, "geo-optimize", max_pages=args.max_pages,
                                    ignore_robots=True)

@@ -64,7 +64,6 @@ def submit(cfg: Config, urls: list[str], key_location: Optional[str] = None) -> 
     if key_location:
         body["keyLocation"] = key_location
 
-    # A pure signal with no server-side state to double-charge: safe to retry.
     resp = http_util.post(ENDPOINT, json_body=body, min_interval=0.5,
                           retry="idempotent", check=True)
     return resp.status_code

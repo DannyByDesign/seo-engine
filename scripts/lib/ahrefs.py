@@ -32,7 +32,7 @@ def _get(cfg: Config, path: str, params: dict[str, Any]) -> dict[str, Any]:
         f"{BASE_URL}{path}",
         headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
         params=params,
-        min_interval=1.0,  # 60 req/min default limit
+        min_interval=1.0,
         cache_dir=cfg.state_dir / "http-cache", cache_ttl=3600,
         check=True,
     )

@@ -146,7 +146,6 @@ def main() -> int:
         text = skill_md.read_text(encoding="utf-8")
         prose = strip_urls(strip_fences(text))
 
-        # 1. Frontmatter.
         fm = parse_frontmatter(text)
         if fm.get("name") != skill_dir.name:
             fail(skill_md, f"frontmatter name {fm.get('name')!r} != directory {skill_dir.name!r}")
@@ -156,7 +155,6 @@ def main() -> int:
         elif len(description) > 550:
             fail(skill_md, f"description is {len(description)} chars (max 550)")
 
-        # 5. Skeleton.
         body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.DOTALL)
         first_heading = next((line for line in body.splitlines() if line.startswith("#")), "")
         if first_heading.strip() != f"# {skill_dir.name}":
@@ -173,7 +171,6 @@ def main() -> int:
         if present != sorted(present):
             fail(skill_md, "canonical headings are out of order")
 
-        # 2. Flag parity.
         scripts = sorted(skill_dir.glob("scripts/*.py"))
         script_flags: set[str] = set()
         for script in scripts:
@@ -184,7 +181,6 @@ def main() -> int:
         for flag in sorted((script_flags - FLAG_ALLOWLIST) - doc_flags):
             fail(skill_md, f"script flag {flag} is not documented anywhere in the SKILL.md")
 
-        # 3. State-file claims.
         script_sources = "\n".join(s.read_text(encoding="utf-8") for s in scripts)
         for state_ref in set(re.findall(r"\.seo-engine/[\w./<>{}\[\]*-]+", text)):
             token = state_ref.rstrip(".,)")
@@ -199,7 +195,6 @@ def main() -> int:
                 continue
             fail(skill_md, f"claims state/report path {token!r} not found in this skill's scripts")
 
-        # 4. Pointer resolution.
         for link in re.findall(r"\]\(([^)]+\.md)(?:#[^)]*)?\)", text):
             if link.startswith("http"):
                 continue
@@ -213,21 +208,16 @@ def main() -> int:
             fail(skill_md, "contains a dead ../../references or bare references/ pointer")
         check_section_refs(skill_md, text, sections)
 
-        # 6. Skill-name integrity.
         for token in set(BACKTICK_SKILL_RE.findall(text)):
             if token not in skill_names:
                 fail(skill_md, f"references skill `{token}` which does not exist")
 
-        # 7. Lint.
         if MOJIBAKE_RE.search(text):
             fail(skill_md, "contains SS-mojibake or replacement characters")
         for year in set(YEAR_RE.findall(prose)):
             fail(skill_md, f"bare year {year} in prose — dated facts belong in seo-references")
         for para in re.split(r"\n\s*\n", prose):
             if para.lstrip().startswith((">", "|")):
-                # Blockquote callouts (incl. the mandated Paths block) and
-                # tables (incl. the mandated snapshot-store State row) are
-                # structured/mandated repetition, not prose duplication.
                 continue
             words = para.split()
             if len(words) >= 40:
@@ -237,7 +227,6 @@ def main() -> int:
                     fail(skill_md, f"40+-word paragraph duplicated from {owner.relative_to(ENGINE_ROOT)}")
                 paragraph_owners[digest] = skill_md
 
-    # Script-embedded section refs (finding text carries e.g. "geo-playbook.md §4").
     for script in sorted(SKILLS_DIR.glob("*/scripts/*.py")) + sorted((ENGINE_ROOT / "scripts" / "lib").glob("*.py")):
         check_section_refs(script, script.read_text(encoding="utf-8"), sections)
 

@@ -27,12 +27,9 @@ from urllib.parse import urlparse
 
 try:
     import yaml
-except ImportError:  # pragma: no cover
+except ImportError:
     yaml = None
 
-#: Which env vars unlock each optional integration. "any" = one suffices,
-#: "all" = every listed var is required. This is the single source of truth —
-#: `available_integrations()` and ai_visibility's provider map derive from it.
 INTEGRATION_ENV_VARS: dict[str, dict[str, list[str]]] = {
     "google_search_console": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"]},
     "google_analytics": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"], "all": ["GA4_PROPERTY_ID"]},
@@ -56,8 +53,6 @@ INTEGRATION_ENV_VARS: dict[str, dict[str, list[str]]] = {
     "notion": {"all": ["NOTION_TOKEN"]},
 }
 
-#: Values that mean "the user never filled this in". Checked as
-#: case-insensitive substrings.
 _PLACEHOLDER_MARKERS = ("your-", "<", "/path/to/", "changeme", "example.com")
 
 
@@ -132,7 +127,6 @@ class Config:
     env: dict[str, str] = field(default_factory=dict)
     site: dict[str, Any] = field(default_factory=dict)
 
-    # ---------- construction ----------
 
     @classmethod
     def load(cls, start: Optional[Path] = None) -> "Config":
@@ -153,7 +147,6 @@ class Config:
             site = yaml.safe_load(site_cfg.read_text(encoding="utf-8")) or {}
         return cls(repo_root=root, env=env, site=site)
 
-    # ---------- generic accessors ----------
 
     def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
         return self.env.get(key, default)
@@ -168,7 +161,6 @@ class Config:
         value = self.env.get(key, "").strip()
         return bool(value) and not _is_placeholder(value)
 
-    # ---------- site config ----------
 
     @property
     def site_url(self) -> str:
@@ -199,7 +191,6 @@ class Config:
         d.mkdir(parents=True, exist_ok=True)
         return d
 
-    # ---------- integration availability ----------
 
     def integration_available(self, name: str) -> bool:
         spec = INTEGRATION_ENV_VARS[name]

@@ -36,7 +36,6 @@ def assess(candidates, *, today=None, root=None):
                     evidence.update(provenance_kind='local_snapshot_not_automatically_verified',
                                     snapshot_sha256=hashlib.sha256(path.read_bytes()).hexdigest())
                 valid.append(evidence)
-        # Explicit heuristic ordering, not a prediction of clicks or ranking probability.
         value, effort = row.get('business_value'), row.get('effort_hours')
         if type(value) is not int or not 1 <= value <= 3 or not isinstance(effort, (float,int)) or effort <= 0:
             raise ValueError('business_value is 1..3; effort_hours must be positive')
@@ -57,7 +56,6 @@ def discover(cfg, queries, location, language):
     if not 1 <= len(queries) <= 10:
         raise ValueError('use one to ten seed queries to bound paid calls')
     result = {'queries': [], 'location_code': location, 'language_code': language, 'observed_on': date.today().isoformat()}
-    # Keep caller-selected language for SERPs. Google Ads volume uses the endpoint's geography only.
     try:
         raw = dataforseo.search_volume(cfg, queries, location)
         volumes = {r['keyword']: r.get('search_volume') for r in (raw['tasks'][0].get('result') or [])}

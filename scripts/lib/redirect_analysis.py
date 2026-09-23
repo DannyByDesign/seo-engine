@@ -114,7 +114,7 @@ def classify_record(record: dict[str, Any]) -> Optional[dict[str, Any]]:
                 ),
                 "auto_fixable": False,
             }
-        return None  # single substantive redirect: normal (moved page), not a finding
+        return None
 
     if all_normalizing:
         return {
@@ -153,7 +153,7 @@ def classify_snapshot(pages: list[dict[str, Any]]) -> dict[str, Any]:
         "link_to_redirect": [],
     }
 
-    redirecting: dict[str, dict[str, Any]] = {}  # canonical_key -> record
+    redirecting: dict[str, dict[str, Any]] = {}
     for rec in pages:
         result = classify_record(rec)
         if result is not None:
@@ -161,7 +161,6 @@ def classify_snapshot(pages: list[dict[str, Any]]) -> dict[str, Any]:
         if rec.get("redirect_chain"):
             redirecting[urlnorm.canonical_key(rec.get("url", ""))] = rec
 
-    # Internal links pointing at URLs that answer with a redirect.
     referrers: dict[str, list[str]] = {}
     for rec in pages:
         if rec.get("status") != 200:
@@ -171,11 +170,6 @@ def classify_snapshot(pages: list[dict[str, Any]]) -> dict[str, Any]:
             target = redirecting.get(key)
             if target is None:
                 continue
-            # A link to a pure-normalizing redirect (slash/www/scheme) is not
-            # worth a finding — but a link to ANY substantive redirect is,
-            # including the single-hop moved-page case (classify_record
-            # returns None for that shape only because it isn't a chain/loop
-            # defect; the link should still point at the final destination).
             if _pure_normalizing(target):
                 continue
             referrers.setdefault(key, []).append(rec.get("url", ""))

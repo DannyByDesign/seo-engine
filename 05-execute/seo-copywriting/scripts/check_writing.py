@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import writing_examples  # portable engine discovery, including SEO_ENGINE_ROOT
+import writing_examples
 from scripts.lib import config, languagetool
 
 

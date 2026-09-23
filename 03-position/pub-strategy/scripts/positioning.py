@@ -55,16 +55,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import re
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import http_util, llm, publication, pubstate, robots, sitemaps  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import http_util, llm, publication, pubstate, robots, sitemaps
+from scripts.lib.config import Config
 
 MAX_TARGETS = 5
 SUGGEST_SYSTEM = (
@@ -111,7 +111,7 @@ def measure_brand(domain: str) -> dict[str, Any]:
             if any(s in host for s in ("linkedin.com", "x.com", "twitter.com", "github.com", "youtube.com", "instagram.com", "tiktok.com")):
                 socials.add(a["href"])
         out["socials"] = sorted(socials)[:10]
-    except Exception as exc:  # noqa: BLE001 — a measurement is best effort
+    except Exception as exc:
         out["warnings"].append(f"homepage: {http_util.sanitize_text(str(exc))[:200]}")
     try:
         policy = robots.fetch(site_url)
@@ -125,9 +125,9 @@ def measure_brand(domain: str) -> dict[str, Any]:
                 title = (s.title.string or "").strip() if s.title and s.title.string else url
                 desc = s.find("meta", attrs={"name": "description"})
                 out["pages"].append({"url": url, "title": title[:160], "description": (str(desc.get("content") or "")[:200] if desc else "")})
-            except Exception:  # noqa: BLE001
+            except Exception:
                 continue
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         out["warnings"].append(f"sitemap: {http_util.sanitize_text(str(exc))[:200]}")
     return out
 
@@ -221,7 +221,7 @@ def validate(strategy: dict[str, Any], *, check_urls: bool) -> list[dict[str, st
                 resp = http_util.get(l["url"], timeout=20.0)
                 if resp.status_code >= 400:
                     problems.append({"severity": "error", "message": f"landing returns HTTP {resp.status_code}: {l['url']}"})
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 problems.append({"severity": "error", "message": f"landing unreachable: {l['url']} ({http_util.sanitize_text(str(exc))[:80]})"})
     return problems
 

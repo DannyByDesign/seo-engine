@@ -50,16 +50,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import re
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import article, http_util, llm, publication, pubstate  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import article, http_util, llm, publication, pubstate
+from scripts.lib.config import Config
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 KERNELS_DIR = SKILL_DIR / "kernels"
@@ -105,8 +105,6 @@ def mention_decision(pub: publication.Publication, strategy: dict[str, Any], res
     client_host = str(client.get("domain") or "").lower().removeprefix("www.")
     published = len(pub.posts)
     with_mention = sum(1 for p in pub.posts if isinstance(p.meta.get("mention"), dict) and p.meta["mention"].get("applied"))
-    # Budget = how many of (published + this one) may carry a mention at this rate, never below one
-    # so a brand-new publication is not locked out of its first honest citation.
     budget = max(1, int(round(rate * (published + 1)))) if rate > 0 else 0
     within_rate = with_mention < budget
     landing = next((s for s in research.get("sources", []) if s.get("origin") == "client_landing"), None)
@@ -175,7 +173,7 @@ def compose_opening(cfg: Config, kernel: str, outline: dict[str, Any], sources: 
                     template_block: str, mention: dict[str, Any]) -> str:
     opening = outline.get("opening") or {}
     if not opening.get("verified"):
-        return ""  # A rejected opening must never be given back to the model.
+        return ""
     src = sources.get(opening.get("source"), {})
     user = (f"VOICE CARD:\n{kernel}\n\n{HOUSE_RULES}\n\nARTICLE CONTEXT:\n{context}\n\nTEMPLATE BLOCK:\n{template_block}\n\n"
             f"OPENING STATISTIC: {opening.get('claim')}\nEVIDENCE (verbatim): \"{opening.get('quote')}\"\nSOURCE: {src.get('title', '')} — {src.get('url', '')}\n"
@@ -238,7 +236,7 @@ def main() -> int:
     if research.get("status") != "done" or not outline.get("sections"):
         print(json.dumps({"checked": False, "error": "draft has no completed research outline — run research_outline.py first"}, indent=2))
         return 1
-    if body.strip() and not re.fullmatch(r"(\s*<!--.*?-->\s*)*", body, flags=re.S) and not args.force:
+    if body.strip() and not args.force:
         print(json.dumps({"checked": False, "error": "draft already has a body — pass --force to rewrite"}, indent=2))
         return 1
 
@@ -277,7 +275,6 @@ def main() -> int:
         md, stripped = article.strip_links_to_host(md, mention["client_host"])
     client_links = [u for _, u in article.links_in(md) if mention["client_host"] and mention["client_host"] in urlparse(u).netloc.lower()]
     if mention["allowed"] and len(client_links) > 1:
-        # keep the first, strip the rest — one citation per article
         first = client_links[0]
         count = 0
 

@@ -25,24 +25,18 @@ def key(url: str) -> str:
     return urlnorm.canonical_key(url)
 
 
-# ---------------------------------------------------------------------------
-# build_graph
-# ---------------------------------------------------------------------------
-
 def test_build_graph_folds_aliases_so_redirect_target_is_not_orphaned():
     pages = [
         page(f"{SITE}/", internal_links=[f"{SITE}/old"]),
-        page(f"{SITE}/old", final_url=f"{SITE}/new"),  # redirecting alias
+        page(f"{SITE}/old", final_url=f"{SITE}/new"),
     ]
     graph = linkgraph.build_graph(pages)
     root = key(f"{SITE}/")
-    # /old's redirecting record contributes an alias, not a separate node.
     assert key(f"{SITE}/new") in graph.nodes
     assert key(f"{SITE}/old") not in graph.nodes
-    # The root's link to /old is credited to /new via the alias map.
     assert graph.adjacency[root] == {key(f"{SITE}/new")}
     reachable = linkgraph.reachable(graph, root)
-    assert key(f"{SITE}/new") in reachable  # not orphaned
+    assert key(f"{SITE}/new") in reachable
 
 
 def test_inbound_counts_distinct_sources_not_total_links():
@@ -52,7 +46,7 @@ def test_inbound_counts_distinct_sources_not_total_links():
         page(f"{SITE}/target"),
     ]
     graph = linkgraph.build_graph(pages)
-    assert graph.inbound[key(f"{SITE}/target")] == 2  # /a and /b, not 3 links
+    assert graph.inbound[key(f"{SITE}/target")] == 2
 
 
 def test_reachable_bfs_walks_multiple_hops():
@@ -78,10 +72,6 @@ def test_build_graph_skips_error_records():
     graph = linkgraph.build_graph(pages)
     assert key(f"{SITE}/broken") not in graph.nodes
 
-
-# ---------------------------------------------------------------------------
-# orphan_analysis
-# ---------------------------------------------------------------------------
 
 def test_orphan_page_unreachable_crawled_200_indexable_is_high_severity():
     pages = [
@@ -129,8 +119,6 @@ def test_noindex_page_excluded_from_orphan_pages():
     universe = {"checked": True, "urls": {key(f"{SITE}/"), key(f"{SITE}/hidden")}}
     result = linkgraph.orphan_analysis(universe, graph, root, linkgraph.index_pages(pages))
     assert result["orphan_pages"] == []
-    # Excluded entirely -- neither an orphan finding nor an uncrawled candidate
-    # (it WAS crawled, just not indexable).
     assert result["orphan_candidates_uncrawled"] == []
 
 
@@ -147,10 +135,10 @@ def test_universe_checked_false_passes_through_reason():
 
 
 def test_coverage_ratio_refusal_when_universe_more_than_double_nodes():
-    pages = [page(f"{SITE}/")]  # 1 crawled node
+    pages = [page(f"{SITE}/")]
     graph = linkgraph.build_graph(pages)
     root = key(f"{SITE}/")
-    universe = {"checked": True, "urls": {f"{SITE}/p{i}" for i in range(5)}}  # 5 > 2*1
+    universe = {"checked": True, "urls": {f"{SITE}/p{i}" for i in range(5)}}
     result = linkgraph.orphan_analysis(universe, graph, root, linkgraph.index_pages(pages))
     assert result["checked"] is False
     assert "raise --max-pages" in result["reason"]
@@ -167,10 +155,6 @@ def test_index_pages_keys_by_final_destination():
     assert indexed[key(f"{SITE}/new")]["url"] == f"{SITE}/old"
 
 
-# ---------------------------------------------------------------------------
-# known_url_universe
-# ---------------------------------------------------------------------------
-
 def test_known_url_universe_sitemap_only_when_no_gsc(monkeypatch, tmp_repo):
     from scripts.lib import sitemaps
 
@@ -184,7 +168,7 @@ def test_known_url_universe_sitemap_only_when_no_gsc(monkeypatch, tmp_repo):
         }
 
     monkeypatch.setattr(sitemaps, "fetch_url_set", fake_fetch_url_set)
-    cfg = tmp_repo.make_config(env={})  # no GSC creds configured
+    cfg = tmp_repo.make_config(env={})
     result = linkgraph.known_url_universe(cfg, SITE)
     assert result["checked"] is True
     assert result["urls"] == {key(f"{SITE}/a"), key(f"{SITE}/b")}

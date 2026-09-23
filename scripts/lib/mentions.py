@@ -60,7 +60,6 @@ def strip_link_surfaces(text: str) -> str:
         label, target = m.group(1), m.group(2)
         if not label.strip() or _ADDRESS_RE.match(label.strip()):
             return _blank(m.group(0))
-        # keep label in place, blank the brackets and the target
         return " " + label + " " + _blank("(" + target + ")")
 
     text = _MD_LINK_RE.sub(md_sub, text)

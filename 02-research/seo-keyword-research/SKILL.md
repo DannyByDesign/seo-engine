@@ -67,22 +67,16 @@ non-speculative prioritization heuristic available from free data.
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Default: last 90 days, GSC signal + DataForSEO/Ahrefs context if either is configured
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py"
 
-# Shorter window, stricter impression floor (less noise, smaller list)
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --days 28 --min-impressions 25
 
-# Widen what counts as "outside target position"
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --min-position 15
 
-# GSC-only, skip paid keyword-data enrichment entirely (no paid API cost)
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --no-keyword-data
 
-# Country/device-segmented opportunity mining
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --country usa --device MOBILE
 
-# Force Ahrefs over DataForSEO when both are configured; raise the pagination cap
 python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --prefer-ahrefs --row-limit 200000
 ```
 

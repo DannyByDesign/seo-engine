@@ -69,17 +69,13 @@ empty node never errors, only warns):
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Live crawl of the whole configured site
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --max-pages 200
 
-# Live check of one URL (e.g. right after editing one page template)
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --url https://example.com/blog/my-post
 
-# Local HTML files -- e.g. a pre-deploy CI check against a static build output dir
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --files-dir ./dist --pattern ".html"
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --files dist/index.html dist/blog/post.html
 
-# CI gate: also block on missing-recommended-property warnings, skip writing reports
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --strict --no-report
 ```
 

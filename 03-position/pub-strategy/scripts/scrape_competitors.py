@@ -44,19 +44,19 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-from datetime import datetime, timedelta, timezone  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+import re
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup  # noqa: E402
+from bs4 import BeautifulSoup
 
-from scripts.lib import dataforseo, http_util, llm, publication, pubstate, robots, sitemaps  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import dataforseo, http_util, llm, publication, pubstate, robots, sitemaps
+from scripts.lib.config import Config
 
 ARTICLE_HINT = re.compile(r"/(blog|posts?|articles?|content|guides?|resources?|insights?|news|learn|stories|research)(/|$)", re.I)
 EXCLUDE = re.compile(r"/(tag|tags|category|categories|author|authors|page|search|feed|wp-json|cart|login|privacy|terms)(/|$)|\.(png|jpe?g|gif|svg|webp|pdf|xml|css|js)$", re.I)
@@ -89,7 +89,7 @@ def article_urls(site_url: str, max_pages: int) -> tuple[list[str], list[str]]:
 def read_page(cfg: Config, url: str) -> Optional[dict[str, Any]]:
     try:
         resp = http_util.get(url, timeout=25.0, min_interval=1.0, cache_dir=cfg.state_dir / "http-cache", cache_ttl=7 * 86400)
-    except Exception:  # noqa: BLE001 — one bad page is not a failed scrape
+    except Exception:
         return None
     if resp.status_code != 200 or "html" not in (resp.headers.get("content-type") or ""):
         return None
@@ -133,7 +133,7 @@ def infer_keywords(cfg: Config, client_description: str, topics: list[dict[str, 
                         continue
                     t["inferred_keyword"] = str(row.get("keyword") or "").strip().lower()
                     t["keyword_priority"] = row.get("priority") if row.get("priority") in ("high", "medium", "low") else "medium"
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 notes.append(f"LLM keyword inference failed for a batch: {http_util.sanitize_text(str(exc))[:120]}")
     for t in pending:
         if not t.get("inferred_keyword"):

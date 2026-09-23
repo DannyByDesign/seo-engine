@@ -80,18 +80,18 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import time  # noqa: E402
-from datetime import date, timedelta, datetime, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+import time
+from datetime import date, timedelta, datetime, timezone
+from typing import Any
 
-from scripts.lib import gsc, gsc_trends, http_util, snapshots  # noqa: E402
-from scripts.lib.config import Config, MissingConfigError  # noqa: E402
+from scripts.lib import gsc, gsc_trends, http_util, snapshots
+from scripts.lib.config import Config, MissingConfigError
 
-REPORTING_LAG_DAYS = 3  # GSC data is unreliable/incomplete for the most recent ~2-3 days
+REPORTING_LAG_DAYS = 3
 HISTORY_FILENAME = "rank-history.json"
 
 
@@ -196,13 +196,13 @@ def _attach_pages_for_query_drops(
     if not drops:
         return notes
     end = gsc.gsc_today() - timedelta(days=REPORTING_LAG_DAYS)
-    start = end - timedelta(days=min(days, 28))  # recent window is enough to identify the ranking page(s)
+    start = end - timedelta(days=min(days, 28))
     try:
         result = gsc.search_analytics_query(
             cfg, start.isoformat(), end.isoformat(),
             dimensions=["query", "page"], row_limit=5000,
         )
-    except Exception as exc:  # noqa: BLE001 -- page attribution is an enhancement, not a hard dependency
+    except Exception as exc:
         notes.append(http_util.sanitize_text(
             f"Could not attach page context to query drops: {exc}"
         ))
@@ -340,9 +340,6 @@ def main() -> None:
     setup_notes.extend(scope_notes)
 
     tracked_rows = [r for r in rows if r["key"] in tracked_keys]
-    # window_end drops the trailing PARTIAL ISO week -- a 1-3-day "week"
-    # average is not comparable to the full-week baseline it would be
-    # diffed against.
     series = gsc_trends.weekly_series(tracked_rows, window_end=window_end)
     drops, improvements = gsc_trends.detect_drops(
         series,

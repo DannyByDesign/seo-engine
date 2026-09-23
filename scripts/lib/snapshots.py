@@ -32,9 +32,6 @@ SCHEMA_VERSION = 2
 CRAWL_PREFIX = "crawl-"
 
 
-#: An interrupted crawl leaves a .jsonl with no sidecar. Sweep such
-#: fragments only after this many hours, so a crawl still in flight
-#: (also sidecar-less) is never deleted out from under itself.
 FRAGMENT_SWEEP_AFTER_HOURS = 6
 
 
@@ -84,13 +81,6 @@ def _load_snapshot(jsonl_path: Path) -> Optional[Snapshot]:
     if not jsonl_path.is_file():
         return None
     if not meta_path.is_file():
-        # new_crawl writes the sidecar only after crawl_to_file returns, so a
-        # missing sidecar means the crawl was interrupted (Ctrl-C, timeout,
-        # OOM) and the .jsonl holds a partial site. Without this guard such a
-        # fragment still loads with empty meta -- pages_crawled 0, truncated
-        # False, finished_at falling back to mtime -- so it sorts NEWEST and
-        # wins latest(), silently serving every downstream skill a truncated
-        # view of the site. Not a reusable snapshot.
         return None
     meta: dict[str, Any] = {}
     try:
@@ -125,7 +115,7 @@ def new_crawl(
     include_subdomains: bool = False,
 ) -> Snapshot:
     """Run a fresh crawl into the store and return its Snapshot."""
-    from . import crawler  # lazy: crawler never imports snapshots
+    from . import crawler
 
     site_url = cfg.site_url
     start = start_url or site_url
@@ -174,7 +164,7 @@ def latest(
     for snap in all_snapshots(cfg, site_url=site_url):
         age = datetime.now(timezone.utc) - snap.finished_at
         if age > timedelta(hours=max_age_hours):
-            return None  # newest is already too old; older ones are older
+            return None
         if min_pages is not None and snap.pages_crawled < min_pages:
             continue
         return snap
@@ -238,10 +228,6 @@ def prune(
 
     removed = {"crawls": 0, "reports": 0}
 
-    # Sidecar-less fragments left by interrupted crawls are invisible to
-    # all_snapshots (see _load_snapshot), so they'd never be pruned. Sweep
-    # them here, but only once they're older than an in-flight crawl could
-    # plausibly be -- a crawl still running has no sidecar either.
     frag_cutoff = time.time() - FRAGMENT_SWEEP_AFTER_HOURS * 3600
     for jsonl_path in crawl_dir(cfg).glob(f"{CRAWL_PREFIX}*.jsonl"):
         meta_path = jsonl_path.with_name(jsonl_path.stem + ".meta.json")

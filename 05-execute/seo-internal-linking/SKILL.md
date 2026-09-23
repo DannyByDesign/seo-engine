@@ -82,21 +82,16 @@ specific sentence to edit and not a ranking by predicted traffic impact.
 > this skill's directory and works for both the symlink and plugin install.
 
 ```bash
-# Step 1: find orphans, unreachable clusters, and deep pages
 python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py"
 
 python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py" --max-depth 3 --max-pages 300
 python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py" --force-recrawl
 
-# Step 2: candidates for one specific flagged page
 python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" \
   --target-url https://example.com/orphan-page
 
-# Step 2 (batch): every orphan_page/unreachable_page/deep_page finding
-# from the most recent analyze_link_graph.py report
 python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" --from-analysis
 
-# Tune candidate shortlist size / overlap sensitivity
 python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" \
   --from-analysis --max-candidates 8 --min-score 0.05
 ```

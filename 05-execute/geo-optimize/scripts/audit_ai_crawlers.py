@@ -67,18 +67,11 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
-from scripts.lib import http_util, robots, snapshots  # noqa: E402
-from scripts.lib.config import MissingConfigError  # noqa: E402
+from scripts.lib import config as config_module
+from scripts.lib import http_util, robots, snapshots
+from scripts.lib.config import MissingConfigError
 
 
-# ---------------------------------------------------------------------------
-# The exact per-vendor table from references/geo-playbook.md §4.
-# Every user-agent token a real AI/search vendor publishes for crawling.
-# ---------------------------------------------------------------------------
-
-# Crawlers whose purpose is powering live citations/search answers/indexing
-# used for citation. Blocking these has a real, documented GEO cost.
 CITATION_RELEVANT = {
     "OAI-SearchBot": {
         "vendor": "OpenAI",
@@ -158,9 +151,6 @@ CITATION_RELEVANT = {
     },
 }
 
-# Crawlers whose purpose is model-training/grounding-data collection only.
-# Blocking these is a legitimate, unrelated choice this skill must NOT
-# second-guess -- reported informationally, never as a "fix this" finding.
 TRAINING_ONLY = {
     "GPTBot": {
         "vendor": "OpenAI",
@@ -257,9 +247,8 @@ def audit(site_url: str) -> dict:
     try:
         resp = http_util.get(robots_url, min_interval=0.5)
     except http_util.HttpError as exc:
-        # Network failure: we honestly do not know what the policy says.
         result["effective"] = "indeterminate"
-        result["error"] = str(exc)  # pre-sanitized by http_util
+        result["error"] = str(exc)
         result["note"] = (
             "robots.txt could not be fetched (network error) -- the actual "
             "policy is unknown, so no per-bot verdicts were computed. Re-run "
@@ -271,8 +260,6 @@ def audit(site_url: str) -> dict:
     result["status_code"] = resp.status_code
 
     if resp.status_code >= 500:
-        # 5xx: unreadable, NOT the same as "no restrictions". Honest
-        # indeterminate outcome — zero findings, zero false reassurance.
         result["effective"] = "indeterminate"
         result["note"] = (
             f"robots.txt returned HTTP {resp.status_code} -- the actual policy "
@@ -284,8 +271,6 @@ def audit(site_url: str) -> dict:
         return _finish(result)
 
     if resp.status_code >= 400:
-        # RFC 9309 §2.3.1: 4xx means no robots restrictions exist. A missing
-        # robots.txt blocks nothing — benign, zero findings, not an error.
         result["effective"] = "allow_all"
         if resp.status_code == 404:
             result["note"] = (
@@ -332,8 +317,6 @@ def audit(site_url: str) -> dict:
             })
             continue
 
-        # Allowed at "/" but disallowed from specific paths — a real partial
-        # block (e.g. Disallow: /blog/ still costs citations for /blog/).
         partial_paths = sorted(
             {p for p in policy.disallowed_paths(bot_name) if not _matches_root(p)}
         )
@@ -412,11 +395,6 @@ def audit(site_url: str) -> dict:
                 "geo_playbook_ref": "geo-playbook.md §4",
             })
 
-    # Sanity-check: any group targeting a bot name not in our known table at
-    # all (e.g. a typo'd user-agent, or a real bot this table hasn't been
-    # updated for) -- surfaced as a note so a human can decide whether the
-    # playbook table needs updating, never silently dropped. (lib/robots
-    # lowercases agent tokens; matching is casefolded on both sides.)
     known_lower = {b.casefold() for b in ALL_KNOWN_BOTS}
     unknown_agents = sorted({
         agent for g in policy.groups for agent in g.agents

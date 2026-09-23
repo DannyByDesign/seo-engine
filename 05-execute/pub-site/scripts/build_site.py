@@ -40,16 +40,16 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
+import argparse
+import json
 import importlib.util
 import tempfile
-import fcntl  # noqa: E402
-from typing import Any  # noqa: E402
+import fcntl
+from typing import Any
 
-from scripts.lib import publication, pubstate  # noqa: E402
+from scripts.lib import publication, pubstate
 
 
 def _render_one(root: Path, out: Path | None, include_drafts: bool) -> dict[str, Any]:
@@ -60,7 +60,6 @@ def _render_one(root: Path, out: Path | None, include_drafts: bool) -> dict[str,
         return {'publication': root.name, 'deployed': False, 'validation': {'errors': len(invalid),
                 'findings': [{'severity': 'error', 'check': 'stale-editorial-review', 'post': slug} for slug in invalid]}}
 
-    # Preview output is visibly nonproduction and cannot advance planner state.
     if include_drafts and out is None:
         out = root / 'preview'
     manifest = publication.build_site(pub, out)

@@ -44,21 +44,20 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import re  # noqa: E402
-import time  # noqa: E402
-from typing import Any, Optional  # noqa: E402
+import argparse
+import json
+import re
+import time
+from typing import Any, Optional
 
-from scripts.lib import (  # noqa: E402
+from scripts.lib import (
     crawler, pagerules, redirect_analysis, robots, sitemaps, snapshots, urlnorm,
 )
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
-#: Paths that are almost always noindexed on purpose — never a finding.
 INTENTIONAL_NOINDEX_RE = re.compile(
     r"/(login|signin|signup|logout|cart|checkout|account|admin|search|preview)([/?]|$)"
     r"|/tag/|[?&]s=",
@@ -82,7 +81,7 @@ def _gsc_page_keys(cfg) -> Optional[set]:
             dimensions=["page"], max_rows=100_000,
         )
         return {urlnorm.canonical_key(r["keys"][0]) for r in rows if r.get("keys")}
-    except Exception:  # noqa: BLE001 — evidence enhancement only; degrade quietly to sitemap-only
+    except Exception:
         return None
 
 
@@ -111,7 +110,7 @@ def find_noindex_findings(
         had_traffic = bool(gsc_keys) and key in gsc_keys
 
         if not in_sitemap and not had_traffic:
-            continue  # unlinked-in-spirit AND unindexed-in-practice: likely deliberate
+            continue
 
         if had_traffic:
             finding_type, severity = "accidental_noindex", "high"
@@ -198,7 +197,7 @@ def find_broken_internal_links(pages: list[dict]) -> tuple[list[dict], list[dict
     for target_key, linkers in linkers_by_target.items():
         target_page = status_by_key.get(target_key)
         if target_page is None:
-            continue  # never fetched (outside max_pages / robots) — not enough info
+            continue
         status = target_page.get("status")
         target_url = target_page.get("url", "")
         if target_page.get("error"):
@@ -271,10 +270,10 @@ def find_sitemap_mismatches(pages: list[dict], sitemap_result: dict) -> dict:
     for key in sitemap_keys:
         p = by_key.get(key)
         if p is None:
-            continue  # not crawled (may be outside max_pages) — not enough info
+            continue
         reasons = []
         if p.get("error"):
-            continue  # transient fetch error — don't accuse the sitemap
+            continue
         if p.get("status") != 200:
             reasons.append(f"HTTP {p.get('status')}")
         if pagerules.is_noindex(p):
@@ -318,9 +317,6 @@ def sample_js_rendering_gaps(cfg, pages: list[dict], sample_size: int) -> dict:
     from scripts.lib import firecrawl, http_util
 
     html_pages = [p for p in pages if pagerules.is_indexable_html(p)]
-    # Deterministic sample (reproducible audits) spread across the site:
-    # sort by URL, then take an evenly-spaced stride rather than the first N
-    # (the first N alphabetically is usually one site section).
     html_pages.sort(key=lambda p: p.get("url", ""))
     stride = max(len(html_pages) // sample_size, 1) if html_pages else 1
     sample = html_pages[::stride][:sample_size]
@@ -330,7 +326,7 @@ def sample_js_rendering_gaps(cfg, pages: list[dict], sample_size: int) -> dict:
     for p in sample:
         try:
             diff = firecrawl.diff_raw_vs_rendered(cfg, p["url"])
-        except Exception as exc:  # network/API errors shouldn't crash the whole audit
+        except Exception as exc:
             errors.append({"url": p["url"], "error": http_util.sanitize_text(str(exc))})
             continue
         if diff.get("likely_js_dependent"):
@@ -407,7 +403,7 @@ def sample_canonical_gsc_crosscheck(cfg, pages: list[dict],
         url = c["url"]
         try:
             result = gsc.inspect_url(cfg, url)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append({"url": url, "error": http_util.sanitize_text(str(exc))})
             continue
         index_result = result.get("inspectionResult", {}).get("indexStatusResult", {})
@@ -450,10 +446,6 @@ def sample_canonical_gsc_crosscheck(cfg, pages: list[dict],
         "findings": findings,
     }
 
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="seo-technical-audit: crawl-based technical SEO audit")

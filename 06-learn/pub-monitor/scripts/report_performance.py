@@ -49,22 +49,20 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-from datetime import date, timedelta  # noqa: E402
-from typing import Any, Optional  # noqa: E402
-from urllib.parse import urlparse  # noqa: E402
+import argparse
+import json
+from datetime import date, timedelta
+from typing import Any, Optional
+from urllib.parse import urlparse
 
-from scripts.lib import publication, pubstate, urlnorm  # noqa: E402
-from scripts.lib.config import Config  # noqa: E402
+from scripts.lib import publication, pubstate, urlnorm
+from scripts.lib.config import Config
 
 PERIODS = {"14d": 14, "30d": 30, "90d": 90}
 GSC_LAG_DAYS = 3
 
-
-# ---------- pure aggregation (unit-tested) ----------
 
 def totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
     clicks = sum(int(r.get("clicks", 0)) for r in rows)
@@ -208,7 +206,7 @@ def main() -> int:
         report.update({"checked": False, "not_checked": {"search_console": "set GOOGLE_APPLICATION_CREDENTIALS or GSC_SERVICE_ACCOUNT_JSON and add the service account to the publication's property"}})
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return 0 if args.sync_geo else 1
-    from scripts.lib import gsc  # lazy: needs google libs only here
+    from scripts.lib import gsc
 
     entries = gsc.list_sites(cfg)
     prop, candidates = gsc._match_property(pub.site_url, entries)

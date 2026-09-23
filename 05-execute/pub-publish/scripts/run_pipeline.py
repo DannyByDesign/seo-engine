@@ -39,17 +39,17 @@ def _find_engine_root(start: Path) -> Path:
 
 
 sys.path.insert(0, str(_find_engine_root(Path(__file__).resolve())))
-from scripts.lib import config as config_module  # noqa: E402
+from scripts.lib import config as config_module
 
-import argparse  # noqa: E402
-import json  # noqa: E402
-import hashlib  # noqa: E402
-import importlib.util  # noqa: E402
-import subprocess  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from typing import Any  # noqa: E402
+import argparse
+import json
+import hashlib
+import importlib.util
+import subprocess
+from datetime import datetime, timezone
+from typing import Any
 
-from scripts.lib import publication, pubstate  # noqa: E402
+from scripts.lib import publication, pubstate
 
 from scripts.lib.paths import skill
 STEPS = ["research", "write", "enhance", "diagrams", "cover", "shred", "publish", "relink", "build"]
@@ -134,15 +134,13 @@ def main() -> int:
     can_publish, _ = publisher.approval(pub.site.get("planner") or {}, meta, args.approve)
     steps = [s for s in STEPS if s not in skip]
     if post_path.is_file() and not draft_path.is_file():
-        can_publish = True  # recovery only; content is already published locally
+        can_publish = True
         steps = [s for s in steps if s in ("relink", "build")]
     elif args.approve and not body.strip():
         print(json.dumps({"checked": False, "error": "prepare and review a draft before --approve"}))
         return 1
     elif body.strip():
         steps = [s for s in steps if s not in ("research", "write")]
-        # Prepared drafts stay immutable while awaiting approval. Edits invalidate
-        # the preparation fingerprint and require preparing/reviewing again.
         ready_path = pubstate.state_path(cfg, "prepared", root.name + "-" + slug)
         prepared = pubstate.load_json(ready_path, {})
         digest = hashlib.sha256(draft_path.read_bytes()).hexdigest()

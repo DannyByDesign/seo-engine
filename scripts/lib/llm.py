@@ -46,7 +46,6 @@ DEFAULT_MODELS: dict[str, dict[str, str]] = {
     "gemini": {"quality": "gemini-2.5-pro", "cheap": "gemini-2.5-flash"},
 }
 
-#: Anthropic models that reject `output_config.effort`.
 _NO_EFFORT_PREFIXES = ("claude-haiku", "claude-sonnet-4-5", "claude-3")
 
 
@@ -90,8 +89,6 @@ def model_for(cfg: Config, provider: str, tier: str = "quality") -> str:
     env_key = ("LLM_MODEL_" if tier == "quality" else "LLM_CHEAP_MODEL_") + provider.upper()
     return (cfg.get(env_key) or "").strip() or DEFAULT_MODELS[provider][tier]
 
-
-# ---------- provider adapters ----------
 
 def _anthropic(cfg: Config, model: str, system: str, user: str, max_tokens: int,
                json_mode: bool, effort: Optional[str]) -> dict[str, Any]:
@@ -192,8 +189,6 @@ def _gemini(cfg: Config, model: str, system: str, user: str, max_tokens: int,
 _ADAPTERS = {"anthropic": _anthropic, "openai": _openai, "gemini": _gemini}
 
 
-# ---------- public API ----------
-
 def complete(
     cfg: Config,
     system: str,
@@ -216,7 +211,7 @@ def complete(
         result = _ADAPTERS[name](cfg, model, system or "", user, max_tokens, json_mode, effort)
     except LlmError:
         raise
-    except Exception as exc:  # noqa: BLE001 — sanitize and re-raise as one type
+    except Exception as exc:
         raise LlmError(f"{name}/{model}: {http_util.sanitize_text(str(exc))}") from None
     if not (result.get("text") or "").strip():
         raise LlmError(f"{name}/{model} returned an empty completion (stop_reason={result.get('stop_reason')}).")

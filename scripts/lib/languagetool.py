@@ -39,7 +39,6 @@ def prose(source, format='markdown'):
     soup = BeautifulSoup(source, 'lxml')
     for node in soup.select('pre, code, script, style, noscript, template, [hidden], [aria-hidden="true"]'):
         node.decompose()
-    # Inline markup does not insert spaces; block boundaries separate paragraphs.
     for node in soup.select('address, article, aside, blockquote, br, dd, div, dl, dt, figcaption, footer, h1, h2, h3, h4, h5, h6, header, hr, li, main, nav, ol, p, section, table, td, th, tr, ul'):
         node.insert_before('\n\n')
         node.insert_after('\n\n')
@@ -60,7 +59,6 @@ def chunks(text, limit):
 
 
 def character_index(text, offset):
-    # LanguageTool is Java-based: supplementary characters occupy two UTF-16 units.
     if type(offset) is not int or offset < 0: raise ValueError('Invalid LanguageTool offset')
     encoded = text.encode('utf-16-le')
     if offset * 2 > len(encoded): raise ValueError('LanguageTool offset exceeds checked text')
