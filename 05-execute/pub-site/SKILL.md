@@ -60,19 +60,19 @@ links to sibling publications or the vendor, disclosure consistent with `site.ym
 ## Running it
 
 > All commands run from the **target repo root** (the repo that contains the website and
-> `.seo-engine/`). `${CLAUDE_SKILL_DIR}` is set by Claude Code to this skill's directory.
+> `.seo-engine/`). Set `SKILL_DIR` to this skill's resolved absolute directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_publication.py" --name "LLM Billboard" \
+python3 "${SKILL_DIR}/scripts/scaffold_publication.py" --name "LLM Billboard" \
   --site-url https://llmbillboard.com --tagline "A blog on conversational AI advertising." \
   --sections "Advertiser Strategy,AI Search,Performance Benchmarks" \
   --client-name thrad --client-domain thrad.ai --theme signal --icon leaf --dry-run
-python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_publication.py" --from-domain thrad.ai \
+python3 "${SKILL_DIR}/scripts/scaffold_publication.py" --from-domain thrad.ai \
   --direction "how agency trading desks buy paid placements inside LLMs" \
   --site-url https://adsinllms.com --client-name thrad
-python3 "${CLAUDE_SKILL_DIR}/scripts/build_site.py" --publication llm-billboard
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_site.py" --publication llm-billboard
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_site.py" --url https://llmbillboard.com --max-pages 6
+python3 "${SKILL_DIR}/scripts/build_site.py" --publication llm-billboard
+python3 "${SKILL_DIR}/scripts/validate_site.py" --publication llm-billboard
+python3 "${SKILL_DIR}/scripts/validate_site.py" --url https://llmbillboard.com --max-pages 6
 cd publications/llm-billboard && vercel deploy dist/
 ```
 

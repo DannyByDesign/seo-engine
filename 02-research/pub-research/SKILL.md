@@ -60,16 +60,16 @@ The host also uses `scripts/content_brief.py` for either content path. Flags: `-
 Only proposed publishable material belongs in that JSON, never raw/private interview notes.
 
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard \
+python3 "${SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness
+python3 "${SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard \
   --topic "Advertiser readiness assessment for the AI search transition" --spoke-id sp-0004 \
   --source-url https://www.emarketer.com/content/ai-search-ads --must-include "measurement readiness"
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --direction-gate
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --choice 1
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --no-search --depth barebones
+python3 "${SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --direction-gate
+python3 "${SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --choice 1
+python3 "${SKILL_DIR}/scripts/research_outline.py" --publication llm-billboard --slug advertiser-readiness --no-search --depth barebones
 ```
 
 Flags: `--publication`, `--slug`, `--topic`, `--spoke-id`, `--source-url` (repeatable),

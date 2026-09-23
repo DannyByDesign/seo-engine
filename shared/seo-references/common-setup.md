@@ -3,21 +3,19 @@
 ## Paths & working directory
 
 - **Run every script from the target repo root** (the repo that contains the
-  website). Config and state discovery walk **up from the current working
+  website, or its dedicated SEO workspace). Config and state discovery walk **up from the current working
   directory** to the nearest `.git`/`.seo-engine`/`package.json` marker, and all
   state lands in `<repo>/.seo-engine/` — running from the wrong cwd writes state
   to the wrong repo. For cron/CI, pin it explicitly with `SEO_REPO_ROOT=/path/to/repo`.
-- **Invoke scripts as** `python3 "${CLAUDE_SKILL_DIR}/scripts/<script>.py" [flags]`.
-  Claude Code sets `${CLAUDE_SKILL_DIR}` to the invoking skill's directory; the
-  form works identically for the symlink install (`.claude/skills/<name>` →
-  engine) and the plugin install. Never use paths relative to cwd for scripts.
-- **Shared references** (this directory) are the skill's sibling:
-  `${CLAUDE_SKILL_DIR}/../seo-references/<file>.md` — a single-`..` hop that
-  resolves both lexically and physically under either install mode.
-- **Cross-skill scripts**: `"${CLAUDE_SKILL_DIR}/../<other-skill>/scripts/<script>.py"`.
-- If `${CLAUDE_SKILL_DIR}` is unset (non-Claude-Code agent), resolve the physical
-  skill dir with `cd -P` (plain `cd` normalizes symlinks lexically and breaks):
-  `SKILL_DIR="$(cd -P "$(dirname "<path-to-SKILL.md>")" && pwd)"`.
+- **Host-neutral commands:** set `SKILL_DIR` to the resolved absolute directory containing
+  the skill's `SKILL.md`, then run `python3 "$SKILL_DIR/scripts/<script>.py" [flags]`
+  using the workspace's Python environment. No agent-specific environment variable is assumed.
+- References in each `SKILL.md` are relative to its physical phase directory. Shared
+  references are under `<engine>/shared/seo-references/`. Cross-phase scripts use their
+  actual phase paths; sibling shortcuts are not valid across phases.
+- Resolve symlinks before selecting a script path. An agent may substitute the absolute
+  script path directly rather than set a shell variable. Skill discovery via `.agents/skills`
+  or `.claude/skills` is optional; any host can read the same Markdown instructions directly.
 - Scripts locate the engine's shared library by walking up from their own
   **resolved** file location; if skills were *copied* rather than symlinked, set
   `SEO_ENGINE_ROOT=/path/to/seo-engine` (scripts fail loudly with this remediation).
@@ -25,9 +23,10 @@
 ## Configuration resolution
 
 - **`.env` at the target repo root** (never committed — install.sh gitignores it)
-  holds API keys. Resolution order, later wins: engine-adjacent `.env` → repo
-  `.env` → process environment. Every key is optional.
-- **`.seo-engine/config.yml`** (safe to commit) holds site facts: `site_url`,
+  holds API keys. Resolution order, later wins: workspace `.env` → process environment.
+  Engine-adjacent credentials from another workspace are never loaded. Every key is optional.
+  See the annotated root `.env.example` for purposes and setup locations.
+- **`.seo-engine/config.yml`** (private/ignored by default) holds site facts: `site_url`,
   `sitemap_url`, `framework`, `static_source_dir`, `build_output_dir`,
   `target_topics`, `locales`, and the resolved `gsc_property`. Written by the
   seo-setup skill; read by everything else. `site_url` may also come from the
@@ -59,6 +58,8 @@ account can see and what to fix.
 ```
 .seo-engine/
 ├── config.yml
+├── onboarding.json   # goals, setup progress, integration decisions
+├── knowledge.md      # current brand brief, read before strategy/content work
 ├── state/
 │   ├── crawls/
 │   ├── http-cache/
@@ -131,3 +132,11 @@ Per-topic research and operator permissions live in the target's ignored
 `.seo-engine/state/content/` as JSON records managed by `content_brief.py`.
 They contain proposed publishable material and scoped confirmation, never raw private notes.
 Article metadata and growth briefs carry a path/digest reference, not a company-wide approval.
+
+Onboarding records and brand knowledge are local persistent context, not template content.
+They are ignored by Git along with other private state; back them up privately for continuity.
+A completed onboarding record is reused across sessions. Topic disclosure permissions remain
+separate. Use a fresh working copy for a different website; never switch domains over old state.
+
+The agent may use `.seo-engine/onboarding-input.json` as ignored, non-secret working input
+for the onboarding helper; it is not a second source of saved onboarding state.

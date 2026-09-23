@@ -78,21 +78,21 @@ specific sentence to edit and not a ranking by predicted traffic impact.
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py"
+python3 "${SKILL_DIR}/scripts/analyze_link_graph.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py" --max-depth 3 --max-pages 300
-python3 "${CLAUDE_SKILL_DIR}/scripts/analyze_link_graph.py" --force-recrawl
+python3 "${SKILL_DIR}/scripts/analyze_link_graph.py" --max-depth 3 --max-pages 300
+python3 "${SKILL_DIR}/scripts/analyze_link_graph.py" --force-recrawl
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" \
+python3 "${SKILL_DIR}/scripts/suggest_link_opportunities.py" \
   --target-url https://example.com/orphan-page
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" --from-analysis
+python3 "${SKILL_DIR}/scripts/suggest_link_opportunities.py" --from-analysis
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/suggest_link_opportunities.py" \
+python3 "${SKILL_DIR}/scripts/suggest_link_opportunities.py" \
   --from-analysis --max-candidates 8 --min-score 0.05
 ```
 

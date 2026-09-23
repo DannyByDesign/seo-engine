@@ -47,8 +47,8 @@ groups merge, empty patterns match nothing) against `geo-playbook.md` §4:
   `effective: "indeterminate"` rather than assuming either allow or block.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_ai_crawlers.py"
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_ai_crawlers.py" --url https://example.com
+python3 "${SKILL_DIR}/scripts/audit_ai_crawlers.py"
+python3 "${SKILL_DIR}/scripts/audit_ai_crawlers.py" --url https://example.com
 ```
 
 No API key required.
@@ -72,8 +72,8 @@ to flag.
   banners, personalization are common benign causes).
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_ai_cloaking.py" --urls https://example.com/ https://example.com/pricing
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_ai_cloaking.py" --sample-from-crawl --max-pages 20 --sample-size 8
+python3 "${SKILL_DIR}/scripts/check_ai_cloaking.py" --urls https://example.com/ https://example.com/pricing
+python3 "${SKILL_DIR}/scripts/check_ai_cloaking.py" --sample-from-crawl --max-pages 20 --sample-size 8
 ```
 
 No API key required.
@@ -93,8 +93,8 @@ comment) stating this explicitly.
 - Never auto-triggered by `seo-maintain` — explicit, on-demand only.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_llms_txt.py" --max-pages 60 --dry-run
-python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_llms_txt.py" --max-pages 60 --out /path/to/repo/public/llms.txt
+python3 "${SKILL_DIR}/scripts/scaffold_llms_txt.py" --max-pages 60 --dry-run
+python3 "${SKILL_DIR}/scripts/scaffold_llms_txt.py" --max-pages 60 --out /path/to/repo/public/llms.txt
 ```
 
 No API key required.
@@ -125,9 +125,9 @@ is the paid, exact half — this script optionally upgrades into that same diff 
   `"heuristic"`.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_js_visibility.py"
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_js_visibility.py" --from-snapshot --min-words 150
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_js_visibility.py" --urls https://example.com/pricing
+python3 "${SKILL_DIR}/scripts/check_js_visibility.py"
+python3 "${SKILL_DIR}/scripts/check_js_visibility.py" --from-snapshot --min-words 150
+python3 "${SKILL_DIR}/scripts/check_js_visibility.py" --urls https://example.com/pricing
 ```
 
 No API key required for the core check; `FIRECRAWL_API_KEY` unlocks the confirming upgrade only.
@@ -136,14 +136,14 @@ No API key required for the core check; `FIRECRAWL_API_KEY` unlocks the confirmi
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_ai_crawlers.py"
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_ai_cloaking.py" --sample-from-crawl
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_js_visibility.py" --from-snapshot
-python3 "${CLAUDE_SKILL_DIR}/scripts/scaffold_llms_txt.py" --dry-run
+python3 "${SKILL_DIR}/scripts/audit_ai_crawlers.py"
+python3 "${SKILL_DIR}/scripts/check_ai_cloaking.py" --sample-from-crawl
+python3 "${SKILL_DIR}/scripts/check_js_visibility.py" --from-snapshot
+python3 "${SKILL_DIR}/scripts/scaffold_llms_txt.py" --dry-run
 ```
 
 Flags: `audit_ai_crawlers.py --url`; `check_ai_cloaking.py --urls (repeatable) |

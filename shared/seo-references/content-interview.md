@@ -3,7 +3,10 @@
 Use this for new articles, substantial topic refreshes and substantive website copy. It applies
 to both the host-written website path and the scripted publication path. Minor corrections
 and diagnostic technical repairs do not need a fresh interview. Company knowledge stays in
-the target workspace, not in the reusable engine or its human-writing corpus.
+the target workspace, not in reusable skill instructions or the human-writing corpus.
+Read `.seo-engine/knowledge.md` when present for the audience, positioning and existing
+constraints before research or interview questions. Update that brief with useful, agreed
+context; it never supplies publication permission for a new topic.
 
 ## Research existing answers
 

@@ -30,6 +30,7 @@ The owner should not need to write a marketing brief to finish onboarding.
 
 ## Tools in this directory
 
-[seo-setup](../01-understand/seo-setup/SKILL.md), [seo-technical-audit](../01-understand/seo-technical-audit/SKILL.md).
+[seo-technical-audit](seo-technical-audit/SKILL.md).
+First-time setup lives separately in [00-onboarding](../00-onboarding/README.md).
 
 Phase commands: `scripts/run_strategy.py`.

@@ -46,20 +46,20 @@ key pages and reports, per page:
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py"
+python3 "${SKILL_DIR}/scripts/audit_cwv.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" \
+python3 "${SKILL_DIR}/scripts/audit_cwv.py" \
   --url https://example.com/ --url https://example.com/pricing
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --strategy desktop
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --both-strategies
+python3 "${SKILL_DIR}/scripts/audit_cwv.py" --strategy desktop
+python3 "${SKILL_DIR}/scripts/audit_cwv.py" --both-strategies
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --max-pages 15 --no-gsc
-python3 "${CLAUDE_SKILL_DIR}/scripts/audit_cwv.py" --no-crawl-snapshot --no-gsc
+python3 "${SKILL_DIR}/scripts/audit_cwv.py" --max-pages 15 --no-gsc
+python3 "${SKILL_DIR}/scripts/audit_cwv.py" --no-crawl-snapshot --no-gsc
 ```
 
 ## Expected output

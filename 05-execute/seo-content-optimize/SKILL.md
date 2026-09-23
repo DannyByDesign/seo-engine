@@ -74,15 +74,15 @@ candidate (`copyright_year` boilerplate is `auto_fixable`; others are not).
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py"
+python3 "${SKILL_DIR}/scripts/find_staleness_signals.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py" --min-days-old 30
+python3 "${SKILL_DIR}/scripts/find_staleness_signals.py" --min-days-old 30
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_staleness_signals.py" --max-pages 300 --fetch-limit 40
+python3 "${SKILL_DIR}/scripts/find_staleness_signals.py" --max-pages 300 --fetch-limit 40
 ```
 
 No API key required — the crawler and the staleness live-fetch are both free

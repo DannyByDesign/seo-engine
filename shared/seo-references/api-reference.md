@@ -328,9 +328,10 @@ the domain label) and scores sentiment/recommendation with the cheap tier below.
 
 ## LLM provider APIs — content generation (the `pub-*` skills)
 
-Bring-your-own-key text generation in `scripts/lib/llm.py`. The first configured provider in
-the order Anthropic → OpenAI → Gemini is used unless `LLM_PROVIDER` names another configured one;
-every call goes through `http_util` with the JSON body and a single retry on malformed JSON.
+Bring-your-own-key text generation in `scripts/lib/llm.py`. Select a configured provider with
+`LLM_PROVIDER` or the command's provider option. A single configured provider works without
+a selector; multiple configured providers require an explicit choice, with no vendor priority.
+Every call goes through `http_util` with the JSON body and a single retry on malformed JSON.
 
 | Provider | Endpoint | Quality model (default) | Cheap model (default) | Override |
 |---|---|---|---|---|

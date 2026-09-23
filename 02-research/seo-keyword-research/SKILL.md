@@ -63,21 +63,21 @@ non-speculative prioritization heuristic available from free data.
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py"
+python3 "${SKILL_DIR}/scripts/find_opportunities.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --days 28 --min-impressions 25
+python3 "${SKILL_DIR}/scripts/find_opportunities.py" --days 28 --min-impressions 25
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --min-position 15
+python3 "${SKILL_DIR}/scripts/find_opportunities.py" --min-position 15
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --no-keyword-data
+python3 "${SKILL_DIR}/scripts/find_opportunities.py" --no-keyword-data
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --country usa --device MOBILE
+python3 "${SKILL_DIR}/scripts/find_opportunities.py" --country usa --device MOBILE
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/find_opportunities.py" --prefer-ahrefs --row-limit 200000
+python3 "${SKILL_DIR}/scripts/find_opportunities.py" --prefer-ahrefs --row-limit 200000
 ```
 
 ## Expected output

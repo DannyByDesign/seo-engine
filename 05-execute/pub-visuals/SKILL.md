@@ -40,13 +40,13 @@ abstract SVG cover from the theme so nothing blocks.
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/render_diagram.py" --publication llm-billboard --slug advertiser-readiness --png
-python3 "${CLAUDE_SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness
-python3 "${CLAUDE_SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider gemini --force
-python3 "${CLAUDE_SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider svg
+python3 "${SKILL_DIR}/scripts/render_diagram.py" --publication llm-billboard --slug advertiser-readiness --png
+python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness
+python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider gemini --force
+python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider svg
 ```
 
 Flags: `render_diagram.py` `--publication`, `--slug`, `--spec` (repeatable), `--png`,

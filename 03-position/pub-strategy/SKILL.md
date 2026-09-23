@@ -47,17 +47,17 @@ Posts" feed).
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/positioning.py" --publication llm-billboard \
+python3 "${SKILL_DIR}/scripts/positioning.py" --publication llm-billboard \
   --client-domain thrad.ai --client-name thrad \
   --direction "how brands and agencies buy and measure ads inside LLM assistants"
-python3 "${CLAUDE_SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --measure-brand --suggest
-python3 "${CLAUDE_SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --measure-brand --suggest --apply
-python3 "${CLAUDE_SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --validate --check-urls
-python3 "${CLAUDE_SKILL_DIR}/scripts/scrape_competitors.py" --publication llm-billboard --domain adexchanger.com
-python3 "${CLAUDE_SKILL_DIR}/scripts/scrape_competitors.py" --publication llm-billboard --fresh-posts
+python3 "${SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --measure-brand --suggest
+python3 "${SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --measure-brand --suggest --apply
+python3 "${SKILL_DIR}/scripts/positioning.py" --publication llm-billboard --validate --check-urls
+python3 "${SKILL_DIR}/scripts/scrape_competitors.py" --publication llm-billboard --domain adexchanger.com
+python3 "${SKILL_DIR}/scripts/scrape_competitors.py" --publication llm-billboard --fresh-posts
 ```
 
 Flags: `positioning.py` `--publication`, `--client-domain`, `--client-name`, `--direction`,

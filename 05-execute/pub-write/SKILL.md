@@ -67,14 +67,14 @@ tool (red-flags §3).
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/write_article.py" --publication llm-billboard --slug advertiser-readiness
-python3 "${CLAUDE_SKILL_DIR}/scripts/write_article.py" --publication llm-billboard --slug advertiser-readiness \
+python3 "${SKILL_DIR}/scripts/write_article.py" --publication llm-billboard --slug advertiser-readiness
+python3 "${SKILL_DIR}/scripts/write_article.py" --publication llm-billboard --slug advertiser-readiness \
   --kernel sequoia --candidates 3 --force
-python3 "${CLAUDE_SKILL_DIR}/scripts/shred.py" --publication llm-billboard --slug advertiser-readiness --dry-run
-python3 "${CLAUDE_SKILL_DIR}/scripts/shred.py" --publication llm-billboard --slug advertiser-readiness --coverage 0.4
+python3 "${SKILL_DIR}/scripts/shred.py" --publication llm-billboard --slug advertiser-readiness --dry-run
+python3 "${SKILL_DIR}/scripts/shred.py" --publication llm-billboard --slug advertiser-readiness --coverage 0.4
 ```
 
 Flags: `write_article.py` `--publication`, `--slug`, `--kernel`, `--template`, `--candidates`,

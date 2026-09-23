@@ -8,7 +8,7 @@ three mocking strategies; one thin adapter per provider keeps the repo's
 "only one egress" invariant and lets the whole content pipeline run
 offline in pytest.
 
-Provider rules baked in (from the current Claude API reference):
+Provider-specific adapters:
 * Anthropic: `claude-opus-5` for quality work, `claude-haiku-4-5` for
   cheap classification. Thinking is adaptive by default on Opus 5 — the
   `thinking` parameter is deliberately omitted. Sampling parameters
@@ -21,8 +21,7 @@ Provider rules baked in (from the current Claude API reference):
   `responseMimeType`.
 
 Model ids are env-overridable (`LLM_MODEL_<PROVIDER>`,
-`LLM_CHEAP_MODEL_<PROVIDER>`) because OpenAI/Gemini ids drift faster than
-this file is edited; `scripts/dev/smoke.py` is the place to confirm them.
+`LLM_CHEAP_MODEL_<PROVIDER>`) because model availability changes; `scripts/dev/smoke.py` is the place to confirm them.
 
 Every call returns {text, provider, model, usage{input_tokens,
 output_tokens}} so scripts can log spend per stage.
@@ -65,9 +64,8 @@ def configured_providers(cfg: Config) -> list[str]:
 
 
 def pick_provider(cfg: Config, prefer: Optional[str] = None) -> str:
-    """The provider to use: `prefer` (or `LLM_PROVIDER`) when configured,
-    else the first configured in PROVIDER_ORDER. Raises LlmError naming the
-    env vars when nothing is configured — never a bare KeyError."""
+    """Use the explicitly selected provider, or the only configured provider.
+    Multiple credentials do not imply a preference for a model vendor."""
     available = configured_providers(cfg)
     wanted = (prefer or cfg.get("LLM_PROVIDER") or "").strip().lower()
     if wanted:
@@ -77,8 +75,10 @@ def pick_provider(cfg: Config, prefer: Optional[str] = None) -> str:
             return wanted
         needed = INTEGRATION_ENV_VARS[wanted]["all"]
         raise LlmError(f"LLM provider {wanted!r} requested but {needed} is not set.")
-    if available:
+    if len(available) == 1:
         return available[0]
+    if available:
+        raise LlmError('Multiple LLM providers are configured. Set LLM_PROVIDER or select a provider explicitly.')
     raise LlmError(
         "No LLM provider configured. Set one of ANTHROPIC_API_KEY, OPENAI_API_KEY, "
         "GOOGLE_GEMINI_API_KEY in .env (see .env.example)."

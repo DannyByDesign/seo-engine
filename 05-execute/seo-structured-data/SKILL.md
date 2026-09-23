@@ -65,18 +65,18 @@ empty node never errors, only warns):
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --max-pages 200
+python3 "${SKILL_DIR}/scripts/validate_schema.py" --live --max-pages 200
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --url https://example.com/blog/my-post
+python3 "${SKILL_DIR}/scripts/validate_schema.py" --live --url https://example.com/blog/my-post
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --files-dir ./dist --pattern ".html"
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --files dist/index.html dist/blog/post.html
+python3 "${SKILL_DIR}/scripts/validate_schema.py" --files-dir ./dist --pattern ".html"
+python3 "${SKILL_DIR}/scripts/validate_schema.py" --files dist/index.html dist/blog/post.html
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/validate_schema.py" --live --strict --no-report
+python3 "${SKILL_DIR}/scripts/validate_schema.py" --live --strict --no-report
 ```
 
 Flags: `--live` / `--files` / `--files-dir` (mutually exclusive, one required); `--url` (with

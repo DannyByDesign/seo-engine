@@ -82,17 +82,17 @@ that is resolved (or explicitly deferred with a reason) dispatch `seo-metadata`.
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py"
+python3 "${SKILL_DIR}/scripts/run_maintenance_cycle.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --max-pages 2000
+python3 "${SKILL_DIR}/scripts/run_maintenance_cycle.py" --max-pages 2000
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --gsc-days 14
+python3 "${SKILL_DIR}/scripts/run_maintenance_cycle.py" --gsc-days 14
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_maintenance_cycle.py" --ignore-robots
+python3 "${SKILL_DIR}/scripts/run_maintenance_cycle.py" --ignore-robots
 ```
 
 Flags: `--max-pages` (default 500), `--gsc-days` (default 28), `--ignore-robots`.

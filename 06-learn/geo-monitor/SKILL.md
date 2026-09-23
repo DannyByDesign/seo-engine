@@ -58,14 +58,14 @@ deduped; Gemini's are matched by title, since its grounding `uri` is an opaque p
 not the real source URL.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py"
+python3 "${SKILL_DIR}/scripts/track_ai_visibility.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py" \
+python3 "${SKILL_DIR}/scripts/track_ai_visibility.py" \
   --prompt "what is the best expense tracking software for freelancers" \
   --prompt "how do I automate invoice reminders"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py" --domain example.com --samples 5
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py" --skip-trackers
+python3 "${SKILL_DIR}/scripts/track_ai_visibility.py" --domain example.com --samples 5
+python3 "${SKILL_DIR}/scripts/track_ai_visibility.py" --skip-trackers
 ```
 
 ### 2. Commercial tracker cross-check (optional)
@@ -101,9 +101,9 @@ parseable timestamp are still counted, never silently dropped. Client IPs in per
 lines are masked (IPv4 last two octets, IPv6 to the first hextet) before being written anywhere.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log
-python3 "${CLAUDE_SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log.gz --since-days 30
-python3 "${CLAUDE_SKILL_DIR}/scripts/grep_ai_crawler_logs.py" access.log --sample-lines 5
+python3 "${SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log
+python3 "${SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log.gz --since-days 30
+python3 "${SKILL_DIR}/scripts/grep_ai_crawler_logs.py" access.log --sample-lines 5
 ```
 
 Needs no config or API key — reads only the log file path given. If `.seo-engine/` isn't
@@ -141,9 +141,9 @@ the owned pages that get cited; the trend against the previous run; `first_menti
 a run.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --generate --dry-run
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --replicates 2
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --brand thrad --domain thrad.ai \
+python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --generate --dry-run
+python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --publication llm-billboard --replicates 2
+python3 "${SKILL_DIR}/scripts/track_brand_mentions.py" --brand thrad --domain thrad.ai \
   --competitor "Lapis=trylapis.com" --topic "LLM advertising platforms" --generate --providers openai,anthropic
 ```
 
@@ -151,12 +151,12 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/track_brand_mentions.py" --brand thrad --do
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_ai_visibility.py"
-python3 "${CLAUDE_SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log
+python3 "${SKILL_DIR}/scripts/track_ai_visibility.py"
+python3 "${SKILL_DIR}/scripts/grep_ai_crawler_logs.py" /var/log/nginx/access.log
 ```
 
 Flags: `track_ai_visibility.py --prompt` (repeatable), `--domain`, `--samples` (default 3, must

@@ -44,13 +44,13 @@ post (`refresh_of` set) so the planner schedules a real rewrite through research
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/report_performance.py" --publication llm-billboard --period 30d
-python3 "${CLAUDE_SKILL_DIR}/scripts/report_performance.py" --publication llm-billboard --sync-geo
-python3 "${CLAUDE_SKILL_DIR}/scripts/refresh_triggers.py" --publication llm-billboard
-python3 "${CLAUDE_SKILL_DIR}/scripts/refresh_triggers.py" --publication llm-billboard --queue --max-age-days 120
+python3 "${SKILL_DIR}/scripts/report_performance.py" --publication llm-billboard --period 30d
+python3 "${SKILL_DIR}/scripts/report_performance.py" --publication llm-billboard --sync-geo
+python3 "${SKILL_DIR}/scripts/refresh_triggers.py" --publication llm-billboard
+python3 "${SKILL_DIR}/scripts/refresh_triggers.py" --publication llm-billboard --queue --max-age-days 120
 ```
 
 Flags: `report_performance.py` `--publication`, `--period`, `--sync-geo`, `--publications-dir`;

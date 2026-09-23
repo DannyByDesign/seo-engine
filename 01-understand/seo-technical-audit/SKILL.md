@@ -57,17 +57,17 @@ One run of `scripts/run_audit.py`:
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py"
+python3 "${SKILL_DIR}/scripts/run_audit.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --max-pages 100 --sample-js 10
+python3 "${SKILL_DIR}/scripts/run_audit.py" --max-pages 100 --sample-js 10
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --skip-crawl
+python3 "${SKILL_DIR}/scripts/run_audit.py" --skip-crawl
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_audit.py" --ignore-robots
+python3 "${SKILL_DIR}/scripts/run_audit.py" --ignore-robots
 ```
 
 Flags: `--max-pages` (default 500), `--delay`, `--sample-js` (default 5), `--sample-canonical`

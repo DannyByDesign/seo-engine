@@ -58,8 +58,9 @@ monitoring — the model documented in
 
 ## Layout
 
-The implementation lives in six physical phase directories, from `01-understand/` through
-`06-learn/`. Each owns its skills, scripts and phase README. Cross-phase reference material
+First-run setup lives separately in `00-onboarding/`, which owns the `seo-setup` skill
+and its helper scripts. The ongoing workflow lives in six physical phase directories, from
+`01-understand/` through `06-learn/`. Each owns its skills, scripts and phase README. Cross-phase reference material
 lives in `shared/seo-references/`; shared Python mechanics remain in `scripts/lib/`.
 `skills/*` and the old workflow filenames are compatibility symlinks. Installers and internal
 skill dispatch use the canonical phase locations, not those aliases.
@@ -72,6 +73,10 @@ edits, using the scripts to check handoffs; no human-authored seed list or brief
 
 ```text
 seo-engine/
+├── 00-onboarding/
+│   └── seo-setup/
+│       ├── SKILL.md
+│       └── scripts/
 ├── 01-understand/
 ├── 02-research/
 ├── 03-position/

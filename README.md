@@ -1,15 +1,22 @@
 # seo-engine
 
-A drop-in agent system for turning website repositories into organic acquisition channels
-through market research, positioning, useful copy and code, and measured iteration.
+A reusable, model-independent workspace template for growing one website through market
+research, positioning, useful content, technical improvements and measured iteration.
+
+**New here? Open your copy in an AI coding agent and say “Help me get started.”**
+The agent follows [seo-setup](00-onboarding/seo-setup/SKILL.md), asks about your website and
+goals, configures the relevant tools, and saves a brand brief for future sessions. You do not
+need to read the skill catalog or edit environment variables yourself. If your agent doesn't
+automatically read `AGENTS.md`, ask it to read `00-onboarding/seo-setup/SKILL.md` directly.
 
 Start with **[Understand → Research → Position → Choose → Execute → Learn](workflow/README.md)**.
 The installed `seo-growth` skill leads the host agent through this workflow. It derives its
 own seeds and briefs from the website, calls specialized research APIs, writes in the site's
 existing stack, and carries evidence and decisions between sessions. The actual skills, scripts,
-writing corpus and phase instructions live under six physical directories:
+writing corpus and phase instructions live under onboarding and six workflow directories:
 
 ```text
+00-onboarding/  first-run interview, workspace setup and integration configuration
 01-understand/  repository discovery, technical diagnosis, strategy recorder
 02-research/    keyword/source research, vendor API collector and guide
 03-position/    positioning skills
@@ -99,55 +106,94 @@ Both families are bound by [red-flags.md](shared/seo-references/red-flags.md):
   refreshes preserve URLs and useful content while adding a substantive improvement.
 - **No link building.** `seo-backlinks` is monitoring-only, by design.
 
-## Install
+## One workspace per website
+
+This repository is the public template. Make a **separate working copy for each website**,
+with a descriptive name such as `acme-seo`. Each copy keeps its own goals, brand knowledge,
+research, article permissions and credentials. Don't switch a configured copy between brands.
+
+Use the hosting provider's template feature, or clone the published repository into your
+chosen directory. Open it in your AI agent and say:
+
+> Help me get started with this SEO Engine workspace for my website.
+
+The agent asks about the site, audience, desired outcome and constraints; investigates what
+it can itself; then sets up only useful integrations. It handles local configuration. You
+only provide decisions and account actions such as signing in or entering a key in a hidden
+input. You can skip integrations and add them later. Interrupted setup resumes; completed
+setup isn't repeated on every session.
+
+A standalone workspace supports research, remote-site diagnosis and drafts. To edit an
+existing site's source, use a dedicated engine copy **inside that website's repository**
+(for example `tools/seo-engine/`) and make the website root the workspace. Source/CMS access
+is needed to implement or deploy changes; a remote URL alone doesn't supply it.
+
+The descriptive identity lives in the clone name and saved brand brief. Onboarding does not
+rewrite reusable skills, change Git remotes, or rename an open directory. A future personal
+remote should be chosen explicitly. Private local knowledge isn't pushed to the template.
+
+## Agent and model support
+
+The entry points are ordinary Markdown plus Python scripts. Any agent able to read files,
+ask questions, edit files and run commands can follow them. Use a question tool when the
+host has one, otherwise normal conversation. No Claude-only runtime or model is required.
+`AGENTS.md` provides portable guidance; `CLAUDE.md` simply points to it.
+
+Agent discovery adapters are optional. From a standalone clone, the agent can run:
 
 ```bash
-cp -r seo-engine /path/to/your-website-repo/
-
-cd /path/to/your-website-repo/seo-engine
-./install.sh
-
-python3 -m pip install -r requirements.txt
+bash install.sh                         # portable setup; default target is this clone
+bash install.sh "$PWD" "$PWD" codex     # optional .agents/skills discovery
+bash install.sh "$PWD" "$PWD" claude    # optional .claude/skills discovery
 ```
 
-`install.sh` discovers the 26 task skills in the six phase directories plus shared `seo-references`, then links them
-into `<your-repo>/.claude/skills/`, writes an inert stub `.env` (never placeholder values —
-add only keys you actually have), and makes sure `.env` and `.seo-engine/` are gitignored in
-the target repo. Scripts self-locate the engine through the symlinks; if you copy skills
-instead of symlinking, set `SEO_ENGINE_ROOT=/path/to/seo-engine`.
+For an embedded engine, pass its absolute path and the **website root** explicitly:
+`bash tools/seo-engine/install.sh /absolute/site/tools/seo-engine /absolute/site generic`.
+The default no longer targets the parent directory. Skill links are relative so moving the
+whole workspace preserves them. Existing files/other skill installations are preserved.
+Onboarding creates a virtual environment, installs `requirements.txt`, and uses its Python.
+The installer itself only handles local links/ignore rules and an empty `.env`.
 
-This also works as a Claude Code plugin (see `.claude-plugin/plugin.json`) — `skills/` at the
-folder root is discoverable either way. All skill commands run from the **target repo root**
-(state lands in `<repo>/.seo-engine/`); pin it with `SEO_REPO_ROOT` for cron/CI. See
-[common-setup.md](shared/seo-references/common-setup.md) for the full path/state contract.
+Host-agent research and writing use your chosen model with no extra model API. The optional
+scripted publication text client supports **OpenAI, Anthropic and Gemini**; select a provider
+explicitly during onboarding. Other models can drive the host workflow, but arbitrary API
+endpoints are not implemented. The Claude plugin package is an optional discovery adapter.
 
-## Quickstart
+## After onboarding
 
-In an agent session inside your website repo:
+Say **“Continue with our next SEO task”** or **“Use seo-growth to work on [goal].”** The agent
+reads the saved brand brief and follows Understand → Research → Position → Choose → Execute
+→ Learn, loading only the skills needed for the next step. Use `seo-maintain` for a checkup.
 
-1. Invoke **`seo-setup`** — detects your framework (Next.js, Astro, Nuxt, SvelteKit, Hugo,
-   plain HTML, ...) including where static files must live vs. where builds are wiped, confirms
-   your production `site_url` from existing scope and deployment evidence, writes `.seo-engine/config.yml`, and reports which
-   optional integrations are configured vs. what unlocks with which env var.
-2. Invoke **`seo-growth`** to follow the six phases autonomously. Use **`seo-maintain`**
-   for focused checkups and regression monitoring.
-3. Invoke any of the other skills directly when you know what you want to work on.
-4. To run a publication: **`pub-site`** scaffolds, builds and validates it; **`pub-strategy`**
-   records positioning; **`pub-curate`** builds the topic map and the queue; **`pub-publish`**
-   runs the pipeline on a cadence; **`pub-monitor`** and **`geo-monitor`** report whether it is
-   working. The [publication-playbook](shared/seo-references/publication-playbook.md) explains
-   the model and the measured anatomy the skills reproduce.
+For an article, say **“Research and draft an article about [topic] for our audience.”** The
+agent researches existing answers, interviews you about that topic, confirms what can be
+published, studies the human writing corpus, and edits the full draft. The onboarding
+interview supplies context; it never replaces per-topic disclosure permission.
 
-## Configuration
+An owned publication is an optional route selected during setup. Its skills scaffold the
+site, plan topics, generate reviewed articles and monitor results. Existing website work
+remains in its actual framework/CMS.
 
-- **`.env`** (git-ignored, never commit) — API keys, all optional. See
-  [.env.example](.env.example) for the complete list with setup instructions for each.
-- **`.seo-engine/config.yml`** (safe to commit) — site URL, sitemap, detected framework,
-  static-source/build-output dirs, resolved GSC property, target topics/locales. Written by
-  `seo-setup`, read by every other skill.
-- **`.seo-engine/state/`** and **`.seo-engine/reports/`** (git-ignored) — the shared crawl
-  snapshot store (with provenance sidecars so skills reuse each other's crawls safely),
-  per-skill history, and dated reports. Retention is pruned automatically.
+## Configuration and private knowledge
+
+[.env.example](.env.example) is the annotated variable reference: what each setting unlocks,
+which values go together, setup locations, and which goals need it. These are options, not
+a checklist of accounts to purchase. Keys are supplied through hidden terminal input or a
+user-selected credential file; the agent handles the `.env` edits and relevant checks.
+
+| Workspace file | Purpose |
+|---|---|
+| `.seo-engine/onboarding.json` | Setup progress, goals, integration decisions and next action |
+| `.seo-engine/knowledge.md` | Current brand brief, positioning, constraints and useful learned context |
+| `.seo-engine/config.yml` | Site URL, framework, source/build paths and integration-specific site settings |
+| `.env` | Local credentials/settings; process environment can override these |
+| `.seo-engine/state/` and `.seo-engine/reports/` | Research, scoped article permissions, strategy and measurement records |
+
+These files are **ignored by Git**. They persist between local sessions, but pushing the repo
+is not a backup of them: arrange private backup for continuity across machines. Only reviewed,
+shareable output should enter version control. Never force-add private state or credentials.
+Each workspace loads its own `.env`; it does not inherit keys from the engine's other copies.
+Pin `SEO_REPO_ROOT` in scheduled runs. See [common setup](shared/seo-references/common-setup.md).
 
 ## The 26 task skills
 
@@ -155,7 +201,7 @@ In an agent session inside your website repo:
 
 | Skill | What it does |
 |---|---|
-| [`seo-setup`](01-understand/seo-setup/SKILL.md) | Onboarding — detect stack (incl. static-source vs build-output dirs), write config, report integration status |
+| [`seo-setup`](00-onboarding/seo-setup/SKILL.md) | Guided, resumable onboarding — one-site identity, goals, brand brief, selective integrations and next action |
 | [`seo-growth`](04-choose/seo-growth/SKILL.md) | Understand → research → position → choose → execute → learn; evidence-bound strategy, terminal APIs and durable jobs |
 | [`seo-copywriting`](05-execute/seo-copywriting/SKILL.md) | Frozen human prose inside the skill, 38 frozen sources and 373 indexed passages; diverse reference packets and copying diagnostics |
 | [`seo-maintain`](06-learn/seo-maintain/SKILL.md) | Orchestrator — regression-first prioritized checkup against a comparable baseline, dispatches to the rest |
@@ -231,11 +277,6 @@ shared Python library (`scripts/lib/`) every skill script builds on.
 This toolkit has not yet demonstrated traffic lift on a live pilot. Local builds and API citation probes do not establish organic visits. Use the existing website first; optional publications require transparent attribution, ownership disclosure and review of final claims.
 
 Start first-party growth work with [`seo-growth`](04-choose/seo-growth/SKILL.md). It connects website improvements to real analytics exports; the GA4 adapter needs a numeric `GA4_PROPERTY_ID` and service-account Viewer access.
-
-For Codex repository discovery, use `./install.sh /absolute/SEO-engine /absolute/website codex`
-(the compatible default is `claude`). Codex loads the `.agents/skills` symlinks. Use the actual
-skill path in commands; `CLAUDE_SKILL_DIR` is specific to Claude. See the
-[official skill locations](https://learn.chatgpt.com/docs/build-skills).
 
 For recurring operation, configure the target host's scheduler with the
 [growth-cycle prompt](shared/seo-references/growth-cycle.md). `seo-growth/scripts/run_cycle.py` generates

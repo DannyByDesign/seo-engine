@@ -138,7 +138,7 @@ def test_load_env_precedence(tmp_path, monkeypatch):
 
     cfg = Config.load(repo)
     assert cfg.repo_root == repo.resolve()
-    assert cfg.env["SEOTEST_A"] == "engine-a"
+    assert "SEOTEST_A" not in cfg.env  # another site's engine is not a credential fallback
     assert cfg.env["SEOTEST_B"] == "repo-b"
     assert cfg.env["SEOTEST_C"] == "process-c"
 

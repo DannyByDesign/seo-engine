@@ -56,23 +56,23 @@ whole-site tracking.
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py"
+python3 "${SKILL_DIR}/scripts/track_rankings.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --dimension page
+python3 "${SKILL_DIR}/scripts/track_rankings.py" --dimension page
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --days 60 --drop-threshold 5.0 --baseline-weeks 8
+python3 "${SKILL_DIR}/scripts/track_rankings.py" --days 60 --drop-threshold 5.0 --baseline-weeks 8
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/track_rankings.py" --min-impressions 25 --max-rows 200000
+python3 "${SKILL_DIR}/scripts/track_rankings.py" --min-impressions 25 --max-rows 200000
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes"
+python3 "${SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --location-code 2826 --language-code en
+python3 "${SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --location-code 2826 --language-code en
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --domain competitor.com --source ahrefs
+python3 "${SKILL_DIR}/scripts/check_serp_position.py" --keyword "best running shoes" --domain competitor.com --source ahrefs
 ```
 
 `--min-impressions` does double duty: the fallback tracking-scope floor *and* the

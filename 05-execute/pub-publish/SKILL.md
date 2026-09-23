@@ -57,16 +57,16 @@ draft ready for review. `--next` picks the next due slot; `--dry-run` prints the
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/planner.py" --publication llm-billboard --configure \
+python3 "${SKILL_DIR}/scripts/planner.py" --publication llm-billboard --configure \
   --cadence-per-week 6 --sourcing-mode curate_first --approval-mode manual --publish-hour 20
-python3 "${CLAUDE_SKILL_DIR}/scripts/planner.py" --publication llm-billboard --materialize --days 14 --queue
-python3 "${CLAUDE_SKILL_DIR}/scripts/planner.py" --publication llm-billboard --due
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_pipeline.py" --publication llm-billboard --next
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_pipeline.py" --publication llm-billboard --slug advertiser-readiness --approve --indexnow
-python3 "${CLAUDE_SKILL_DIR}/scripts/publish_article.py" --publication llm-billboard --slug advertiser-readiness --approve --relink --build
+python3 "${SKILL_DIR}/scripts/planner.py" --publication llm-billboard --materialize --days 14 --queue
+python3 "${SKILL_DIR}/scripts/planner.py" --publication llm-billboard --due
+python3 "${SKILL_DIR}/scripts/run_pipeline.py" --publication llm-billboard --next
+python3 "${SKILL_DIR}/scripts/run_pipeline.py" --publication llm-billboard --slug advertiser-readiness --approve --indexnow
+python3 "${SKILL_DIR}/scripts/publish_article.py" --publication llm-billboard --slug advertiser-readiness --approve --relink --build
 ```
 
 Flags: `planner.py` `--publication`, `--configure`, `--enable`, `--disable`,

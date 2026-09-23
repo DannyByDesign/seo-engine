@@ -1,13 +1,14 @@
 """Configuration resolution for seo-engine scripts.
 
 Resolution order (later wins for the same key):
-  1. .env sitting next to the seo-engine installation (fallback for shared setups)
-  2. .env at the target repo root (never committed; see .env.example)
-  3. Process environment (always wins — lets cron/CI override files)
+  1. .env at the target repo root (never committed; see .env.example)
+  2. Process environment (always wins — lets cron/CI override files)
+
+Never inherit another workspace's engine-adjacent credentials.
 
 Site-level settings (domain, sitemap, target topics, ...) live in
 `.seo-engine/config.yml` at the target repo root — created by the `seo-setup`
-skill and safe to commit.
+skill and private by default alongside the workspace's operating decisions.
 
 The target repo root is discovered by walking up from the current working
 directory (`.git` / `.seo-engine` / `package.json` markers). Set the
@@ -132,7 +133,6 @@ class Config:
     def load(cls, start: Optional[Path] = None) -> "Config":
         root = find_repo_root(start)
         env: dict[str, str] = {}
-        env.update(_parse_env_file(_engine_root() / ".env"))
         env.update(_parse_env_file(root / ".env"))
         env.update(os.environ)
 

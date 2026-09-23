@@ -52,17 +52,17 @@ optional), `spec_change` (hash + sentence diff of a page), `notion_activity` (`N
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard
-python3 "${CLAUDE_SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard --refresh --spokes-per-pillar 6
-python3 "${CLAUDE_SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard --mark-covered
-python3 "${CLAUDE_SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard \
+python3 "${SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard
+python3 "${SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard --refresh --spokes-per-pillar 6
+python3 "${SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard --mark-covered
+python3 "${SKILL_DIR}/scripts/build_topic_map.py" --publication llm-billboard \
   --add "Deal ID structures for private AI publisher supply" --pillar campaign-setup --brief "Buyers need a deal taxonomy that survives conversational inventory."
-python3 "${CLAUDE_SKILL_DIR}/scripts/score_suggestions.py" --publication llm-billboard --target 10
-python3 "${CLAUDE_SKILL_DIR}/scripts/seers.py" --publication llm-billboard --propose --apply
-python3 "${CLAUDE_SKILL_DIR}/scripts/seers.py" --publication llm-billboard
+python3 "${SKILL_DIR}/scripts/score_suggestions.py" --publication llm-billboard --target 10
+python3 "${SKILL_DIR}/scripts/seers.py" --publication llm-billboard --propose --apply
+python3 "${SKILL_DIR}/scripts/seers.py" --publication llm-billboard
 ```
 
 Flags: `build_topic_map.py` `--publication`, `--spokes-per-pillar`, `--refresh`, `--no-llm`,

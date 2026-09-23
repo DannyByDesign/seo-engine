@@ -8,7 +8,12 @@ description: Autonomously understand any website repo, research its market with 
 ## When to use this skill
 
 Use when the user wants the website to acquire organic visitors, including cold-start sites.
-Start in the existing website repo. A separate publication is an optional experiment.
+Start in this website's configured workspace. For a fresh or incomplete setup, use
+[seo-setup](../../00-onboarding/seo-setup/SKILL.md) first. Read `.seo-engine/onboarding.json`
+and `.seo-engine/knowledge.md` before planning; reuse goals, constraints and integration
+choices. Update the brief with substantiated learning. Do not repeat completed onboarding.
+A remote-only workspace can research and prepare drafts; source edits require actual site
+access. A separate publication is an optional experiment.
 Begin with [the ordered workflow](../../workflow/README.md), then load only the next
 needed section. The agent does the strategy and authoring; do not hand the owner a form asking
 for keywords, competitors, positioning or intervention JSON. No extra model API is required
@@ -152,13 +157,13 @@ GA4 coverage warnings are retained across every response page.
 ## Running it
 
 Run from the target repository, using the resolved absolute skill directory for your agent.
-`${CLAUDE_SKILL_DIR}` below can be replaced by that path.
+Set `SKILL_DIR` below to that path.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_strategy.py" --action inspect
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_strategy.py" --action record --section understand --file understand-input.json
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_strategy.py" --action status
-python3 "${CLAUDE_SKILL_DIR}/scripts/research_market.py" --provider dataforseo --operation ideas --query "QUERY_DERIVED_FROM_PRODUCT" --location 2840 --language en --limit 10 --allow-paid
+python3 "${SKILL_DIR}/scripts/run_strategy.py" --action inspect
+python3 "${SKILL_DIR}/scripts/run_strategy.py" --action record --section understand --file understand-input.json
+python3 "${SKILL_DIR}/scripts/run_strategy.py" --action status
+python3 "${SKILL_DIR}/scripts/research_market.py" --provider dataforseo --operation ideas --query "QUERY_DERIVED_FROM_PRODUCT" --location 2840 --language en --limit 10 --allow-paid
 ```
 
 Strategy flags: `--action` (inspect/record/status), `--section` (understand/research/position),
@@ -168,17 +173,17 @@ credential requirements are in the linked API guide. Target is a bare domain for
 research or an absolute URL for scrape. Research output paths are returned automatically.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/traffic_report.py" --ga4 --start YYYY-MM-DD --end YYYY-MM-DD --out baseline.json
-python3 "${CLAUDE_SKILL_DIR}/scripts/traffic_report.py" --before baseline.json --after followup.json --pages /guides/topic --controls /guides/comparison --deployed-on YYYY-MM-DD --out comparison.json
+python3 "${SKILL_DIR}/scripts/traffic_report.py" --ga4 --start YYYY-MM-DD --end YYYY-MM-DD --out baseline.json
+python3 "${SKILL_DIR}/scripts/traffic_report.py" --before baseline.json --after followup.json --pages /guides/topic --controls /guides/comparison --deployed-on YYYY-MM-DD --out comparison.json
 ```
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage create --brief-file brief.json
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage validate --id deployment-guide
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage deploy --id deployment-guide --approve-deploy
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage verify --id deployment-guide
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage evaluate --id deployment-guide --before baseline.json --after followup.json
-python3 "${CLAUDE_SKILL_DIR}/scripts/run_growth.py" --stage status
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage create --brief-file brief.json
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage validate --id deployment-guide
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage deploy --id deployment-guide --approve-deploy
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage verify --id deployment-guide
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage evaluate --id deployment-guide --before baseline.json --after followup.json
+python3 "${SKILL_DIR}/scripts/run_growth.py" --stage status
 ```
 
 Cycle flag: `--execute-agent`. Its packet and last result live in `.seo-engine/reports/growth-cycle-packet.json` and `growth-cycle-last.json`.

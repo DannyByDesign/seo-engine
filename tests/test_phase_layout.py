@@ -13,8 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_every_skill_has_one_physical_phase_owner_and_legacy_alias():
-    actual = [p.parent for p in ROOT.glob('0[1-6]-*/*/SKILL.md')]
+    actual = [p.parent for p in ROOT.glob('0[0-6]-*/*/SKILL.md')]
     assert len(actual) == 26 and len({p.name for p in actual}) == 26
+    assert paths.skill('seo-setup') == ROOT / '00-onboarding/seo-setup'
+    assert not (ROOT / '01-understand/seo-setup').exists()
     for directory in actual:
         assert not directory.is_symlink()
         assert paths.skill(directory.name) == directory
@@ -40,6 +42,17 @@ def test_installer_and_canonical_commands_work_from_foreign_repo(tmp_path):
     assert 'Human reference' in samples.stdout and 'Product explanation' in samples.stdout
     again = subprocess.run(['bash', str(ROOT / 'install.sh'), str(ROOT), str(tmp_path), 'codex'], check=True, capture_output=True, text=True)
     assert 'Linked 0 skill(s)' in again.stdout
+
+
+def test_installer_migrates_old_onboarding_link(tmp_path):
+    installed = tmp_path / '.agents/skills'
+    installed.mkdir(parents=True)
+    link = installed / 'seo-setup'
+    link.symlink_to(ROOT / '01-understand/seo-setup')
+    subprocess.run(['bash', str(ROOT / 'install.sh'), str(ROOT), str(tmp_path), 'codex'],
+                   check=True, capture_output=True)
+    assert link.resolve() == ROOT / '00-onboarding/seo-setup'
+    assert (link / 'scripts/onboard.py').is_file()
 
 
 def test_cross_phase_publication_dispatch_uses_actual_research_directory():

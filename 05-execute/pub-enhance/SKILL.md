@@ -66,14 +66,14 @@ Relinking writes proposed refresh drafts and preserves live posts. Existing draf
 
 ## Running it
 
-> Run from the target repo root. `${CLAUDE_SKILL_DIR}` is this skill's directory.
+> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness
-python3 "${CLAUDE_SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness \
+python3 "${SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness
+python3 "${SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness \
   --stages verify --check-links --strict-verify
-python3 "${CLAUDE_SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness --voice --dry-run
-python3 "${CLAUDE_SKILL_DIR}/scripts/relink.py" --publication llm-billboard --new-slug advertiser-readiness
+python3 "${SKILL_DIR}/scripts/enhance_article.py" --publication llm-billboard --slug advertiser-readiness --voice --dry-run
+python3 "${SKILL_DIR}/scripts/relink.py" --publication llm-billboard --new-slug advertiser-readiness
 ```
 
 Flags: `enhance_article.py` `--publication`, `--slug`, `--posts`, `--stages`,

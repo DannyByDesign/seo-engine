@@ -71,23 +71,23 @@ Merges with any explicit `--changed-url`/`--changed-urls-file` entries, deduped.
 
 > All commands below run from the **target repo root** (the repo that contains the
 > website). State and reports land in `<repo>/.seo-engine/` — running from anywhere
-> else writes state to the wrong repo. `${CLAUDE_SKILL_DIR}` is set by Claude Code to
-> this skill's directory and works for both the symlink and plugin install.
+> else writes state to the wrong repo. Set `SKILL_DIR` to this skill's resolved absolute directory before running these commands
+> (see common-setup.md); no host-specific variable is required.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py"
+python3 "${SKILL_DIR}/scripts/sync_indexing.py"
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --changed-from-snapshots
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" --changed-from-snapshots
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" \
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" \
   --changed-url https://example.com/blog/new-post --changed-url https://example.com/pricing
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --changed-urls-file changed-urls.txt
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" \
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" --changed-urls-file changed-urls.txt
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" \
   --inspect-url https://example.com/ --inspect-url https://example.com/pricing --no-sitemap-sync
 
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --sitemap-url https://example.com/sitemap.xml --force-resubmit
-python3 "${CLAUDE_SKILL_DIR}/scripts/sync_indexing.py" --no-inspect --changed-urls-file changed-urls.txt
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" --sitemap-url https://example.com/sitemap.xml --force-resubmit
+python3 "${SKILL_DIR}/scripts/sync_indexing.py" --no-inspect --changed-urls-file changed-urls.txt
 ```
 
 Flags: `--sitemap-url`, `--force-resubmit`, `--no-sitemap-sync`, `--inspect-url` (repeatable),
@@ -96,10 +96,10 @@ Flags: `--sitemap-url`, `--force-resubmit`, `--no-sitemap-sync`, `--inspect-url`
 (override when the key file isn't served at the default `https://{host}/{key}.txt`).
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py"
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py" --dir public
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py" --existing-key-file public/<key>.txt
-python3 "${CLAUDE_SKILL_DIR}/scripts/setup_indexnow_key.py" --force
+python3 "${SKILL_DIR}/scripts/setup_indexnow_key.py"
+python3 "${SKILL_DIR}/scripts/setup_indexnow_key.py" --dir public
+python3 "${SKILL_DIR}/scripts/setup_indexnow_key.py" --existing-key-file public/<key>.txt
+python3 "${SKILL_DIR}/scripts/setup_indexnow_key.py" --force
 ```
 
 `setup_indexnow_key.py` auto-scans the target dir for a reusable existing key file first (valid

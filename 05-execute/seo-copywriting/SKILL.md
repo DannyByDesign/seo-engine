@@ -5,6 +5,10 @@ description: Write research-backed website copy and articles using frozen human-
 
 # seo-copywriting
 
+Read the website workspace's `.seo-engine/knowledge.md` when present for audience,
+positioning and constraints. It supplies context, never blanket approval to publish firsthand
+claims; follow the per-topic interview and disclosure contract.
+
 ## When to use this skill
 
 Use for first-party landing pages, guides, comparisons, product copy, useful tools' explanatory
@@ -356,11 +360,11 @@ required work evidence; zero matches is not a publication gate.
 Run with the resolved skill directory; no network or model key is needed to read the corpus.
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/writing_examples.py" --mode landing --seed "target-page-topic" --limit 6
-python3 "${CLAUDE_SKILL_DIR}/scripts/writing_examples.py" --verify
-python3 "${CLAUDE_SKILL_DIR}/scripts/writing_examples.py" --text-file draft.md
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_writing.py" --file draft.md --format markdown --language en-US
-python3 "${CLAUDE_SKILL_DIR}/scripts/check_writing.py" --file copy.txt --format text --level picky
+python3 "${SKILL_DIR}/scripts/writing_examples.py" --mode landing --seed "target-page-topic" --limit 6
+python3 "${SKILL_DIR}/scripts/writing_examples.py" --verify
+python3 "${SKILL_DIR}/scripts/writing_examples.py" --text-file draft.md
+python3 "${SKILL_DIR}/scripts/check_writing.py" --file draft.md --format markdown --language en-US
+python3 "${SKILL_DIR}/scripts/check_writing.py" --file copy.txt --format text --level picky
 ```
 
 Flags: `--mode` (landing/article/docs/news/essay), `--seed`, `--limit` (three to ten),

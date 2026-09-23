@@ -126,7 +126,7 @@ def check_section_refs(path: Path, text: str, sections: dict[str, set[str]]) -> 
 
 def main() -> int:
     skill_dirs = sorted(
-        d for phase in sorted(ENGINE_ROOT.glob('0[1-6]-*')) if phase.is_dir() for d in phase.iterdir()
+        d for phase in sorted(ENGINE_ROOT.glob('0[0-6]-*')) if phase.is_dir() for d in phase.iterdir()
         if d.is_dir() and (d / "SKILL.md").is_file() and d.name != "seo-references"
     )
     skill_names = {d.name for d in skill_dirs} | {"seo-references", "seo-engine"}

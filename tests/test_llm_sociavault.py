@@ -14,7 +14,10 @@ def test_pick_provider_orders_and_errors(tmp_path):
     with pytest.raises(llm.LlmError):
         llm.pick_provider(_cfg(tmp_path))
     cfg = _cfg(tmp_path, OPENAI_API_KEY="sk-x", GOOGLE_GEMINI_API_KEY="g")
-    assert llm.pick_provider(cfg) == "openai"
+    with pytest.raises(llm.LlmError, match="Multiple LLM providers"):
+        llm.pick_provider(cfg)
+    assert llm.pick_provider(cfg, "openai") == "openai"
+    assert llm.pick_provider(_cfg(tmp_path, LLM_PROVIDER="openai", OPENAI_API_KEY="sk-x", ANTHROPIC_API_KEY="ant-x")) == "openai"
     assert llm.pick_provider(cfg, "gemini") == "gemini"
     with pytest.raises(llm.LlmError):
         llm.pick_provider(cfg, "anthropic")
