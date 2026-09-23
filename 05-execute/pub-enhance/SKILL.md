@@ -1,6 +1,6 @@
 ---
 name: pub-enhance
-description: The editing passes before a publication article ships: contextual internal links from the publication's own catalogue, the Sources list from the paper trail and links actually used, numeric anchors to sources, diagram specs and placement, semantic-keyword gaps (report only), a numeric-presence check (not semantic claim verification), metadata hygiene, an opt-in voice pass with a nothing-lost guard, and relink, which proposes reviewed refresh drafts for older posts.
+description: "Edits publication drafts before they ship. Requires a whole-article clarity and brevity pass, then supports internal links, source lists, numeric anchors, diagrams, keyword suggestions, numeric-presence checks, metadata and proofreading. Relink proposes reviewed refresh drafts for older posts. Use after pub-write and before publication review."
 ---
 
 # pub-enhance
@@ -21,6 +21,18 @@ grows (`publication-playbook.md` §3, §4).
   renders the specs this skill writes).
 
 ## What it checks / does
+
+Start by checking that the host completed the [whole-piece editing pass](../seo-copywriting/SKILL.md#required-whole-piece-editing-pass).
+If not, perform it on the complete draft now. Remove repetition and unnecessary explanation
+before adding links and visuals to prose that may be cut. After enhancement, read the final
+piece once more for duplicated explanations in captions, summaries and body text.
+
+The optional `voice` stage is a local rewrite aid, not this editorial pass. Its preservation
+guard can reject a useful large cut or heading change as well as a harmful rewrite. Inspect
+the reported reason. For warranted structural edits, edit the draft directly, check retained
+claims against their evidence, update affected outline/visual instructions, then rerun the
+relevant enhancement and proofreading stages and obtain a fresh editorial review. Do not
+disable safeguards, edit live posts, or restore padding merely to satisfy a rewrite ratio.
 
 ### 1. `scripts/enhance_article.py` — stages
 
@@ -100,8 +112,8 @@ Flags: `enhance_article.py` `--publication`, `--slug`, `--posts`, `--stages`,
   fills the graph in both directions as posts accumulate.
 - **`keywords.missing_phrases` are suggestions for a human edit**; stuffing them in is the
   failure mode this stage avoids by not inserting.
-- **A rejected `voice` pass** (guard non-empty) means the model changed a fact or a link;
-  nothing was written.
+- **A rejected `voice` pass** (guard non-empty) means a preservation check failed, which may
+  include length or heading changes; inspect the reason. Nothing was written.
 
 ## Safe to auto-apply vs. human review
 

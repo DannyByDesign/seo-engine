@@ -32,6 +32,18 @@ for example a concrete opening, a quiet objection answer and a short practical c
 a coherent site voice; blending does not mean alternating author impersonations sentence by
 sentence. Do not import antique diction, historical prejudice, topic facts or invented drama.
 
+Study how the selected passages introduce their subject, develop a point without repeating
+it, move between ideas, use concrete detail and stop when the point is complete. Identify
+specific examples of techniques relevant to this piece; reading the packet alone is not
+enough. In brief working notes alongside the example IDs, describe the observed move, why
+it works and where it could help this draft. If an excerpt does not show the transition or
+ending you need to study, read its surrounding source text rather than inventing an analysis.
+
+Use the corpus as the concrete reference for those choices. Abstract advice such as "be
+engaging" or "sound human" is not a substitute for examining the supplied writing. Transfer
+the technique, not the phrasing, source facts or author's identity. Do not force a technique
+onto a passage where it does not fit, or reproduce a sample's length and ornament.
+
 Create two materially different openings or hero treatments, then develop the one that best
 answers the actual reader task. Read the draft aloud internally: remove generic claims,
 unearned superlatives, repetitive transitions and tidy summaries that add nothing. Keep useful
@@ -44,6 +56,45 @@ and unintended copying. Record selected example IDs and why the chosen technique
 agent reviewer is sufficient within existing scope. Rewrite weak passages instead of claiming
 that a style score or a detector result proves quality. The corpus is a required writing input,
 not a guarantee that every resulting sentence is good or that authorship is undetectable.
+
+### Required whole-piece editing pass
+
+After drafting, read the complete piece in order, including its title and summary. Edit it
+as one argument before handing it off. Section-by-section candidate selection, a grammar
+check and a good voice score do not substitute for this pass. The host agent performs it
+directly on the draft; no separate model, tool or additional human style approval is required.
+
+- Lead with the actual answer, problem or useful observation. Cut generic scene-setting,
+  announcements of what the article will discuss, and openings that could fit an unrelated topic.
+- Give each paragraph a clear job: a fact, explanation, example, qualification, instruction
+  or decision that helps this reader. Delete sentences that merely announce importance,
+  repeat the heading or restate the preceding sentence in more polished language.
+- Check across section boundaries. Explain an idea fully where it belongs; merge overlapping
+  sections and remove repeated definitions, examples and conclusions. When drafting directly,
+  read the preceding prose before adding another section. After scripted generation, make
+  this cross-section edit explicitly—the section writer does not see the preceding prose.
+- Prefer concrete actors, actions and consequences to abstract claims and adjective stacks.
+  Replace stock transitions, forced contrasts, rhetorical questions and repetitive three-part
+  lists with the actual connection between ideas. Do not just swap a flagged word for a synonym.
+  Use these forms when the substance needs them, not as a recurring prose template.
+- Keep headings useful and specific without forcing them into matching sentence patterns.
+  Vary sentence length where the thought calls for it; do not manufacture fragments, quirks
+  or conversational asides to simulate a human voice.
+- End when the reader's task is complete. Keep a next action or necessary qualification;
+  remove a conclusion that only repeats the introduction or summarizes every section again.
+
+Rewrite weak passages instead of leaving a critique or declaring them acceptable because
+they have citations. Revisit the relevant human examples: compare the draft's opening,
+explanation, transition or ending with the specific move observed in the source, then apply
+that technique to the draft's own evidence and reader task. Keep this analysis in working
+notes; the published piece should not narrate its style exercise. Favor the shortest version that
+preserves understanding; do not impose a percentage reduction or turn useful explanation
+into cryptic prose. Keep the company-specific example, necessary context, evidence, approved
+attribution, limitations and disclosure boundaries intact. Never strengthen a claim by
+cutting its caveat. Recheck those obligations after merging or deleting material.
+
+Finish by asking whether removing another sentence would lose something the reader needs.
+If not, remove it. The final artifact should be the edited copy, not a self-awarded style score.
 
 ### Frozen examples inside the skill
 

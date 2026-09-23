@@ -27,6 +27,13 @@ loads six frozen human passages across source texts and genres into its composit
 records `writing_example_ids`. Use their techniques while grounding every claim in the outline;
 the reference passages are never factual evidence for this article.
 
+Treat the script's section-by-section output as a first draft. Before handing it to
+`pub-enhance`, perform the [required whole-piece editing pass](../seo-copywriting/SKILL.md#required-whole-piece-editing-pass).
+Read all sections together; remove repeated explanations, generic framing and recap endings,
+merge overlapping sections, and rewrite weak prose. Preserve the approved contribution and
+its evidence and limits. A candidate judge or sentence-level Shredder cannot establish that
+the complete article is concise. Do this edit even when every script reports success.
+
 The writer runs LanguageTool on the composed draft and records `languagetool` with its report
 path and text hash. Read the suggestions, fix actual errors while preserving facts and voice,
 and rerun on revised prose. `pub-enhance` checks the final text again after editing. Missing

@@ -85,6 +85,13 @@ never manufacture an attestation to make the gate pass. All numeric claims need 
 and the reviewer checks nonnumeric factual claims too. This is accountable judgment,
 not automatic semantic proof. The receipt binds text, metadata, sources, assets and policy.
 
+Before recording that review, read the complete final article and apply the
+[whole-piece editing pass](../seo-copywriting/SKILL.md#required-whole-piece-editing-pass).
+Do not accept generic introductions, repeated arguments or recap-only endings because the
+factual checks passed. Confirm that editing left the approved contribution, useful examples
+and necessary caveats intact. Correct weak prose before reviewing the resulting final text;
+successful pipeline execution alone is not evidence that this editing work happened.
+
 ## Expected output
 
 `planner.py`: `planner` (effective config), `materialized[]`, `queued[] = {slot, scheduled_for,
