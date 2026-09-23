@@ -597,7 +597,7 @@ def process_body(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Non
                     img["width"], img["height"] = str(dims[0]), str(dims[1])
         img["loading"] = "lazy"
         img["decoding"] = "async"
-        if not img.get("alt"):
+        if not img.has_attr("alt"):
             post.warnings.append(f"image without alt text: {src}")
     for table in body.find_all("table"):
         wrapper = soup.new_tag("div", attrs={"class": "table-wrap"})
@@ -608,24 +608,50 @@ def process_body(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Non
     post.html = "".join(str(c) for c in body.contents)
 
 
-def cover_of(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Optional[dict[str, Any]]:
-    cover = post.meta.get("cover")
+def _image_placement(pub: Publication, post: Post, cover: Any, asset_dir: Optional[Path]) -> Optional[dict[str, Any]]:
     if isinstance(cover, str):
         cover = {"src": cover}
     if not isinstance(cover, dict) or not cover.get("src"):
         return None
     src = str(cover["src"])
+    asset = (post.meta.get('image_assets') or {}).get(src) or {}
+    width, height = cover.get('width') or asset.get('width'), cover.get('height') or asset.get('height')
     if not urlparse(src).scheme and not src.startswith("/"):
         rel = src.lstrip("./")
-        if asset_dir is not None and not cover.get("width"):
+        if asset_dir is not None:
             dims = image_dimensions(asset_dir / rel)
             if dims:
-                cover = {**cover, "width": dims[0], "height": dims[1]}
+                width, height = dims
         src = f"/assets/{asset_name(post.meta, post.slug)}/{rel}"
     absolute = src if urlparse(src).scheme else pub.url(src)
+    if 'alt' not in cover and not cover.get('decorative'):
+        post.warnings.append(f'image placement needs reviewed alt text: {src}')
+    variants = []
+    for variant in cover.get('variants') or []:
+        vsrc, vwidth = variant.get('src'), variant.get('width')
+        if vsrc and type(vwidth) is int and vwidth > 0:
+            if not urlparse(vsrc).scheme and not vsrc.startswith('/'):
+                vsrc = f"/assets/{asset_name(post.meta, post.slug)}/{vsrc.lstrip('./')}"
+            variants.append(f'{vsrc} {vwidth}w')
     return {"src": src, "absolute": absolute,
-            "alt": str(cover.get("alt") or f"Cover illustration for “{post.title}”"),
-            "credit": cover.get("credit"), "width": cover.get("width"), "height": cover.get("height")}
+            "alt": '' if cover.get('decorative') else str(cover.get('alt') or ''),
+            "caption": cover.get('caption'), 'asset': asset, 'mime': asset.get('mime'),
+            'srcset': ', '.join(variants), 'sizes': cover.get('sizes'),
+            "credit": cover.get("credit") or asset.get('credit_text'), "width": width, "height": height}
+
+
+def cover_of(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Optional[dict[str, Any]]:
+    placement = post.meta.get('cover')
+    cover = _image_placement(pub, post, placement, asset_dir)
+    if cover and isinstance(placement, dict) and placement.get('social'):
+        cover['social'] = _image_placement(pub, post, placement['social'], asset_dir)
+    return cover
+
+
+def _responsive_attrs(cover: dict) -> str:
+    if not cover.get('srcset'):
+        return ''
+    return f' srcset="{_e(cover["srcset"])}" sizes="{_e(cover.get("sizes") or "100vw")}"'
 
 
 def graph_ld(pub: Publication) -> dict[str, Any]:
@@ -676,7 +702,17 @@ def post_ld(pub: Publication, post: Post, cover: Optional[dict[str, Any]]) -> di
         "description": post.dek,
     }
     if cover:
-        ld["image"] = [{"@type": "ImageObject", "url": cover["absolute"], "caption": cover["alt"]}]
+        image = {"@type": "ImageObject", "url": cover["absolute"], 'contentUrl': cover['absolute']}
+        for key in ('caption', 'width', 'height'):
+            if cover.get(key): image[key] = cover[key]
+        asset = cover.get('asset') or {}
+        for source, field in [('credit_text', 'creditText'), ('license_url', 'license'),
+                              ('copyright_notice', 'copyrightNotice'), ('mime', 'encodingFormat')]:
+            if asset.get(source): image[field] = asset[source]
+        creator = asset.get('creator') or {}
+        if isinstance(creator, dict) and creator.get('name') and creator.get('type') in ('Person', 'Organization'):
+            image['creator'] = {'@type': creator['type'], 'name': creator['name']}
+        ld["image"] = [image]
     ld.update({
         "datePublished": post.published_at, "dateModified": post.updated_at,
         "author": person_ld(pub, pub.author_for(post)), "publisher": {"@id": pub.url("/#organization")},
@@ -830,7 +866,7 @@ def _card(pub: Publication, post: Post, cover: Optional[dict[str, Any]], *, head
     img = ""
     if cover:
         dims = f' width="{_e(cover["width"])}" height="{_e(cover["height"])}"' if cover.get("width") and cover.get("height") else ""
-        img = f'<a href="/posts/{_e(post.slug)}"><img src="{_e(cover["src"])}" alt="{_e(cover["alt"])}" loading="lazy" decoding="async"{dims}></a>'
+        img = f'<a href="/posts/{_e(post.slug)}" aria-label="{_e(post.title)}"><img src="{_e(cover["src"])}" alt="{_e(cover["alt"])}" loading="lazy" decoding="async"{dims}{_responsive_attrs(cover)}></a>'
     return (f'<article class="card">{img}<p class="kicker"><a href="/sections/{_e(section["slug"])}">{_e(section["name"])}</a></p>'
             f'<{heading}><a href="/posts/{_e(post.slug)}">{_e(post.title)}</a></{heading}><p>{_e(post.dek)}</p>'
             f'<p class="meta"><a href="/authors/{_e(author["slug"])}">{_e(author["name"])}</a> · '
@@ -861,8 +897,9 @@ def render_post_page(pub: Publication, post: Post, cover: Optional[dict[str, Any
     if cover:
         dims = f' width="{_e(cover["width"])}" height="{_e(cover["height"])}"' if cover.get("width") and cover.get("height") else ""
         credit = f" · {_e(cover['credit'])}" if cover.get("credit") else ""
-        cover_html = (f'<figure class="cover"><img src="{_e(cover["src"])}" alt="{_e(cover["alt"])}" fetchpriority="high" decoding="async"{dims}>'
-                      f'<figcaption>{_e(section["name"])} · {_e(display_date(post.published_at))} · {post.minutes} min read · {post.words:,} words{credit}</figcaption></figure>')
+        caption = f'<span>{_e(cover["caption"])}</span> · ' if cover.get('caption') else ''
+        cover_html = (f'<figure class="cover"><img src="{_e(cover["src"])}" alt="{_e(cover["alt"])}" fetchpriority="high" decoding="async"{dims}{_responsive_attrs(cover)}>'
+                      f'<figcaption>{caption}{_e(section["name"])} · {_e(display_date(post.published_at))} · {post.minutes} min read · {post.words:,} words{credit}</figcaption></figure>')
     sources_html = ""
     if post.sources:
         lis = "".join(
@@ -902,13 +939,15 @@ def render_post_page(pub: Publication, post: Post, cover: Optional[dict[str, Any
         "twitter:card": "summary_large_image", "twitter:title": post.title, "twitter:description": post.dek,
     }
     if cover:
-        og.update({"og:image": cover["absolute"], "og:image:alt": cover["alt"], "twitter:image": cover["absolute"]})
-        if cover.get("width") and cover.get("height"):
-            og.update({"og:image:width": str(cover["width"]), "og:image:height": str(cover["height"])})
+        social = cover.get('social') or cover
+        og.update({"og:image": social["absolute"], "og:image:alt": social["alt"], "twitter:image": social["absolute"], 'twitter:image:alt': social['alt']})
+        if social.get("width") and social.get("height"):
+            og.update({"og:image:width": str(social["width"]), "og:image:height": str(social["height"])})
+        if social.get('mime'): og['og:image:type'] = social['mime']
     seo = post.meta.get("seo") or {}
     ld = [graph_ld(pub), post_ld(pub, post, cover),
           breadcrumb_ld([("Home", pub.site_url), (section["name"], pub.url(f"/sections/{section['slug']}")), (post.title, None)])]
-    extra_head = f'<link rel="preload" as="image" href="{_e(cover["src"])}" fetchpriority="high">' if cover else ""
+    extra_head = f'<link rel="preload" as="image" href="{_e(cover["src"])}" fetchpriority="high">' if cover and not cover.get('srcset') else ""
     return _page(pub, title=str(seo.get("title") or f"{post.title} · {pub.name}"), description=str(seo.get("description") or post.dek),
                  canonical_path=url_path, body=body, ld=ld, og=og, build_year=build_year, current_section=section["slug"],
                  extra_head=extra_head)

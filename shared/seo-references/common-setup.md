@@ -2,6 +2,8 @@
 
 ## Paths & working directory
 
+- `.seo-engine/visuals.md` is the host-maintained website visual brief. Follow [images.md](images.md)
+  for asset sourcing, placement metadata and review; scripts do not author this brief for the operator.
 - **Run every script from the target repo root** (the repo that contains the
   website, or its dedicated SEO workspace). Config and state discovery walk **up from the current working
   directory** to the nearest `.git`/`.seo-engine`/`package.json` marker, and all

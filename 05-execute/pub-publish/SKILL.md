@@ -134,6 +134,8 @@ headline, draft}`, `status` counts, `upcoming[]`, `due[]`.
 
 ## Guardrails
 
+- Before review/publication, perform the [rendered image review](../../shared/seo-references/images.md#5-review-the-rendered-page)
+  and include `visual_review` notes in editorial review JSON. A cover file alone is insufficient.
 - A refresh retains its original URL and author. `published_at` is set once and never rewritten; `updated_at` only moves with content.
 - The gate cannot be lowered from the command line below its documented floors without
   `--skip-checks`, which is recorded in the post.

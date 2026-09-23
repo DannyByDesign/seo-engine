@@ -138,6 +138,11 @@ as a starting constraint, never truncate a real detail to hit a number. `og:imag
 an image that actually represents the page — flag a missing page-specific image as a content gap
 rather than inventing a placeholder.
 
+For image sourcing and placement metadata across all page types, follow the shared
+[image workflow](../../shared/seo-references/images.md). Inspect the actual image, preserve
+intentional decorative alt, distinguish captions from alt, and verify social variants and
+applicable image/rights structured data in the rendered page.
+
 ## Safe to auto-apply vs. human review
 
 - **Safe to fix directly:** adding a missing `og:title`/`og:description` mirroring an already-good
@@ -148,8 +153,8 @@ rather than inventing a placeholder.
   page's own content; a title/H1 mismatch that might be intentional; metadata in a CMS the agent
   lacks write access to; bulk rewrites across many pages without a differentiation check — write
   each one individually from that page's content, never from one prompt template producing
-  near-identical output; a missing `og:image` with no page-specific image anywhere in the page's
-  content (sourcing one is a human/design decision).
+  near-identical output. For a missing page-specific image, use the image workflow within
+  existing scope; ask only for unresolved brand, factual, rights or spending decisions.
 
 ## Guardrails
 

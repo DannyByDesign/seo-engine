@@ -22,6 +22,10 @@ the mention policy applied exactly once per article (§6).
 
 ## What it checks / does
 
+Read the [image workflow](../../shared/seo-references/images.md). Carry `visual_plan` from the
+outline into the draft and preserve sourced image placements. After drafting, use `pub-visuals`
+to obtain the planned assets and review them in context; don't invent product screenshots.
+
 Read [seo-copywriting](../seo-copywriting/SKILL.md) before drafting. The writer automatically
 loads six frozen human passages across source texts and genres into its composition context and
 records `writing_example_ids`. Use their techniques while grounding every claim in the outline;

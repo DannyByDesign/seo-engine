@@ -36,7 +36,9 @@ def _repo(tmp_path: Path, **env):
     (root / "drafts").mkdir(parents=True)
     (root / "site.yml").write_text(yaml.safe_dump({"name": "Prompt Ledger", "slug": "pl", "tagline": "t", "site_url": "https://pl.example",
                                                   "theme": "signal", "sections": [{"slug": "features", "name": "Features"}], "authors": []}))
-    publication.write_post(root / "drafts" / "piece.md", {"title": "AI Search Ad Spend Doubles", "slug": "piece", "dek": "A dek."}, "body")
+    publication.write_post(root / "drafts" / "piece.md", {"title": "AI Search Ad Spend Doubles", "slug": "piece", "dek": "A dek.",
+        'visual_plan': {'cover': {'kind': 'generated', 'subject': 'A branching path towards an advertising display',
+                                  'purpose': 'Illustrate the choice of advertising channels', 'aspect_ratio': '16:9'}}}, "body")
     return Config(repo_root=tmp_path, env=dict(env), site={"publications_dir": "publications"}), root
 
 
@@ -74,10 +76,13 @@ def test_render_all_diagram_types(tmp_path, monkeypatch, capsys):
 
 def test_cover_svg_fallback_and_providers(tmp_path, monkeypatch, capsys, fake_transport):
     cfg, root = _repo(tmp_path)
-    out = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece"], monkeypatch, capsys)
+    blocked = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece"], monkeypatch, capsys)
+    assert blocked['_exit'] == 1 and 'No image provider' in blocked['error']
+    out = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece", '--provider', 'svg'], monkeypatch, capsys)
     assert out["_exit"] == 0 and out["cover"]["generator"] == "svg-fallback"
     meta, _ = publication.read_post(root / "drafts" / "piece.md")
-    assert meta["cover"]["alt"] == "Cover illustration for “AI Search Ad Spend Doubles”" and meta["cover"]["width"] == 1600
+    assert meta["cover"]["alt"] == '' and meta['cover']['decorative'] and meta["cover"]["width"] == 1600
+    assert meta['image_assets']['cover.svg']['mime'] == 'image/svg+xml' and out['requires_visual_review']
     assert (root / "assets" / "piece" / "cover.svg").read_text().startswith("<svg")
     skipped = _run(cover_mod, cfg, ["--publication", "pl", "--slug", "piece"], monkeypatch, capsys)
     assert skipped["skipped"] is True
@@ -88,7 +93,10 @@ def test_cover_svg_fallback_and_providers(tmp_path, monkeypatch, capsys, fake_tr
     out2 = _run(cover_mod, cfg2, ["--publication", "pl", "--slug", "piece", "--force"], monkeypatch, capsys)
     assert out2["cover"]["generator"].startswith("openai/") and out2["cover"]["width"] == 1536 and out2["cover"]["src"] == "cover.jpg"
     body = fake_transport.calls[-1][2]["json"]
-    assert body["size"] == "1536x1024" and "No text" in body["prompt"] and "#ff4d1c" in body["prompt"]
+    assert body["size"] == "1536x1024" and "A branching path" in body["prompt"] and "#ff4d1c" in body["prompt"]
+    meta, _ = publication.read_post(root / 'drafts/piece.md')
+    assert 'alt' not in meta['cover']  # The host must inspect before describing generated pixels.
+    assert meta['image_assets']['cover.jpg']['source_type'] == 'generated'
 
     cfg3 = Config(repo_root=tmp_path, env={"GOOGLE_GEMINI_API_KEY": "g"}, site={"publications_dir": "publications"})
     fake_transport.route("POST", "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
@@ -97,3 +105,19 @@ def test_cover_svg_fallback_and_providers(tmp_path, monkeypatch, capsys, fake_tr
     assert gen["provider"] == "gemini" and gen["mime"] == "image/png" and gen["bytes"] == PNG_1X1
     with pytest.raises(images.ImageError):
         images.generate_image(Config(repo_root=tmp_path, env={}, site={}), "x")
+
+
+def test_cover_honors_selected_provider_and_does_not_generate_factual_assets(tmp_path, monkeypatch, capsys, fake_transport):
+    cfg, root = _repo(tmp_path, OPENAI_API_KEY='openai-key', GOOGLE_GEMINI_API_KEY='gemini-key', IMAGE_PROVIDER='gemini')
+    fake_transport.route('POST', 'https://generativelanguage.googleapis.com/', {'body': json.dumps({
+        'candidates': [{'content': {'parts': [{'inlineData': {'mimeType': 'image/png', 'data': base64.b64encode(PNG_1X1).decode()}}]}}]})})
+    out = _run(cover_mod, cfg, ['--publication', 'pl', '--slug', 'piece'], monkeypatch, capsys)
+    assert out['cover']['generator'].startswith('gemini/')
+    assert len(fake_transport.calls) == 1 and 'googleapis.com' in fake_transport.calls[0][1]
+    meta, body = publication.read_post(root / 'drafts/piece.md')
+    meta['visual_plan']['cover']['kind'] = 'screenshot'
+    publication.write_post(root / 'drafts/piece.md', meta, body)
+    refused = _run(cover_mod, cfg, ['--publication', 'pl', '--slug', 'piece', '--force'], monkeypatch, capsys)
+    assert refused['_exit'] == 1 and len(fake_transport.calls) == 1
+    with pytest.raises(images.ImageError, match='no configured key'):
+        images.pick_image_provider(Config(repo_root=tmp_path, env={'OPENAI_API_KEY': 'x', 'IMAGE_PROVIDER': 'gemini'}))

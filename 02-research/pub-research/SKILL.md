@@ -29,6 +29,10 @@ Rerun after confirmation; unchanged approved input resumes without another inter
 Use `--refresh-research` for a substantive new topic/source investigation, which invalidates
 old contribution scope. Missing operator input pauses unattended runs before drafting.
 
+Plan the cover and useful inline imagery with the outline using the shared
+[image workflow](../../shared/seo-references/images.md). Record `visual_plan` in frontmatter,
+including factual asset needs and diagram evidence, before handing the article to the writer.
+
 
 `scripts/research_outline.py` runs the six phases in order:
 

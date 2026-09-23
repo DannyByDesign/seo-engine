@@ -40,6 +40,8 @@ def pick_image_provider(cfg: Config, prefer: Optional[str] = None) -> str:
         return wanted
     if wanted and wanted not in ("openai", "gemini"):
         raise ImageError(f"Unknown image provider {wanted!r}; choose openai or gemini")
+    if wanted:
+        raise ImageError(f"Selected image provider {wanted!r} has no configured key")
     if available:
         return available[0]
     raise ImageError("No image provider configured — set OPENAI_API_KEY or GOOGLE_GEMINI_API_KEY (or use the SVG fallback).")
@@ -65,7 +67,7 @@ def _gemini(cfg: Config, prompt: str, model: str, size: str) -> tuple[bytes, str
     resp = http_util.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         headers={"x-goog-api-key": key},
-        json_body={"contents": [{"parts": [{"text": prompt + " Aspect ratio 16:9."}]}],
+        json_body={"contents": [{"parts": [{"text": prompt}]}],
                    "generationConfig": {"responseModalities": ["IMAGE"]}},
         timeout=IMAGE_TIMEOUT, check=True,
     )

@@ -1,6 +1,6 @@
 ---
 name: pub-visuals
-description: Produces a publication article's imagery in the measured house style — deterministic SVG (and PNG when a converter exists) diagrams from the JSON specs pub-enhance writes (stat callout, stepped flow, funnel, comparison, timeline; kicker title, one big idea, Source footer, theme colours), and a 16:9 cover per headline via OpenAI or Gemini image models with a theme-derived SVG fallback that needs no key. Invoke after pub-enhance, before publishing. Not for writing the diagram briefs (pub-research does) or placing them (pub-enhance does).
+description: Plan, source, generate and review publication imagery under the website image workflow. Reuse approved assets, capture real product screenshots, source licensed imagery, or generate on-brand illustrations; render evidence-based diagrams and set asset and placement metadata. Use after outlining and before publication review. Other website pages follow the same shared image workflow in their existing stack.
 ---
 
 # pub-visuals

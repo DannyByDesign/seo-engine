@@ -120,6 +120,10 @@ arbitrary manual source edits, so the host must perform the interview before wri
 
 ## Outline, write and review
 
+Plan the article's cover and useful inline images with the outline, following the shared
+[website image workflow](images.md). Base factual imagery on real assets/evidence and carry
+the operator's disclosure limits into screenshots, diagrams, captions and image metadata.
+
 Organize around the reader's task and approved contribution; combine external evidence with
 attributed firsthand experience without turning either into unsupported generalizations.
 Use the existing human corpus for technique, record selected examples, and preserve brand

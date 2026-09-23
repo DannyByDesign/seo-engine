@@ -87,6 +87,10 @@ Articles combine external research with your approved experience, study human wr
 examples, and receive a full clarity/concision edit. Each topic gets its own interview and
 disclosure confirmation.
 
+Images are planned with the content: real product assets where relevant, or on-brand
+illustrations. The workflow covers sourcing, credits, alt text, social previews and visual review
+for articles and other website pages.
+
 ## Your website owns its knowledge
 
 Engine code can update independently. Your website's `.seo-engine/` holds its onboarding,

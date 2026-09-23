@@ -21,6 +21,8 @@ seo-engine skills — read the specific section a task needs rather than everyth
 
 ## Evidence-grade legend (used throughout the playbooks)
 
+For website-wide image planning, sourcing, metadata and rendered review, read [images.md](images.md).
+
 - **Established fact** — primary source (vendor's own docs) or a large controlled study
   with disclosed methodology.
 - **Corroborated pattern** — multiple independent sources agree; still correlational.

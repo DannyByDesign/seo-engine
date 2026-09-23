@@ -376,8 +376,11 @@ blindly. Perplexity is probing-only (no content generation).
 | OpenAI | `POST https://api.openai.com/v1/images/generations` | `gpt-image-1` | `IMAGE_MODEL_OPENAI` | base64 JPEG, `size` 1536×1024 |
 | Google | `POST …/models/<model>:generateContent` with image response modality | `gemini-2.5-flash-image` | `IMAGE_MODEL_GEMINI` | `inlineData` (base64) |
 
-`IMAGE_PROVIDER` (`openai` | `gemini`) picks when both keys exist; with neither key the skill
-renders a deterministic SVG cover so the pipeline never blocks on art. Diagrams are pure SVG
+`IMAGE_PROVIDER` (`openai` | `gemini`) selects the configured account; a missing selected key
+is a blocker, not permission to switch providers. Native host tools or sourced assets can
+supply covers without API credentials. `--provider svg` explicitly requests a decorative
+draft fallback. Follow the [image workflow](images.md) and inspect/crop the actual output;
+the requested aspect ratio is not a guarantee of returned dimensions. Diagrams are pure SVG
 (no API) rendered from the research outline's `diagrams` specs.
 
 ## SociaVault (social-conversation search)

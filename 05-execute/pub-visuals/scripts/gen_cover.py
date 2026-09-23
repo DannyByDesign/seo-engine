@@ -2,16 +2,15 @@
 publication's house style, and record it in the frontmatter.
 
 Providers (scripts/lib/images.py): OpenAI Images or Gemini image models,
-BYOK. With no image key — or `--provider svg` — a deterministic SVG cover is
-drawn from the theme (hero gradient + abstract geometry, no text), so the
-pipeline never blocks on a missing key. Covers are 16:9 (the measured phantoms
-declare 1200x675 for OG and serve the hero at 1600 px).
+BYOK. `--provider svg` explicitly requests a decorative draft fallback.
+Missing keys do not silently replace the planned image. Record actual dimensions;
+the host reviews and crops the generated output to the planned aspect ratio.
 
 House prompt: site.yml `cover_style` when set, else derived from the theme
-palette: flat vector editorial illustration, geometric, two accent colours
-on the theme surface, no text, no logos, no people's faces.
+palette: flat vector editorial illustration, geometric, accent colours
+on the theme surface. The article's visual plan supplies subject and composition.
 
-Alt text convention (measured): `Cover illustration for “<title>”`.
+The host writes alt/caption after inspecting the image; no headline-derived alt.
 
 Usage:
     python3 gen_cover.py --publication llm-billboard --slug advertiser-readiness
@@ -57,13 +56,16 @@ from scripts.lib import images, publication, pubstate
 COVER_W, COVER_H = 1600, 900
 
 
-def house_prompt(pub: publication.Publication, title: str, dek: str) -> str:
+def house_prompt(pub: publication.Publication, title: str, dek: str, plan: dict) -> str:
     theme = pub.theme
     style = str(pub.site.get("cover_style") or "").strip() or (
         f"flat vector editorial illustration, clean geometric shapes, generous negative space, palette limited to "
         f"{theme['primary']}, {theme['accent']} and {theme['secondary']} on {theme['surface']}, subtle grain")
-    return (f"{style}. Concept: an abstract visual metaphor for \"{title}\" ({dek}). No text, no letters, no numbers, no logos, "
-            f"no human faces, no watermarks. Landscape 16:9 composition with the subject weighted to the right third.")
+    return (f"{style}. Subject: {plan['subject']}. Article context: {title} ({dek}). "
+            f"Purpose: {plan.get('purpose', 'editorial illustration')}. "
+            f"Composition: {plan.get('composition', 'keep essential detail safe from edge crops')}. "
+            f"Aspect ratio: {plan.get('aspect_ratio', '16:9')}. "
+            "Create an editorial illustration, not fabricated product UI, a data result or documentary evidence.")
 
 
 def svg_cover(pub: publication.Publication, seed_text: str) -> str:
@@ -94,7 +96,7 @@ def main() -> int:
     parser.add_argument("--publication", help="Publication slug")
     parser.add_argument("--slug", required=True, help="Article slug")
     parser.add_argument("--posts", action="store_true", help="Article lives in posts/ (default drafts/)")
-    parser.add_argument("--provider", choices=["openai", "gemini", "svg"], help="Image provider (default: configured key, else svg)")
+    parser.add_argument("--provider", choices=["openai", "gemini", "svg"], help="Configured image provider; svg explicitly selects a draft fallback")
     parser.add_argument("--model", help="Override the image model id")
     parser.add_argument("--force", action="store_true", help="Regenerate even if a cover exists")
     parser.add_argument("--publications-dir", help="Override the publications directory")
@@ -116,19 +118,26 @@ def main() -> int:
     if existing and existing.get("src") and not args.force:
         print(json.dumps({"checked": True, "skipped": True, "reason": "cover exists (pass --force)", "cover": existing}, indent=2))
         return 0
+    plan = (meta.get('visual_plan') or {}).get('cover') or {}
+    if (plan.get('kind') != 'generated' or not str(plan.get('subject') or '').strip()) and args.provider != 'svg':
+        print(json.dumps({'checked': False, 'error': 'Plan visual_plan.cover.kind=generated and subject first, or obtain the factual asset and set cover.src.'}))
+        return 1
     title = str(meta.get("title") or args.slug)
     asset_dir = publication.draft_assets(root, args.slug, meta)
-    result: dict[str, Any] = {"checked": True, "file": str(path), "title": title}
-    provider = args.provider
-    if provider is None:
-        provider = images.configured_image_providers(cfg)[0] if images.configured_image_providers(cfg) else "svg"
+    result: dict[str, Any] = {"checked": True, "file": str(path), "title": title, "requires_visual_review": True}
+    try:
+        provider = 'svg' if args.provider == 'svg' else images.pick_image_provider(cfg, args.provider)
+    except images.ImageError as exc:
+        print(json.dumps({'checked': False, 'error': str(exc), 'hint': 'Use available host tools or another permitted source; SVG fallback requires an explicit choice.'}))
+        return 1
     if provider == "svg":
         out = asset_dir / "cover.svg"
         out.write_text(svg_cover(pub, args.slug), encoding="utf-8")
-        cover = {"src": "cover.svg", "alt": f"Cover illustration for “{title}”", "width": COVER_W, "height": COVER_H, "generator": "svg-fallback"}
-        result["note"] = "SVG fallback cover (no image key or --provider svg)"
+        cover = {"src": "cover.svg", "alt": "", "decorative": True, "width": COVER_W, "height": COVER_H, "generator": "svg-fallback"}
+        mime = 'image/svg+xml'
+        result["note"] = "Explicit decorative SVG draft fallback; inspect before accepting as the final treatment."
     else:
-        prompt = house_prompt(pub, title, str(meta.get("dek") or ""))
+        prompt = house_prompt(pub, title, str(meta.get("dek") or ""), plan)
         try:
             gen = images.generate_image(cfg, prompt, provider=provider, model=args.model)
         except images.ImageError as exc:
@@ -138,11 +147,16 @@ def main() -> int:
         out = asset_dir / f"cover.{ext}"
         out.write_bytes(gen["bytes"])
         dims = publication.image_dimensions(out) or (None, None)
-        cover = {"src": out.name, "alt": f"Cover illustration for “{title}”", "width": dims[0], "height": dims[1],
+        mime = gen['mime']
+        cover = {"src": out.name, "width": dims[0], "height": dims[1],
                  "generator": f"{gen['provider']}/{gen['model']}"}
-        result["prompt"] = prompt
+        result['note'] = 'Inspect the actual output, then write alt/decorative, caption and social metadata; crop to the visual plan.'
     meta["cover"] = cover
     meta["cover_generated_at"] = pubstate.now_iso()
+    meta.setdefault('image_assets', {})[out.name] = {
+        'source_type': 'generated', 'generator': cover['generator'], 'created_at': meta['cover_generated_at'],
+        'width': cover['width'], 'height': cover['height'], 'mime': mime,
+    }
     publication.write_post(path, meta, body)
     result["cover"] = cover
     print(json.dumps(result, indent=2, ensure_ascii=False))

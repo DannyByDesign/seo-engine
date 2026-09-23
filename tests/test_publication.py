@@ -97,6 +97,55 @@ def _ld(html: str) -> list:
     return [json.loads(m) for m in re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)]
 
 
+def test_image_placements_preserve_accessibility_rights_and_social_variants(tmp_path):
+    from bs4 import BeautifulSoup
+    root = _make_pub(tmp_path)
+    path = root / 'posts/linguistic-markers.md'
+    meta, body = pubmod.read_post(path)
+    meta['image_assets'] = {'cover.png': {
+        'source_type': 'screenshot', 'creator': {'type': 'Organization', 'name': 'Actual product team'},
+        'credit_text': 'Product team', 'license_url': 'https://publisher.test/image-license',
+        'copyright_notice': 'Copyright Product team', 'mime': 'image/png',
+    }, 'social.svg': {'mime': 'image/svg+xml'}}
+    meta['cover'] = {'src': 'cover.png', 'alt': '', 'decorative': True, 'caption': 'Actual caption <safe>',
+                     'variants': [{'src': 'small.svg', 'width': 640}, {'src': 'cover.png', 'width': 1462}],
+                     'sizes': '(max-width: 700px) 100vw, 704px',
+                     'social': {'src': 'social.svg', 'alt': 'Product settings panel'}}
+    assets = root / 'assets/linguistic-markers'
+    (assets / 'small.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"/>')
+    (assets / 'social.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"/>')
+    pubmod.write_post(path, meta, body + '\n\n![](small.svg)\n')
+    pub = pubmod.load_publication(root)
+    manifest = pubmod.build_site(pub)
+    html = (Path(manifest['out_dir']) / 'posts/linguistic-markers/index.html').read_text()
+    soup = BeautifulSoup(html, 'lxml')
+    hero = soup.select_one('figure.cover img')
+    assert hero['alt'] == '' and hero['width'] == '1462'
+    assert hero['fetchpriority'] == 'high' and not hero.has_attr('loading')
+    assert hero['srcset'] == '/assets/linguistic-markers/small.svg 640w, /assets/linguistic-markers/cover.png 1462w'
+    assert hero['sizes'] == '(max-width: 700px) 100vw, 704px'
+    assert 'Actual caption <safe>' in soup.select_one('figure.cover figcaption').get_text()
+    assert not soup.select_one('figure.cover figcaption safe')
+    assert soup.select_one('meta[property="og:image"]')['content'].endswith('/social.svg')
+    assert soup.select_one('meta[property="og:image:width"]')['content'] == '1200'
+    assert soup.select_one('meta[name="twitter:image:alt"]')['content'] == 'Product settings panel'
+    image = _ld(html)[1]['image'][0]
+    assert image['caption'] == 'Actual caption <safe>' and image['contentUrl'].endswith('/cover.png')
+    assert image['creator'] == {'@type': 'Organization', 'name': 'Actual product team'}
+    assert image['license'] == 'https://publisher.test/image-license' and image['creditText'] == 'Product team'
+    assert image['copyrightNotice'] == 'Copyright Product team' and image['encodingFormat'] == 'image/png'
+    home = BeautifulSoup((Path(manifest['out_dir']) / 'index.html').read_text(), 'lxml')
+    for img in home.select('.card img[alt=""]'):
+        assert img.parent.get('aria-label')
+    post = next(p for p in pub.posts if p.slug == 'linguistic-markers')
+    assert not any('image without alt' in warning for warning in post.warnings)
+    # No invented caption or headline-derived alt when a legacy cover has no description.
+    post.meta['cover'] = {'src': 'cover.png'}
+    cover = pubmod.cover_of(pub, post, assets)
+    assert cover['alt'] == '' and any('needs reviewed alt' in w for w in post.warnings)
+    assert 'caption' not in pubmod.post_ld(pub, post, cover)['image'][0]
+
+
 def test_load_and_build_reproduces_anatomy(tmp_path):
     root = _make_pub(tmp_path)
     pub = pubmod.load_publication(root)

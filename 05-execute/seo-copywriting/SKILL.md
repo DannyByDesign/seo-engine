@@ -23,6 +23,11 @@ Use the same article/page-specific approved contribution as the publication writ
 separate from the human corpus: interviews supply permitted facts and experience; examples
 supply writing techniques. Minor copy corrections and technical repairs do not start interviews.
 
+Apply the [website image workflow](../../shared/seo-references/images.md) to this page too:
+read `.seo-engine/visuals.md`, plan relevant images alongside the copy, obtain and inspect the
+assets, set metadata for each placement, and review the rendered desktop/mobile page. Every
+article gets a deliberate cover; other page types use images where they help the reader.
+
 
 The corpus contains the actual human writing in local Markdown, with only title/date,
 genre, tone and integrity metadata. It needs no website fetch or JSON catalog. The examples

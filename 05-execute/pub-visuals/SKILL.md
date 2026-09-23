@@ -1,108 +1,111 @@
 ---
 name: pub-visuals
-description: Produces a publication article's imagery in the measured house style — deterministic SVG (and PNG when a converter exists) diagrams from the JSON specs pub-enhance writes (stat callout, stepped flow, funnel, comparison, timeline; kicker title, one big idea, Source footer, theme colours), and a 16:9 cover per headline via OpenAI or Gemini image models with a theme-derived SVG fallback that needs no key. Invoke after pub-enhance, before publishing. Not for writing the diagram briefs (pub-research does) or placing them (pub-enhance does).
+description: Plan, source, generate and review publication imagery under the website image workflow. Reuse approved assets, capture real product screenshots, source licensed imagery, or generate on-brand illustrations; render evidence-based diagrams and set asset and placement metadata. Use after outlining and before publication review. Other website pages follow the same shared image workflow in their existing stack.
 ---
 
 # pub-visuals
 
-The vendor's "Canvas": covers and diagrams that are "mathematically consistent with the brand
-guidelines". Here that means every diagram is drawn from a spec with the publication's theme
-tokens, and every cover is minted from one house prompt per publication — so a site's imagery
-reads as one hand across a hundred posts (`publication-playbook.md` §3).
+Read the [website image workflow](../../shared/seo-references/images.md) and the target's
+`.seo-engine/visuals.md`. This skill obtains the images planned with the outline, implements
+their metadata, and inspects the result. Generation is one sourcing option.
 
 ## When to use this skill
 
-- After `pub-enhance` has written `assets/<slug>/diagram-N.json` specs — render them.
-- Before publishing any article: mint its cover (`gen_cover.py`); rerun with `--force` after a
-  title change.
-- Re-theming a publication: re-render every article's diagrams and covers.
-- **Not** for deciding what a diagram shows (`pub-research` proposes, `pub-enhance` places).
+Use when planning or producing publication imagery, and again before final visual review.
+For host-written website pages, use the shared image workflow with their existing components.
 
 ## What it checks / does
 
-### 1. `scripts/render_diagram.py`
+1. Read article `visual_plan` and approved disclosure boundaries. Inspect existing assets first.
+   Choose a factual image for product/evidence coverage or a relevant on-brand illustration.
+2. Obtain each asset using the available native tools or configured APIs within existing scope.
+   Follow the shared sourcing rules. Never synthesize evidence or a real product screenshot.
+3. Inspect the actual image, record `image_assets` facts and placement-specific `cover`/inline
+   metadata, and create suitable responsive/social variants using the site's existing tooling.
+4. Render desktop/mobile previews and inspect the social crop. Record `visual_review` with the
+   editorial review. Fix artifacts, weak relevance, missing attribution and bad crops before release.
 
-Reads specs (`--slug` renders all of an article's, `--spec` explicit paths) and writes
-`diagram-N.svg` at 2910×1350: small-caps kicker title top-left, a type-specific body, and a
-`Source:` footer, coloured from the theme. Types: `stat_callout` (two big numbers with a rising
-area between them, or one number), `stepped_flow` (numbered boxes with arrows), `funnel`
-(narrowing bars), `comparison` (horizontal bars, max highlighted), `timeline`. `--png` also
-writes a PNG when `cairosvg` (pip) or `rsvg-convert` (librsvg) is available and says which.
+A generated image prompt is not proof of what its output depicts. Write informative alt only
+after viewing it; decorative images use empty alt. Logos, UI text and faces are legitimate in
+appropriate factual assets; don't apply illustration prompt restrictions to screenshots/photos.
 
-### 2. `scripts/gen_cover.py`
+## Scripted helpers
 
-Builds the house prompt (site.yml `cover_style`, else theme palette) around the headline and
-dek, generates a 16:9 image with the configured provider (`IMAGE_PROVIDER`, else OpenAI, else
-Gemini; models overridable via `IMAGE_MODEL_OPENAI` / `IMAGE_MODEL_GEMINI`), writes
-`assets/<slug>/cover.<ext>`, and records `cover: {src, alt, width, height, generator}` in the
-frontmatter with the measured alt convention. With no key or `--provider svg`, draws a seeded
-abstract SVG cover from the theme so nothing blocks.
+### `scripts/gen_cover.py`
+
+Handles `visual_plan.cover.kind: generated` using the plan's `subject`, website-derived
+`site.yml` `cover_style` and theme. Other kinds must be obtained by the host and assigned to
+`cover.src`. Existing covers are preserved unless `--force` is explicit. Native image tools
+can generate an asset directly; write its metadata instead of calling the API helper again.
+
+Provider selection honors `--provider`, then `IMAGE_PROVIDER`, then available OpenAI/Gemini
+credentials. Models use `IMAGE_MODEL_OPENAI` / `IMAGE_MODEL_GEMINI`. No configured provider
+means a blocker; `--provider svg` explicitly requests a decorative draft fallback. The helper
+records source type, generator, timestamp, measured dimensions and MIME in `image_assets`.
+It does not claim visual review or invent image descriptions. Inspect the output, finish alt,
+caption and social placement metadata, and crop/resize with existing tools to the planned ratio.
+Actual dimensions are recorded; a requested ratio is not assumed to match model output.
+
+### `scripts/render_diagram.py`
+
+Renders `pub-enhance` JSON specs as SVG diagrams (stat callout, stepped flow, funnel,
+comparison, timeline), using theme colours and a source footer. `--png` also exports raster
+when `cairosvg` or `rsvg-convert` is available. Check every figure and label against evidence,
+then inspect the drawing. Provide meaningful alt and a nearby textual explanation/table for
+complex data. Record each diagram in `image_assets`; do not treat a rendered spec as verified data.
 
 ## Running it
 
-> Run from the target repo root. `${SKILL_DIR}` is this skill's directory.
+Run from the website root; `SKILL_DIR` is this canonical skill directory.
 
 ```bash
-python3 "${SKILL_DIR}/scripts/render_diagram.py" --publication llm-billboard --slug advertiser-readiness --png
-python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness
-python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider gemini --force
-python3 "${SKILL_DIR}/scripts/gen_cover.py" --publication llm-billboard --slug advertiser-readiness --provider svg
+python3 "$SKILL_DIR/scripts/render_diagram.py" --publication PUBLICATION --slug ARTICLE --png
+python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE
+python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE --provider gemini --force
+python3 "$SKILL_DIR/scripts/gen_cover.py" --publication PUBLICATION --slug ARTICLE --provider svg
 ```
 
 Flags: `render_diagram.py` `--publication`, `--slug`, `--spec` (repeatable), `--png`,
 `--publications-dir`; `gen_cover.py` `--publication`, `--slug`, `--posts`, `--provider`,
-`--model`, `--force`, `--publications-dir`.
+`--model`, `--force`, `--publications-dir`. Published posts cannot be changed directly;
+work in an isolated refresh draft.
 
 ## Expected output
 
-`render_diagram.py`: `rendered[] = {spec, svg, type, width, height, png?, png_note?}`.
-`gen_cover.py`: `cover = {src, alt, width, height, generator}` plus the `prompt` used (or a
-`note` that the SVG fallback was drawn). Exit 1 when a provider was requested but failed
-(hint: `--provider svg`).
+`render_diagram.py` returns `rendered` paths, type and dimensions, plus PNG status when requested.
+`gen_cover.py` returns `cover`, file and title, or an explicit blocker with `checked: false`.
 
 ## State files
 
-| File | Role | Written by | Read by |
-|---|---|---|---|
-| `publications/<slug>/assets/<article>/diagram-N.svg` (+ `.png`) | rendered diagrams referenced by the markdown | `render_diagram.py` | `pub-site` builder |
-| `publications/<slug>/assets/<article>/cover.<ext>` | cover image | `gen_cover.py` | `pub-site` builder (OG image, hero, cards) |
-| article frontmatter `cover` | src/alt/dimensions/generator | `gen_cover.py` | `pub-site` builder |
+Assets live in the draft's `assets/<article>/` directory (refreshes use their isolated asset
+version). `cover` stores placement metadata; `image_assets` stores shareable asset facts.
+See the [metadata example](../../shared/seo-references/images.md#4-keep-asset-facts-separate-from-placement-metadata).
+The builder renders cover captions/credits, Article image metadata and OG/Twitter variants.
 
 ## How to interpret results
 
-- **A diagram whose numbers you cannot find in the article's sources is a defect upstream**:
-  `pub-enhance`'s verifier checks prose, not images — check `data` in the spec against the
-  paper trail before publishing a stat callout.
-- **SVG-only output is fine for the web and for crawlers**; add a PNG converter only if you
-  need raster for social cards or a CMS that rejects SVG.
-- **Cover `generator: svg-fallback`** means no image model ran; the site still ships, and the
-  cover can be regenerated later with `--force` once a key exists.
-- The cover prompt forbids text and faces on purpose: text in generated images is unreliable,
-  and faces invite a persona problem the measured sites avoid.
+The helper reports `requires_visual_review`; success means a file was produced, not that it
+is relevant, correctly cropped, licensed for the intended use, or ready to publish.
 
 ## Safe to auto-apply vs. human review
 
-- **Safe without asking:** rendering diagrams, minting covers for drafts, the SVG fallback.
-- **Ask first:** regenerating covers across a whole published publication (spends image
-  credits and changes live OG images), changing `cover_style` in `site.yml`.
+Prepare draft assets and metadata within existing permissions and spending scope. Ask only for
+missing access, source rights, brand decisions or additional spending. Publication and changes
+to live assets remain subject to the website's existing approval workflow.
 
 ## Guardrails
 
-- Diagrams render only what the spec contains — no numbers are invented in this skill.
-- Covers carry no text, logos or faces; alt text always names the article.
-- One house prompt per publication; per-article prompt tweaks live in `site.yml`, not in
-  ad-hoc flags, so consistency survives many runs.
+Use the planned source type; never generate factual evidence. Preserve existing assets on
+refresh, redact private data, and inspect final pixels and placement before recording review.
 
 ## References
 
-- [publication-playbook.md](../../shared/seo-references/publication-playbook.md) §2 (images with
-  dimensions, self-hosted), §3 (diagram and cover conventions), §8 (the vendor's Canvas).
-- [seo-playbook.md](../../shared/seo-references/seo-playbook.md) §3 (image dimensions and lazy loading
-  behind the CLS numbers the builder protects).
-- [api-reference.md](../../shared/seo-references/api-reference.md) — image providers.
+The [shared image workflow](../../shared/seo-references/images.md) defines sourcing and metadata.
+[API setup](../../shared/seo-references/api-reference.md) documents scripted providers.
 
 ## Graceful degradation
 
-`render_diagram.py` needs nothing. `gen_cover.py` uses OpenAI or Gemini when a key exists and
-otherwise falls back to a theme-derived SVG cover, saying so in `note`; a failing provider
-exits 1 with the fallback hint rather than writing a broken file.
+If tooling/access is missing, report the exact blocker and use another permitted source.
+A deliberate SVG fallback is a draft placeholder until reviewed and accepted as the final
+brand treatment. Use an appropriate raster social variant where required. No automatic
+image-provider switch should conceal a missing selected key or spend on another account.

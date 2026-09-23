@@ -76,6 +76,11 @@ hypotheses. Update it as work teaches us something useful; don't append conversa
 Raw secrets/private interview details do not belong here. Onboarding establishes working
 context, not permission to quote the operator or publish particular claims.
 
+Establish the [website visual brief](../../shared/seo-references/images.md#1-establish-the-websites-visual-brief)
+in `.seo-engine/visuals.md`: inspect existing assets and components, save brand references,
+sourcing permissions and image conventions, and use the native question tool only for gaps.
+Resume this brief on later sessions; don't impose the publication's default illustration style.
+
 Run `detect_stack.py` for a code repo (`--dir` can inspect a subdirectory). Merge evidenced
 settings into `.seo-engine/config.yml`, preserving unrelated settings, topics and locales.
 Resolve the production URL from user scope/config/live canonical evidence, preserving path
@@ -212,6 +217,7 @@ no network calls. Credential output contains the variable name, never its value.
 - `.seo-engine/config.yml`: site identity and technical settings; shared by the skills.
 - `.seo-engine/onboarding.json`: progress, goals, integration decisions, completion and next action.
 - `.seo-engine/knowledge.md`: current brand brief, read by the host before strategy/content work.
+- `.seo-engine/visuals.md`: website-specific visual references, assets, sourcing and image conventions.
 - `.env`: workspace-local credentials; no fallback to another engine's keys.
 
 All are private/ignored by default. They persist across sessions on this machine, but a Git

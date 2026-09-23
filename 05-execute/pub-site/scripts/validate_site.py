@@ -249,7 +249,7 @@ def check_post(page: dict[str, Any], soup: BeautifulSoup, nodes: list[dict[str, 
         ctx.setdefault("external_hosts", set()).add(host)
 
     for img in article.find_all("img"):
-        if not (img.get("alt") or "").strip():
+        if not img.has_attr('alt'):
             findings.error(name, "img-alt", f"image without alt text: {img.get('src', '')[:80]}")
         if not (img.get("width") and img.get("height")):
             findings.warn(name, "img-dimensions", f"image without width/height: {img.get('src', '')[:80]}")

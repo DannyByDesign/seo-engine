@@ -67,7 +67,7 @@ def gate(meta: dict[str, Any], body: str, strategy: dict[str, Any], *, min_words
     if not meta.get("enhanced_at"):
         problems.append("not enhanced (run pub-enhance)")
     if not (isinstance(meta.get("cover"), dict) and meta["cover"].get("src")):
-        problems.append("no cover (run pub-visuals gen_cover.py)")
+        problems.append("no cover (follow pub-visuals to source the planned image or generate an illustration)")
     words = article.word_count(body)
     min_words, min_sources = max(0, min_words), max(0, min_sources)
     if words < min_words:

@@ -45,6 +45,10 @@ timestamped responses/failures and consume a durable daily call allowance before
 Set `growth.research.daily_call_limit` in config (default twenty logical calls); account dollar
 limits are separate. `--allow-paid` uses existing authorization, not a new per-call question.
 
+For content/page work, include images in the brief and final review under the shared
+[image workflow](../../shared/seo-references/images.md). Read this website's `.seo-engine/visuals.md`;
+use actual product assets where relevant and verify placement metadata in the website's own stack.
+
 Select one actionable opportunity from `seo-maintain`, `seo-keyword-research`, or explicit
 customer questions and current search results when GSC is empty. Record audience, demand
 source, business relevance, target URL, source files, original contribution and expected

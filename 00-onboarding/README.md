@@ -15,6 +15,8 @@ or tell your AI agent: **“Help me get started.”**
 
 The agent establishes the website, goals and constraints, saves a brand brief, configures
 selected integrations, and hands off the first useful task to the ongoing workflow.
+It also inspects existing imagery and saves website-specific visual references, sourcing
+preferences and image conventions in `.seo-engine/visuals.md`.
 It resumes incomplete setup and reuses completed onboarding on later sessions.
 
 For selected free APIs, the agent uses its available browser/computer-use tools to obtain
