@@ -17,7 +17,6 @@ strategy when the host agent can do the work itself.
 The six phase directories physically own the implementation. Each phase contains its actual
 skill folders and scripts; `skills/` contains compatibility symlinks for existing callers.
 `scripts/lib/` contains shared implementation rather than a second competing workflow.
-Historical audits/vendor research live in `research/` and do not override current instructions.
 
 Read only the next needed stage plus the [artifact contract](contract.md). The first invocation
 should inspect the target and write its understanding, not ask the owner to supply keywords,

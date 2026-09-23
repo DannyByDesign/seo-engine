@@ -40,13 +40,7 @@ and disclosed ownership. Neither clean audits nor generated articles establish t
 
 **Effectiveness is not yet demonstrated.** Tests cover software behavior, including static
 and dynamic local websites. No production growth pilot or authenticated analytics result has
-been supplied for this evaluation. See the [capability and evidence ledger](research/capability-evidence.md).
-The [workflow evaluation](research/autonomous-workflow-rounds.md) reached **9.147/10**
-in three rounds under the agreed capability-focused rubric. Its independent behavioral evidence
-and remaining limits are retained. That score predates the physical directory migration and
-LanguageTool integration; their regression checks do not constitute a new effectiveness grade.
-The earlier [ten-round evaluation](research/final-evaluation-2026-09-09.md)
-used a different rubric and remains historical.
+been supplied.
 
 ## What makes this different from "an SEO checklist"
 
@@ -197,8 +191,6 @@ Lives in [`shared/seo-references/`](shared/seo-references/SKILL.md) (installed a
 task skills): `seo-playbook.md`, `geo-playbook.md`, `publication-playbook.md` (the measured
 publication model the `pub-*` skills reproduce), `red-flags.md` (the veto layer),
 `api-reference.md`, and `common-setup.md` (paths, config, snapshot and publication contracts).
-The research behind the publication playbook — a teardown of a live vendor's phantom
-publications and its open-source monitor — is in [`research/`](research/).
 
 ## Testing
 
@@ -235,7 +227,7 @@ shared Python library (`scripts/lib/`) every skill script builds on.
 
 ## Evidence and limits
 
-This toolkit has not yet demonstrated traffic lift on a live pilot. Local builds and API citation probes do not establish organic visits. Use the existing website first; optional publications require transparent attribution, ownership disclosure and review of final claims. See [evaluation](research/product-evaluation-2026-09-09.md) and [improvement rounds](research/improvement-rounds.md).
+This toolkit has not yet demonstrated traffic lift on a live pilot. Local builds and API citation probes do not establish organic visits. Use the existing website first; optional publications require transparent attribution, ownership disclosure and review of final claims.
 
 Start first-party growth work with [`seo-growth`](04-choose/seo-growth/SKILL.md). It connects website improvements to real analytics exports; the GA4 adapter needs a numeric `GA4_PROPERTY_ID` and service-account Viewer access.
 

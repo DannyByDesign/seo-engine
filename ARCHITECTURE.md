@@ -88,7 +88,6 @@ seo-engine/
 ├── tests/               # regression and integration tests
 ├── workflow/            # workflow index/contract and old-guide aliases
 ├── skills/              # compatibility symlinks only
-├── research/            # research, evaluations and preserved evidence
 ├── install.sh           # installs phase-owned skills into host discovery paths
 └── .env.example         # integration configuration
 ```

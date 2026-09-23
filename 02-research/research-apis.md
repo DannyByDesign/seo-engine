@@ -75,8 +75,3 @@ collector call in the target to verify its credentials and inspect the saved res
 recurring research. Missing keys produce a specific blocker; use another configured source.
 Firecrawl currently documents anonymous search/scrape; the collector can attempt it without
 a key. An anonymous quota/denial is a recorded failure, never an assumption of unlimited free access.
-
-A live anonymous search smoke test succeeded on 2026-09-09 with no credential and a one-result
-public documentation query. The actual response is retained in
-`research/vendor-vetting/firecrawl-anonymous-smoke.json`. This verifies that endpoint's access
-from this terminal at that time; it does not verify paid DataForSEO/Brave credentials or traffic outcomes.
