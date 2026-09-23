@@ -313,9 +313,9 @@ def main() -> int:
     publication.write_post(path, meta, md)
     target = int(template.get("target_words") or 0)
     notes = []
-    if words < target * 0.75:
+    if target and words < target * 0.75:
         notes.append(f"short: {words} words vs target {target} — consider --candidates 3 or a richer outline")
-    if words > target * 1.35:
+    if target and words > target * 1.35:
         notes.append(f"long: {words} words vs target {target}")
     print(json.dumps({"checked": True, "draft": str(path), "title": meta.get("title"), "kernel": kernel_name, "words": words,
                       "sections": len(sections), "numeric_anchors": anchored, "mention": meta["mention"], "judge": judge_log,

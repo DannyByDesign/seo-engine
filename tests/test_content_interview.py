@@ -85,6 +85,7 @@ def test_firsthand_evidence_survives_writer_and_review_without_public_url(tmp_pa
     pubstate.save_json(Path(ref['path']), record)
     out = writing_tests._run(writing_tests.write_mod, cfg, ['--publication', root.name, '--slug', 'guide', '--candidates', '1'], monkeypatch, capsys)
     assert out['_exit'] == 0, out
+    assert not any('vs target 0' in note for note in out['notes'])
     meta, body = publication.read_post(root / 'drafts/guide.md')
     assert len(meta['writing_example_ids']) == 6
     assert 'FROZEN HUMAN WRITING REFERENCES' in prompts[0]
