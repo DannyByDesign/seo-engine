@@ -37,7 +37,8 @@ content interventions bind the current `position_digest`. Technical repairs can 
 diagnostics while external research is unavailable.
 
 Use `research_market.py` for terminal API calls: DataForSEO Google SERPs, volumes, keyword
-ideas, domain competitors and ranked keywords; Brave independent web search; Firecrawl
+ideas, domain competitors and ranked keywords; Ahrefs keyword metrics, competitors and ranked
+keywords; Brave independent web search; Firecrawl
 search and rendered scraping. Read [API selection and setup](../../02-research/research-apis.md).
 The agent derives query/target inputs from understanding and previous results. Calls preserve
 timestamped responses/failures and consume a durable daily call allowance before execution.

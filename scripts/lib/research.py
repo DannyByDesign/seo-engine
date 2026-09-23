@@ -8,9 +8,10 @@ from datetime import datetime, timezone
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-from . import brave, dataforseo, firecrawl, http_util, pubstate
+from . import ahrefs, brave, dataforseo, firecrawl, http_util, pubstate
 
 OPERATIONS = {'dataforseo': ('serp', 'volume', 'ideas', 'competitors', 'ranked-keywords'),
+              'ahrefs': ('volume', 'competitors', 'ranked-keywords'),
               'brave': ('search',), 'firecrawl': ('search', 'scrape')}
 
 
@@ -25,6 +26,13 @@ def collect(cfg, provider, operation, *, query=None, target=None, location=2840,
         raise ValueError('this operation needs an agent-derived query')
     if operation in ('competitors', 'ranked-keywords') and (not isinstance(target, str) or not re.fullmatch(r'[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', target)):
         raise ValueError('domain research needs a bare target domain')
+    if provider == 'ahrefs':
+        if not isinstance(country, str) or not re.fullmatch(r'[a-zA-Z]{2}', country):
+            raise ValueError('Ahrefs needs a two-letter country code')
+        if operation == 'volume':
+            keywords = [part.strip() for part in query.split(',')]
+            if not all(keywords) or len(keywords) > limit:
+                raise ValueError('Ahrefs volume needs 1..limit comma-separated keywords')
     if operation == 'scrape':
         url = urlsplit(target or '')
         if url.scheme not in ('https', 'http') or not url.hostname or url.username or url.password:
@@ -70,6 +78,21 @@ def collect(cfg, provider, operation, *, query=None, target=None, location=2840,
                 raw = firecrawl.scrape(cfg, target, formats=['markdown'])
             result['complete'] = raw.get('success') is True and 'data' in raw
             result['anonymous'] = not cfg.has('FIRECRAWL_API_KEY')
+        elif provider == 'ahrefs':
+            result['applied_locale'] = {'country': country.lower()}
+            result['unsupported_locale'] = ['location_code', 'language', 'search_location']
+            paths = {'volume': '/keywords-explorer/overview', 'competitors': '/site-explorer/organic-competitors',
+                     'ranked-keywords': '/site-explorer/organic-keywords'}
+            result['source_url'] = ahrefs.BASE_URL + paths[operation]
+            if operation == 'volume':
+                raw = ahrefs.keywords_overview(cfg, keywords, country=country.lower(), limit=limit)
+            else:
+                result['snapshot_date'] = now.date().isoformat()
+                fetch = ahrefs.organic_competitors if operation == 'competitors' else ahrefs.organic_keywords
+                raw = fetch(cfg, target, country=country.lower(), limit=limit, date=result['snapshot_date'])
+            rows = 'competitors' if operation == 'competitors' else 'keywords'
+            result['complete'] = isinstance(raw, dict) and not raw.get('error') and isinstance(raw.get(rows), list)
+            result['scope'] = 'Ahrefs country-level keyword/ranking estimates; bounded rows, not actual website visits or a live Google SERP'
         else:
             result['applied_locale'] = {'location_code': location}
             result['unsupported_locale'] = ['country', 'search_location']

@@ -12,7 +12,8 @@ Inspect integration availability. Use GSC when present, but an empty property do
 research. Use `research_market.py` with an agent-derived query/target and the provider route
 in [Terminal research APIs](research-apis.md). Its durable receipts and daily call reservations
 support unattended research within existing authority. Firecrawl search/scrape, Brave search,
-DataForSEO keyword ideas/SERPs/domain research, SociaVault, existing clients, or the host's web tools
+DataForSEO keyword ideas/SERPs/domain research, Ahrefs keyword metrics/domain research,
+SociaVault, existing clients, or the host's web tools
 can supply complementary evidence. These are alternatives; do not require every provider.
 Record source URL, provider/query, geography/language, observed date, relevant exact excerpt,
 and a local snapshot of the actual response. Redact credentials and unrelated private data.

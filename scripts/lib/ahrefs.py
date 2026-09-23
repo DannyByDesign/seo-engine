@@ -5,9 +5,10 @@ Auth: Bearer token. Base https://api.ahrefs.com/v3/. Each endpoint takes a
 60 req/min. See the api-reference in skills/seo-references/ for plan gating
 and the cost model.
 
-Ahrefs v3 point-in-time endpoints REQUIRE a `date` (and organic endpoints a
+Ahrefs v3 Site Explorer point-in-time endpoints REQUIRE a `date` (and organic endpoints a
 `country`) — omitting them is a guaranteed 400. Snapshot-style endpoints
 (all-backlinks, broken-backlinks) query the live index and take no date.
+Keywords Explorer overview returns current metrics and takes no snapshot date.
 """
 
 from __future__ import annotations
@@ -95,16 +96,18 @@ def organic_competitors(
     return _get(cfg, "/site-explorer/organic-competitors", {
         "target": target, "limit": limit, "country": country,
         "date": date or _today(),
-        "select": "competitor_domain,common_keywords,share",
+        "select": "competitor_domain,keywords_common,share",
     })
 
 
 def keywords_overview(
     cfg: Config, keywords: list[str], country: str = "us",
-    date: Optional[str] = None,
+    limit: Optional[int] = None,
 ) -> dict[str, Any]:
-    return _get(cfg, "/keywords-explorer/overview", {
+    params = {
         "keywords": ",".join(keywords), "country": country,
-        "date": date or _today(),
-        "select": "keyword,volume,keyword_difficulty,cpc",
-    })
+        "select": "keyword,volume,difficulty,cpc",
+    }
+    if limit is not None:
+        params['limit'] = limit
+    return _get(cfg, "/keywords-explorer/overview", params)

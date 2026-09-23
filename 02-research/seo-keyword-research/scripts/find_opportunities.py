@@ -270,7 +270,7 @@ def _attach_ahrefs_context(cfg: Config, queries: list[str]) -> tuple[dict[str, d
                 if kw:
                     context[kw] = {
                         "volume": item.get("volume"),
-                        "keyword_difficulty": item.get("keyword_difficulty"),
+                        "keyword_difficulty": item.get("difficulty"),
                         "cpc": item.get("cpc"),
                         "source": "ahrefs",
                     }
