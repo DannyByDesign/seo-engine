@@ -7,9 +7,9 @@ measures results. Each website keeps its own brand brief and research between se
 Works with any AI coding agent that can read files and run commands. You stay in your website
 repo—no separate SEO project to clone or open.
 
-## Install
+## Install or update
 
-**Copy this prompt into your AI agent while it has your website repo open:**
+**First install — copy this prompt into your AI agent with your website repo open:**
 
 ```text
 Install SEO Engine into the website Git repository you are currently working in.
@@ -18,6 +18,19 @@ and follow the direct-install instructions. Preserve this repo's existing files,
 credentials and agent instructions. Then read the installed skill at
 .seo-engine/engine/00-onboarding/seo-setup/SKILL.md and guide me through onboarding,
 asking about my goals and configuring only the integrations I need.
+```
+
+**Already installed — copy this update prompt into the same website's agent:**
+
+```text
+Update SEO Engine in the website repository you are currently working in.
+Read https://raw.githubusercontent.com/DannyByDesign/seo-engine/main/00-onboarding/install.md.
+Detect our existing installation and update it using the same method and scope:
+the direct installer's --update option or the host's native plugin manager.
+Preserve website files, credentials, agent instructions and all site knowledge/state.
+Refresh the website's SEO Engine Python dependencies and check migration instructions.
+Reuse our saved onboarding; do not restart it or create a second installation.
+Verify the installed version/revision and tell me if a new agent session is needed.
 ```
 
 ### Prefer manual installation?
@@ -66,7 +79,7 @@ agent instructions, preserving existing content. [Install details and updates](0
 
 ## Get started
 
-The prompt above starts onboarding for you. If you installed manually, say:
+The install prompt starts onboarding for you. If you installed manually, say:
 
 > Use seo-setup to set up SEO Engine for this website.
 
