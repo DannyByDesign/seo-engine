@@ -69,6 +69,12 @@ INTEGRATION_DETAILS = {
         "unlocks": "Actual Google organic and ChatGPT referral sessions/key events for intervention evaluation.",
         "cost": "API quota; requires a configured analytics property",
     },
+    "posthog": {
+        "label": "PostHog web/product analytics",
+        "how": "Set POSTHOG_PERSONAL_API_KEY with query:read restricted to this project, POSTHOG_PROJECT_ID and POSTHOG_HOST (your US/EU/self-hosted private API origin). See https://posthog.com/docs/api/personal-api-keys. The public capture key cannot read analytics.",
+        "unlocks": "Host-assisted traffic, referral and conversion analysis using existing captured events or exports. Setup/presence detection only; no built-in PostHog report collector.",
+        "cost": "account plan/usage and API limits; inspect current account terms",
+    },
     "google_search_console": {
         "label": "Google Search Console",
         "how": "Set ONE of the two env vars (not both required). "

@@ -93,10 +93,15 @@ it costs money. Do not present every missing key as a task or require a paid ser
 
 | Goal | Start with | Add only when needed |
 |---|---|---|
-| Improve an existing site | Source access, live crawl; GSC if already available | PSI/CrUX, GA4 for outcomes, IndexNow for submission |
+| Improve an existing site | Source access, live crawl; GSC if already available | PSI/CrUX, GA4 or PostHog for outcomes, IndexNow for submission |
 | Research and write | Host browsing + human corpus + topic interview | DataForSEO for Google SERPs/volume, Ahrefs or Semrush for additional demand/backlinks; Brave/Firecrawl for discovery/rendering; LanguageTool for proofreading |
-| Measure growth | Existing GSC/GA4 or attributable exports | A chosen AI-citation API for visibility questions |
+| Measure growth | Existing GSC plus GA4/PostHog or attributable exports | A chosen AI-citation API for visibility questions |
 | Run scripted publication generation | Select one supported text API and explicit LLM_PROVIDER | Image API; social/editorial sources only if useful |
+
+For PostHog, follow [API setup](../../shared/seo-references/api-reference.md#posthog).
+Use host-assisted queries or attributable exports; the automated traffic collector does not
+support PostHog yet. Reuse existing instrumentation and establish the conversion events with
+the operator; credentials alone do not authorize adding tracking or changing event capture.
 
 Host-agent writing uses the current agent, whatever its model; it needs no Anthropic key or
 extra LLM subscription. Scripted text generation currently supports OpenAI, Anthropic and

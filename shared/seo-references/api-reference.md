@@ -120,6 +120,30 @@ auth/body shape, adds `collectionPeriodCount`; data refreshes weekly in rolling 
      and validates required-property presence + type-correctness locally before anything is
      pushed live.
 
+## PostHog
+
+**Use:** existing web/product analytics for landing pages, referrers and agreed conversion
+events. This complements Search Console; it does not supply Google impressions or rankings.
+**Engine support:** credential setup and presence detection, plus host-assisted queries or
+attributable exports. No built-in PostHog traffic-report collector exists yet.
+
+**Auth:** `POSTHOG_PERSONAL_API_KEY` sent as `Authorization: Bearer …`, with `query:read`
+and access restricted to the intended project. Use a personal key for the operator's local
+workspace; the public project/capture token is not a read credential. See
+[personal API keys](https://posthog.com/docs/api/personal-api-keys).
+
+**Routing:** set `POSTHOG_PROJECT_ID` to the numeric project ID and `POSTHOG_HOST` to the
+private API origin: `https://us.posthog.com`, `https://eu.posthog.com`, or the actual
+self-hosted origin. Match the account region; ingestion hosts (`*.i.posthog.com`) are for
+capture. See the [API overview](https://posthog.com/docs/api).
+
+**Query:** `POST /api/projects/{project_id}/query/` accepts analytics query nodes, including
+`HogQLQuery`. Scope queries to the website, date range and aggregate evidence needed; confirm
+the existing event/property definitions before interpreting conversions. Do not equate event
+counts with sessions or silently substitute PostHog figures for GA4 metrics. Preserve source,
+filters, timezone and conversion definitions with exports. Check current account/API limits
+before querying. See the [Query API](https://posthog.com/docs/api/query).
+
 ## Ahrefs API v3
 
 **Auth:** Bearer token — `Authorization: Bearer {API_KEY}` plus `Accept: application/json`. Keys

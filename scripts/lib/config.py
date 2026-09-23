@@ -34,6 +34,7 @@ except ImportError:
 INTEGRATION_ENV_VARS: dict[str, dict[str, list[str]]] = {
     "google_search_console": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"]},
     "google_analytics": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"], "all": ["GA4_PROPERTY_ID"]},
+    "posthog": {"all": ["POSTHOG_PERSONAL_API_KEY", "POSTHOG_PROJECT_ID", "POSTHOG_HOST"]},
     "pagespeed_insights": {"all": ["GOOGLE_PSI_API_KEY"]},
     "ahrefs": {"all": ["AHREFS_API_KEY"]},
     "dataforseo": {"all": ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"]},
