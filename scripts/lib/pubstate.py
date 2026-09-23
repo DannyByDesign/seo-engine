@@ -11,6 +11,8 @@ dedupe, internal-link candidates).
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 import re
 from collections import Counter
 from datetime import datetime, timezone
@@ -47,14 +49,24 @@ def load_yaml(path: Path, default: Any = None) -> Any:
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or (default if default is not None else {})
 
 
-def save_yaml(path: Path, data: Any) -> Path:
-    _need_yaml()
+def atomic_text(path: Path, text: str) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
-    tmp.replace(path)
+    fd, temporary = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            stream.write(text); stream.flush(); os.fsync(stream.fileno())
+        if path.exists():
+            os.chmod(temporary, path.stat().st_mode & 0o777)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary): os.unlink(temporary)
     return path
+
+
+def save_yaml(path: Path, data: Any) -> Path:
+    _need_yaml()
+    return atomic_text(path, yaml.safe_dump(data, sort_keys=False, allow_unicode=True))
 
 
 def load_json(path: Path, default: Any = None) -> Any:
@@ -67,12 +79,7 @@ def load_json(path: Path, default: Any = None) -> Any:
 
 
 def save_json(path: Path, data: Any) -> Path:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    tmp.replace(path)
-    return path
+    return atomic_text(path, json.dumps(data, indent=2, ensure_ascii=False))
 
 
 # ---------- publication-local files ----------

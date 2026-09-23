@@ -156,10 +156,31 @@ def check_otterly(cfg, site: str) -> str:
     return f"visibility response keys: {sorted(result)[:4]}"
 
 
+def check_ga4(cfg, site: str) -> str:
+    from datetime import date, timedelta
+    from scripts.lib import ga4
+    cfg.site['site_url'] = site
+    end = date.today() - timedelta(days=4)
+    result = ga4.export(cfg, (end-timedelta(days=13)).isoformat(), end.isoformat())
+    if not result['complete'] or result['sampled'] or result['thresholded']:
+        raise RuntimeError('GA4 response has incomplete or limited coverage; inspect export before analysis')
+    return f"{len(result['rows'])} attributed landing-page rows, timezone={result['timezone']}; authentication and API shape checked, not growth"
+
+
 #: name -> (required integration key or None-for-always, check fn)
+def check_languagetool(cfg, site):
+    from scripts.lib import languagetool
+    result = languagetool.check(cfg, 'This is an test.', format='text', language='en-US')
+    if not result['checked']: raise RuntimeError(result['error'])
+    if not result['match_count']: raise RuntimeError('Known grammar error produced no suggestions; inspect server rules')
+    return f"{result['match_count']} suggestions; report: {result['output']}"
+
+
 CHECKS: dict[str, tuple[Optional[str], Callable]] = {
+    "languagetool": ("languagetool", check_languagetool),
     "crawl": (None, check_crawl),
     "gsc": ("google_search_console", check_gsc),
+    "ga4": ("google_analytics", check_ga4),
     "psi": (None, check_psi),  # works keyless at shared quota
     "crux": ("pagespeed_insights", check_crux),
     "ahrefs": ("ahrefs", check_ahrefs),

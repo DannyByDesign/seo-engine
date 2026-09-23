@@ -31,7 +31,7 @@ perf_mod = _load(REPO / "skills/pub-monitor/scripts/report_performance.py")
 refresh_mod = _load(REPO / "skills/pub-monitor/scripts/refresh_triggers.py")
 mentions_mod = _load(REPO / "skills/geo-monitor/scripts/track_brand_mentions.py")
 
-from scripts.lib import publication, pubstate  # noqa: E402
+from scripts.lib import publication, pubstate, editorial  # noqa: E402
 from scripts.lib.config import Config  # noqa: E402
 
 
@@ -45,6 +45,7 @@ def _repo(tmp_path: Path, **env):
         "sections": [{"slug": "ai-search", "name": "AI Search"}, {"slug": "advertiser-strategy", "name": "Advertiser Strategy"}],
         "authors": [{"slug": "ezra-mbeki", "name": "Ezra Mbeki", "role": "Features Editor"}, {"slug": "lena-rossi", "name": "Lena Rossi", "role": "Senior Writer"}],
         "client": {"name": "thrad", "domain": "thrad.ai"},
+        "disclosure": {"enabled": True, "text": "Published by thrad."},
     }))
     strategy = pubstate.load_strategy(root)
     strategy["client"].update({"name": "thrad", "domain": "thrad.ai", "aliases": ["Thrad AI"]})
@@ -81,6 +82,31 @@ def _ready_draft(root: Path, slug: str, spoke_id: str) -> None:
         "mention": {"allowed": False, "applied": False}}, body)
     (root / "assets" / slug).mkdir(parents=True, exist_ok=True)
     (root / "assets" / slug / "cover.svg").write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900"></svg>')
+
+
+    _review_draft(root, slug)
+
+
+def _review_draft(root, slug, reviewed_at=None):
+    # Synthetic unit evidence only; never evidence of factual or traffic outcomes.
+    import hashlib
+    path = root / 'drafts' / f'{slug}.md'
+    meta, body = publication.read_post(path)
+    text = editorial.plain(body)
+    cache = root / f'{slug}-fixture-source.txt'
+    cache.write_text(text)
+    meta['research']['sources'] = [{'url': 'https://e.com/a', 'cache': str(cache)}]
+    review = {'reviewer': 'Fixture Editor', 'reader_need': 'Synthetic article used to exercise publication state transitions.',
+              'value_added': 'Synthetic fixture supporting deterministic integration testing.', 'facts_checked': True,
+              'claims': [{'claim': text, 'source': 'https://e.com/a', 'quote': text,
+                          'assessment': 'Synthetic fixture matches its synthetic source for state-transition testing only.'}]}
+    meta['editorial_review'] = editorial.record_review(meta, body, root, review)
+    if reviewed_at:
+        meta['editorial_review']['reviewed_at'] = reviewed_at
+    publication.write_post(path, meta, body)
+    cfg = Config(repo_root=root.parents[1], env={}, site={})
+    pubstate.save_json(pubstate.state_path(cfg, 'prepared', root.name + '-' + slug),
+                      {'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
 
 
 def test_planner_materializes_bursts_and_queues(tmp_path, monkeypatch, capsys):
@@ -131,7 +157,7 @@ def test_publish_gate_then_success_with_build(tmp_path, monkeypatch, capsys):
     steps = [p["step"] for p in plan["plan"]]
     assert steps == ["research", "write", "enhance", "diagrams", "cover"]  # manual mode stops before publish; shred skipped
     plan2 = _run(pipeline_mod, cfg, ["--publication", "llm-billboard", "--slug", "x", "--dry-run", "--approve", "--skip", ""], monkeypatch, capsys)
-    assert [p["step"] for p in plan2["plan"]][-3:] == ["publish", "relink", "build"] and "shred" in [p["step"] for p in plan2["plan"]]
+    assert plan2["_exit"] == 1 and "prepare and review" in plan2["error"]
 
 
 def test_performance_aggregation_and_refresh_triggers(tmp_path, monkeypatch, capsys):
@@ -160,11 +186,11 @@ def test_performance_aggregation_and_refresh_triggers(tmp_path, monkeypatch, cap
     # refresh triggers off synthetic history
     pubstate.save_json(pubstate.state_path(cfg, "performance", "llm-billboard"), {
         "first_impression_at": {"old-post": "2026-02-01"},
-        "history": [{"posts": {"old-post": {"clicks": 30}}}, {"posts": {"old-post": {"clicks": 10}}}]})
+        "history": [{"period": "30d", "window": {"start": "2026-06-01", "end": "2026-06-30"}, "posts": {"old-post": {"clicks": 30}}}, {"period": "30d", "window": {"start": "2026-07-01", "end": "2026-07-30"}, "posts": {"old-post": {"clicks": 10}}}]})
     out = _run(refresh_mod, cfg, ["--publication", "llm-billboard", "--queue", "--awaiting-days", "1"], monkeypatch, capsys)
     flagged = {f["slug"]: {t["trigger"] for t in f["triggers"]} for f in out["flagged"]}
     assert flagged["old-post"] >= {"clicks_drop", "aged", "dated_numbers"}
-    assert "never_indexed" in flagged["new-post"]
+    assert "no_recorded_impressions" in flagged["new-post"]
     tm = pubstate.load_topic_map(root)
     refresh_spokes = [s for _, s in pubstate.all_spokes(tm) if s.get("refresh_of")]
     assert {s["refresh_of"] for s in refresh_spokes} == {"old-post", "new-post"} and len(out["queued_spokes"]) == 2
@@ -201,11 +227,11 @@ def test_brand_mentions_run_and_geo_sync(tmp_path, monkeypatch, capsys, fake_tra
     assert comp["name"] == "Lapis" and comp["responses_mentioned"] == 2 and comp["share_of_voice"] > brand["share_of_voice"]
     assert brand["sentiment"]["positive"] == 1 and brand["recommend_rate"] == 1.0
     assert s["owned_citation_rate"]["point"] == 0.5 and s["distinct_owned_urls"] == ["https://llmbillboard.com/posts/x"]
-    assert s["informative_rate"]["point"] == 1.0 and s["measurement_verdict"] == "healthy"
-    assert out["questions_competitors_win"][0]["prompt"].startswith("Which vendors")
+    assert s["informative_rate"]["point"] == 1.0 and s["measurement_verdict"] == "thin-sample"
+    assert out["questions_competitors_win"] == []
     assert out["cited_pages"][0]["page"] == "llmbillboard.com/posts/x"
     assert out["first_mention_at"]
     geo = perf_mod.sync_geo(cfg, "llm-billboard")
-    assert geo["synced"] == 1
+    assert geo["synced"] == 0
     items = pubstate.load_json(pubstate.state_path(cfg, "geo-opportunities", "llm-billboard"))["items"]
-    assert items[0]["competitor_top"] == "Lapis" and items[0]["gap_score"] == 1.0 and items[0]["brand_mentioned"] is False
+    assert items == []

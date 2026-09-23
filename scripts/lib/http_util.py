@@ -247,6 +247,7 @@ def request(
     retry: str = "auto",
     stream: bool = False,
     check: bool = False,
+    allow_redirects: bool = True,
 ) -> requests.Response:
     """requests wrapper with UA, per-host politeness delay, idempotency-aware
     retry/backoff (honoring a capped Retry-After), credential sanitization,
@@ -286,7 +287,7 @@ def request(
             resp = _send(
                 method, url,
                 headers=merged_headers, params=params, json=json_body,
-                data=data, auth=auth, timeout=timeout, stream=stream,
+                data=data, auth=auth, timeout=timeout, stream=stream, allow_redirects=allow_redirects,
             )
         except requests.RequestException as exc:
             last_error = sanitize_text(str(exc))

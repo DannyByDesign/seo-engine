@@ -1,0 +1,151 @@
+{
+  "landing-HVAC-dispatch-pricing.json": [
+    {
+      "id": "web-flask-01",
+      "genre": "web-copy",
+      "technique": "Product explanation",
+      "text": "Flask is a microframework for Python based on Werkzeug and Jinja2. It's intended for getting started very quickly and was developed with best intentions in mind."
+    },
+    {
+      "id": "gds-simple-04",
+      "genre": "web-editorial",
+      "technique": "Voice decision with a reason",
+      "text": "Our hope is that no one ever notices the language. We don\u2019t need it to \u2018build the GOV.UK brand\u2019 by being obviously quirky or clever and it doesn\u2019t need to feel especially weighty or governmental. It needs to get out of the way and get you where you need to go . We\u2019re aiming for a sort of \u2018web service vernacular\u2019 - the language we\u2019ve all grown used to in navigating services online."
+    },
+    {
+      "id": "web-jekyll-02",
+      "genre": "web-copy",
+      "technique": "Product explanation",
+      "text": "Jekyll does what you tell it to do \u2014 no more, no less. It doesn't try to outsmart users by making bold assumptions, nor does it burden them with needless complexity and configuration. Put simply, Jekyll gets out of your way and allows you to concentrate on what truly matters: your content."
+    },
+    {
+      "id": "gds-citizen-04",
+      "genre": "web-editorial",
+      "technique": "Reader task and scope",
+      "text": "We\u2019ve cut the amount you need to read to be able to complete an action. Where possible, we\u2019ve also reduced the number of steps involved in completing it."
+    },
+    {
+      "id": "web-requests-02",
+      "genre": "web-copy",
+      "technique": "Product explanation",
+      "text": "Requests allows you to send *organic, grass-fed* HTTP/1.1 requests, without the need for manual labor. There's no need to manually add query strings to your URLs, or to form-encode your POST data. Keep-alive and HTTP connection pooling are 100% automatic, thanks to `urllib3 <https://github.com/shazow/urllib3>`_."
+    },
+    {
+      "id": "gds-blogs-03",
+      "genre": "web-editorial",
+      "technique": "Product launch and audience fit",
+      "text": "We thought we\u2019d tell you a bit more about the platform and the blogs already on it - and, if you\u2019re reading this from within government, help you think about whether it\u2019s the right space for you."
+    }
+  ],
+  "landing-HVAC-job-CSV-export.json": [
+    {
+      "id": "web-flask-01",
+      "genre": "web-copy",
+      "technique": "Product explanation",
+      "text": "Flask is a microframework for Python based on Werkzeug and Jinja2. It's intended for getting started very quickly and was developed with best intentions in mind."
+    },
+    {
+      "id": "gds-simple-04",
+      "genre": "web-editorial",
+      "technique": "Voice decision with a reason",
+      "text": "Our hope is that no one ever notices the language. We don\u2019t need it to \u2018build the GOV.UK brand\u2019 by being obviously quirky or clever and it doesn\u2019t need to feel especially weighty or governmental. It needs to get out of the way and get you where you need to go . We\u2019re aiming for a sort of \u2018web service vernacular\u2019 - the language we\u2019ve all grown used to in navigating services online."
+    },
+    {
+      "id": "web-jekyll-02",
+      "genre": "web-copy",
+      "technique": "Product explanation",
+      "text": "Jekyll does what you tell it to do \u2014 no more, no less. It doesn't try to outsmart users by making bold assumptions, nor does it burden them with needless complexity and configuration. Put simply, Jekyll gets out of your way and allows you to concentrate on what truly matters: your content."
+    },
+    {
+      "id": "gds-blogs-02",
+      "genre": "web-editorial",
+      "technique": "Product launch and audience fit",
+      "text": "It\u2019s a space which any government organisation can use to write about what they\u2019re up to, or to develop practice or theory in a particular field."
+    },
+    {
+      "id": "web-bootstrap-intro",
+      "genre": "web-copy",
+      "technique": "Category and benefit",
+      "text": "Bootstrap is a sleek, intuitive, and powerful front-end framework for faster and easier web development, created by [Mark Otto](https://twitter.com/mdo) and [Jacob Thornton](https://twitter.com/fat), and maintained by the [core team](https://github.com/orgs/twbs/people) with the massive support and involvement of the community."
+    },
+    {
+      "id": "gds-citizen-05",
+      "genre": "web-editorial",
+      "technique": "Reader task and scope",
+      "text": "We\u2019re not trying to encourage you to explore the site. We\u2019ve only included related items and links that may help you achieve your goal."
+    }
+  ],
+  "news-CSV-export-launch.json": [
+    {
+      "id": "nasa-planets-02",
+      "genre": "reporting",
+      "technique": "Explain a finding and its limits",
+      "text": "This exoplanet system is called TRAPPIST-1, named for The Transiting Planets and Planetesimals Small Telescope (TRAPPIST) in Chile. In May 2016 , researchers using TRAPPIST announced they had discovered three planets in the system. Assisted by several ground-based telescopes, including the European Southern Observatory\u2019s Very Large Telescope, Spitzer confirmed the existence of two of these planets and discovered five additional ones, increasing the number of known planets in the system to seven."
+    },
+    {
+      "id": "usgs-water-01",
+      "genre": "analysis",
+      "technique": "Problem and causal context",
+      "text": "Secure, reliable, and sustainable water resources are fundamental to the Nation\u2019s food production, energy independence, and ecological and human health and well-being. Indications are that at any given time, water resources are under stress in selected parts of the country. The large-scale development of groundwater resources has caused declines in the amount of groundwater in storage and declines in discharges to surface water bodies (Reilly and others, 2008). Water supply in some regions, particularly in arid and semiarid regions, is not adequate to meet demand, and severe drought intensifies the stresses affecting water resources (National Drought Mitigation Center, the U.S. Department of Agriculture, and the National Oceanic and Atmospheric Association, 2015). If these drought conditions continue, water shortages could adversely affect the human condition and threaten environmental flows necessary to maintain ecosystem health."
+    },
+    {
+      "id": "gds-transport-09",
+      "genre": "web-editorial",
+      "technique": "Concrete progress report",
+      "text": "We\u2019ve also been conducting interviews with some of the user groups identified in the session at DfT: driving instructors, MOT testers and a pilot, among others. We want to understand their information needs, the language they use and the tasks they need to complete."
+    },
+    {
+      "id": "nasa-earths-01",
+      "genre": "reporting",
+      "technique": "Finding with unresolved possibilities",
+      "text": "Scientists are pondering the possibilities after this week\u2019s announcement: the discovery of seven worlds orbiting a small, cool star some 40 light-years away, all of them in the ballpark of our home planet in terms of their heft (mass) and size (diameter). Three of the planets reside in the \u201chabitable zone\u201d around their star, TRAPPIST-1, where calculations suggest that conditions might be right for liquid water to exist on their surfaces\u2014though follow-up observations are needed to be sure."
+    },
+    {
+      "id": "gds-blogs-08",
+      "genre": "web-editorial",
+      "technique": "Product launch and audience fit",
+      "text": "The platform\u2019s also designed to keep pace with the main GOV.UK platform - such as sharing a look and feel, and method of signing up to email subscriptions - so that users will have a consistent experience on GOV.UK no matter where they begin their visit."
+    },
+    {
+      "id": "noaa-launch-09",
+      "genre": "web-editorial",
+      "technique": "Everyday consequence",
+      "text": "If you\u2019re a frequent flyer, you\u2019ve probably run into a few travel headaches because fog or low stratus clouds grounded your flight."
+    }
+  ],
+  "default_mode_counts": {
+    "landing": 6,
+    "article": 6,
+    "docs": 6,
+    "news": 6,
+    "essay": 6
+  },
+  "copied_skill": {
+    "exit": 0,
+    "stderr": "",
+    "examples": 6
+  },
+  "corpus_verify": {
+    "checked": true,
+    "sources": 38,
+    "examples": 373,
+    "errors": []
+  },
+  "changed_copy": {
+    "headline": "HVAC schedules for the office and the field",
+    "source_file": "app/pages.py",
+    "build_passed": true,
+    "existing_cta_route": "/guides/export-jobs",
+    "deployed": false,
+    "landing_overlap": {
+      "matches": [],
+      "match_count": 0,
+      "interpretation": "Exact twelve-word overlap with excerpt bank; inspect and rewrite accidental copying. No matches is not proof of originality or human authorship."
+    },
+    "news_overlap": {
+      "matches": [],
+      "match_count": 0,
+      "interpretation": "Exact twelve-word overlap with excerpt bank; inspect and rewrite accidental copying. No matches is not proof of originality or human authorship."
+    }
+  }
+}

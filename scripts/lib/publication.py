@@ -1,6 +1,6 @@
 """Publication model + static-site builder for the pub-* skills.
 
-A *publication* is an independent editorial site (masthead, sections,
+A *publication* is a transparently owned editorial site (masthead, sections,
 recurring authors, posts) that the pipeline writes into and this module
 renders. The rendered HTML reproduces, field for field, the anatomy the
 teardown measured on Letterstory's phantom sites (see
@@ -40,6 +40,7 @@ from email.utils import format_datetime
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
+from uuid import uuid4
 
 from bs4 import BeautifulSoup
 
@@ -254,7 +255,8 @@ def read_post(path: Path) -> tuple[dict[str, Any], str]:
 
 def write_post(path: Path, meta: dict[str, Any], body: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(dump_frontmatter(meta, body), encoding="utf-8")
+    from .pubstate import atomic_text
+    atomic_text(path, dump_frontmatter(meta, body))
     return path
 
 
@@ -305,6 +307,39 @@ def _jsonld(obj: Any) -> str:
 
 
 # ---------- model ----------
+
+def asset_name(meta: dict, slug: str) -> str:
+    name = str(meta.get('asset_slug') or slug)
+    if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9_-]*', name):
+        raise ValueError('asset_slug must be a safe directory name')
+    return name
+
+
+def draft_assets(root: Path, slug: str, meta: dict) -> Path:
+    """Fork the published asset bundle before any pending draft visual mutation."""
+    name = asset_name(meta, slug)
+    published = root / 'posts' / f'{slug}.md'
+    if published.is_file():
+        old_meta, _ = read_post(published)
+        old_name = asset_name(old_meta, slug)
+        if name == old_name:
+            name = f'{slug}--{uuid4().hex[:12]}'
+            source = root / 'assets' / old_name
+            if source.is_dir(): shutil.copytree(source, root / 'assets' / name)
+            meta['asset_slug'] = name
+    path = root / 'assets' / name
+    assert_unpublished_assets(root, path)
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def assert_unpublished_assets(root: Path, path: Path) -> None:
+    """CLI visual operations may not overwrite any currently published asset bundle."""
+    for post in (root / 'posts').glob('*.md'):
+        meta, _ = read_post(post)
+        used = (root / 'assets' / asset_name(meta, post.stem)).resolve()
+        if path.resolve().is_relative_to(used):
+            raise ValueError('published assets are immutable; prepare visuals in an isolated refresh draft')
 
 @dataclass
 class Post:
@@ -456,7 +491,7 @@ def _norm_authors(raw: Any) -> dict[str, dict[str, Any]]:
             "slug": slug, "name": str(a["name"]), "role": str(a.get("role") or "Staff Writer"),
             "bio": str(a.get("bio") or ""), "city": str(a.get("city") or ""),
             "started_at": str(a.get("started_at") or ""), "expertise": list(a.get("expertise") or []),
-            "same_as": list(a.get("same_as") or []),
+            "same_as": list(a.get("same_as") or []), "type": a.get("type") or "Person",
         }
     return out
 
@@ -566,7 +601,7 @@ def process_body(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Non
         if not src:
             continue
         if not urlparse(src).scheme and not src.startswith("/"):
-            img["src"] = f"/assets/{post.slug}/{src.lstrip('./')}"
+            img["src"] = f"/assets/{asset_name(post.meta, post.slug)}/{src.lstrip('./')}"
             if asset_dir is not None:
                 dims = image_dimensions(asset_dir / src.lstrip("./"))
                 if dims:
@@ -597,7 +632,7 @@ def cover_of(pub: Publication, post: Post, asset_dir: Optional[Path]) -> Optiona
             dims = image_dimensions(asset_dir / rel)
             if dims:
                 cover = {**cover, "width": dims[0], "height": dims[1]}
-        src = f"/assets/{post.slug}/{rel}"
+        src = f"/assets/{asset_name(post.meta, post.slug)}/{rel}"
     absolute = src if urlparse(src).scheme else pub.url(src)
     return {"src": src, "absolute": absolute,
             "alt": str(cover.get("alt") or f"Cover illustration for “{post.title}”"),
@@ -634,7 +669,7 @@ def blog_ld(pub: Publication) -> dict[str, Any]:
 
 
 def person_ld(pub: Publication, author: dict[str, Any], *, with_id: bool = False) -> dict[str, Any]:
-    person: dict[str, Any] = {"@type": "Person", "name": author["name"], "jobTitle": author.get("role") or "Staff Writer",
+    person: dict[str, Any] = {"@type": author.get("type") or "Person", "name": author["name"], "jobTitle": author.get("role") or "Staff Writer",
                               "url": pub.url(f"/authors/{author['slug']}"), "worksFor": {"@id": pub.url("/#organization")}}
     if with_id:
         person["@id"] = pub.url(f"/authors/{author['slug']}/#person")
@@ -1040,11 +1075,11 @@ def build_site(pub: Publication, out_dir: Optional[Path] = None, *, build_time: 
 
     covers: dict[str, Optional[dict[str, Any]]] = {}
     for post in pub.posts:
-        asset_dir = pub.root / "assets" / post.slug
+        asset_dir = pub.root / "assets" / asset_name(post.meta, post.slug)
         process_body(pub, post, asset_dir if asset_dir.is_dir() else None)
         covers[post.slug] = cover_of(pub, post, asset_dir if asset_dir.is_dir() else None)
         if asset_dir.is_dir():
-            shutil.copytree(asset_dir, out / "assets" / post.slug, dirs_exist_ok=True)
+            shutil.copytree(asset_dir, out / "assets" / asset_name(post.meta, post.slug), dirs_exist_ok=True)
     static = pub.root / "static"
     if static.is_dir():
         shutil.copytree(static, out, dirs_exist_ok=True)

@@ -1,0 +1,25 @@
+{
+  "provider": "firecrawl",
+  "operation": "anonymous_search",
+  "query": "Google Search Central helpful content documentation",
+  "limit": 1,
+  "live": true,
+  "credential_used": false,
+  "observed_at": "2026-09-10T02:21:16Z",
+  "complete": true,
+  "response": {
+    "success": true,
+    "data": {
+      "web": [
+        {
+          "url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+          "title": "Creating Helpful, Reliable, People-First Content | Documentation",
+          "description": "- [Documentation](https://developers.google.com/search/docs)\n\n- [Documentation](https://developers.google.com/search/docs)\n\n# Creating helpful, reliable, people-first content\nnot content that's created to manipulate search engine rankings. This page is designed to help",
+          "position": 1
+        }
+      ]
+    },
+    "creditsUsed": 2,
+    "id": "01a0891e-91e9-721b-b682-324355cd9378"
+  }
+}

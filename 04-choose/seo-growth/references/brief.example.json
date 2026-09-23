@@ -1,0 +1,84 @@
+{
+  "id": "deployment-guide",
+  "site_url": "https://your-owned-site.test",
+  "hypothesis": "Answering documented deployment questions will attract relevant organic visitors.",
+  "reader_need": "Users need a tested deployment procedure for our product and its failure modes.",
+  "original_value": "A working example verified against the product, with real outputs and troubleshooting.",
+  "demand_evidence": "Replace with real customer question references, query evidence and dated SERP observations.",
+  "rollback": "Restore the prior source revision and run the repository's authorized deployment process.",
+  "source_files": [
+    "src/pages/guides/deploy.astro",
+    "astro.config.mjs",
+    "package.json",
+    "package-lock.json"
+  ],
+  "pages": [
+    {
+      "path": "/guides/deploy",
+      "expected_text": "Replace with a distinctive exact phrase in the improved page"
+    }
+  ],
+  "controls": [],
+  "commands": {
+    "test": [
+      "npm",
+      "test"
+    ],
+    "build": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "deploy": [
+      "npm",
+      "run",
+      "deploy"
+    ]
+  },
+  "selection": {
+    "selected_id": "guide",
+    "rationale": "Replace with why the guide is preferable to the alternative for this audience and current evidence.",
+    "candidates": [
+      {
+        "id": "guide",
+        "query": "Replace with an actual customer query",
+        "audience": "Product developers",
+        "intent": "Learn product deployment",
+        "page": "/guides/deploy",
+        "action": "Improve existing deployment guide",
+        "original_value": "Replace with a concrete owner contribution beyond existing results.",
+        "business_reason": "Replace with the business relevance supported by customer evidence.",
+        "business_value": 2,
+        "effort_hours": 2,
+        "evidence": [
+          {
+            "kind": "customer_question",
+            "reference": "Replace with real source URL or issue reference",
+            "observed_on": "YYYY-MM-DD",
+            "observation": "Replace with the actual observation; assumptions are not evidence."
+          }
+        ]
+      },
+      {
+        "id": "tool",
+        "query": "Replace with an actual customer query",
+        "audience": "Product developers",
+        "intent": "Learn product deployment",
+        "page": "/guides/deploy",
+        "action": "Build interactive deployment checker",
+        "original_value": "Replace with a concrete owner contribution beyond existing results.",
+        "business_reason": "Replace with the business relevance supported by customer evidence.",
+        "business_value": 2,
+        "effort_hours": 8,
+        "evidence": [
+          {
+            "kind": "customer_question",
+            "reference": "Replace with real source URL or issue reference",
+            "observed_on": "YYYY-MM-DD",
+            "observation": "Replace with the actual observation; assumptions are not evidence."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -138,6 +138,9 @@ def test_research_write_enhance_pipeline(tmp_path, monkeypatch, capsys, fake_tra
     meta, body = publication.read_post(root / "drafts" / f"{slug}.md")
     assert body.count("## ") == 2 and "[$2.08 billion](https://www.emarketer.com/content/ai-search-ads)" in body
     assert body.count("thrad.ai") == 1 and meta["status"] == "written"
+    assert len(meta['writing_example_ids']) == 6
+    calls = [c for c in fake_transport.calls if 'api.anthropic.com' in c[1]]
+    assert any('FROZEN HUMAN WRITING REFERENCES' in json.dumps(c[2]) for c in calls)
 
     # enhance: links to a published post, sources, diagrams, verify catches an unsourced number
     publication.write_post(root / "posts" / "keyword-to-prompt.md", {
@@ -187,13 +190,16 @@ def test_relink_bumps_only_changed_posts(tmp_path, monkeypatch, capsys):
     meta, _ = publication.read_post(root / "posts" / "old-post.md")
     assert meta["updated_at"] == "2026-08-01T00:00:00Z"
     real = _run(relink_mod, cfg, ["--publication", "llm-billboard"], monkeypatch, capsys)
-    assert real["changes"][0]["updated_at_bumped"] is True
+    assert real["changes"][0]["updated_at_bumped"] is False
+    assert real["changes"][0]["review_draft"]
     meta, body = publication.read_post(root / "posts" / "old-post.md")
-    assert "](/posts/intent-decay)" in body and meta["updated_at"] != "2026-08-01T00:00:00Z"
+    assert "](/posts/intent-decay)" not in body and meta["updated_at"] == "2026-08-01T00:00:00Z"
+    draft_meta, draft_body = publication.read_post(root / "drafts/old-post.md")
+    assert "](/posts/intent-decay)" in draft_body and draft_meta["refresh_of"] == "old-post"
     meta_u, _ = publication.read_post(root / "posts" / "unrelated.md")
     assert meta_u["updated_at"] == "2026-08-02T00:00:00Z"
     again = _run(relink_mod, cfg, ["--publication", "llm-billboard"], monkeypatch, capsys)
-    assert again["changes"] == []  # idempotent
+    assert again["changes"][0]["skipped"] == "existing draft preserved"
 
 
 def test_shred_keeps_facts_and_structure(tmp_path, monkeypatch, capsys, fake_transport):

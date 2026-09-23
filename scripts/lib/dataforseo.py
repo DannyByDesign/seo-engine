@@ -193,3 +193,17 @@ def competitors_domain(cfg: Config, target: str, location_code: int = 2840,
         "target": target, "location_code": location_code, "limit": limit,
         "language_code": language_code,
     }])
+
+
+def keyword_ideas(cfg: Config, keywords: list[str], location_code: int = 2840,
+                  language_code: str = 'en', limit: int = 20) -> dict[str, Any]:
+    return _post(cfg, '/dataforseo_labs/google/keyword_ideas/live', [{
+        'keywords': keywords, 'location_code': location_code, 'language_code': language_code,
+        'limit': limit, 'include_serp_info': True}])
+
+
+def ranked_keywords(cfg: Config, target: str, location_code: int = 2840,
+                    language_code: str = 'en', limit: int = 20) -> dict[str, Any]:
+    return _post(cfg, '/dataforseo_labs/google/ranked_keywords/live', [{
+        'target': target, 'location_code': location_code, 'language_code': language_code,
+        'limit': limit, 'item_types': ['organic']}])

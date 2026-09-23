@@ -88,6 +88,21 @@ def _write_posts(pub_dir: Path, authors: list[str]) -> None:
         published="2026-08-29T20:11:45.769Z", para=PARA, other="advertiser-readiness"), encoding="utf-8")
 
 
+    # Synthetic source/reviewer fixture for production review gates; not real evidence.
+    from scripts.lib import editorial, publication
+    for path in (pub_dir / 'posts').glob('*.md'):
+        meta, body = publication.read_post(path)
+        text = editorial.plain(body)
+        cache = pub_dir / (path.stem + '-fixture.txt'); cache.write_text(text)
+        meta['research'] = {'status': 'done', 'sources': [{'url': 'https://fixture.test', 'cache': str(cache)}]}
+        meta['editorial_review'] = editorial.record_review(meta, body, pub_dir, {
+            'reviewer': 'Synthetic Fixture Editor', 'reader_need': 'Synthetic fixture verifying build and validator behavior.',
+            'value_added': 'Exercises structural publication output in offline integration tests.', 'facts_checked': True,
+            'claims': [{'claim': text, 'quote': text, 'source': 'https://fixture.test',
+                        'assessment': 'Synthetic article matched to its synthetic evidence for tests only.'}]})
+        publication.write_post(path, meta, body)
+
+
 def test_scaffold_build_validate_roundtrip(repo: Path):
     dry = run("scaffold_publication.py", repo, "--name", "LLM Billboard", "--site-url", "https://llmbillboard.com",
               "--tagline", "A blog on conversational AI advertising.", "--sections", "Advertiser Strategy,AI Search",
@@ -95,10 +110,10 @@ def test_scaffold_build_validate_roundtrip(repo: Path):
               "--deterministic-authors", "--dry-run")
     assert dry.returncode == 0, dry.stderr
     plan = json.loads(dry.stdout)["plan"]
-    assert plan["slug"] == "llm-billboard" and len(plan["site"]["authors"]) == 8
-    assert plan["site"]["disclosure"]["enabled"] is False and plan["site"]["theme"] == "signal"
+    assert plan["slug"] == "llm-billboard" and len(plan["site"]["authors"]) == 1
+    assert plan["site"]["disclosure"]["enabled"] is True and plan["site"]["theme"] == "signal"
     bio = plan["site"]["authors"][0]["bio"]
-    assert " has written for LLM Billboard since " in bio and "Based in" in bio
+    assert plan["site"]["authors"][0]["type"] == "Organization" and "Based in" not in bio
     assert not (repo / "publications").exists()
 
     # the naming rule
@@ -120,7 +135,7 @@ def test_scaffold_build_validate_roundtrip(repo: Path):
     assert again.returncode != 0 and "--force" in again.stderr
 
     authors = [a["slug"] for a in site["authors"][:2]]
-    _write_posts(pub_dir, authors)
+    _write_posts(pub_dir, authors * 2)
     built = run("build_site.py", repo, "--publication", "llm-billboard")
     assert built.returncode == 0, built.stderr
     manifest = json.loads(built.stdout)["builds"][0]

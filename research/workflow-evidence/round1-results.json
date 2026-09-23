@@ -1,0 +1,11 @@
+{
+  "cold_start_next": "choose",
+  "after_source_dependency_change": "choose",
+  "source_changed": true,
+  "route_preserved": true,
+  "validation": "validated",
+  "deployed": false,
+  "traffic_outcome": "unknown",
+  "rendered_html_bytes": 357,
+  "real_external_source_bytes": 1016242
+}

@@ -30,7 +30,7 @@ from pathlib import Path
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = ENGINE_ROOT / "skills"
-REFERENCES_DIR = SKILLS_DIR / "seo-references"
+REFERENCES_DIR = ENGINE_ROOT / "shared/seo-references"
 
 CANONICAL_HEADINGS = [
     "## When to use this skill",
@@ -104,7 +104,7 @@ def argparse_flags(script: Path) -> set[str]:
 
 def documented_flags(text: str) -> set[str]:
     """--flags mentioned anywhere in a SKILL.md (code fences + inline code + prose)."""
-    return set(re.findall(r"(--[a-z][a-z0-9-]+)", text))
+    return set(re.findall(r"(?<![\w-])(--[a-z][a-z0-9-]+)", text))
 
 
 def section_headings(ref_file: Path) -> set[str]:
@@ -126,7 +126,7 @@ def check_section_refs(path: Path, text: str, sections: dict[str, set[str]]) -> 
 
 def main() -> int:
     skill_dirs = sorted(
-        d for d in SKILLS_DIR.iterdir()
+        d for phase in sorted(ENGINE_ROOT.glob('0[1-6]-*')) if phase.is_dir() for d in phase.iterdir()
         if d.is_dir() and (d / "SKILL.md").is_file() and d.name != "seo-references"
     )
     skill_names = {d.name for d in skill_dirs} | {"seo-references", "seo-engine"}
@@ -207,7 +207,7 @@ def main() -> int:
             lexical = Path(str((skill_dir / link)).replace("/./", "/"))
             if not target.is_file():
                 fail(skill_md, f"markdown link {link!r} does not resolve")
-            elif "../.." in link or link.startswith("references/") and not (skill_dir / "references").is_dir():
+            elif not target.is_relative_to(ENGINE_ROOT) or link.startswith("references/") and not (skill_dir / "references").is_dir():
                 fail(skill_md, f"link {link!r} uses a fragile path form")
         if "../../references" in text or re.search(r"[^.]\./references/", text):
             fail(skill_md, "contains a dead ../../references or bare references/ pointer")

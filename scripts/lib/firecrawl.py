@@ -1,11 +1,11 @@
 """Firecrawl client (v2 API) — JS-rendering scrape/crawl. Optional; used by
 seo-technical-audit to diff raw-HTML content against rendered content,
 catching JS-hydration SEO/GEO blind spots (see skills/seo-references/
-red-flags.md §4 and geo-playbook.md §11 — no major AI crawler executes JS).
+red-flags.md §4 and geo-playbook.md §11 for platform-specific rendering limits).
 
-The cloud API requires authentication on every endpoint — there is no
-keyless tier. Calls without FIRECRAWL_API_KEY raise MissingConfigError with
-remediation text instead of an opaque 401.
+Search and scrape support limited anonymous use in current vendor documentation.
+Other endpoints retain the configured-key contract; availability and quota are
+determined by the server rather than assumed from credential presence.
 """
 
 from __future__ import annotations
@@ -19,7 +19,9 @@ BASE_URL = "https://api.firecrawl.dev/v2"
 _HINT = "Get a key at firecrawl.dev (free tier: 1,000 credits/month). The cloud API requires auth on all endpoints."
 
 
-def _headers(cfg: Config) -> dict[str, str]:
+def _headers(cfg: Config, anonymous_allowed: bool = False) -> dict[str, str]:
+    if anonymous_allowed and not cfg.has('FIRECRAWL_API_KEY'):
+        return {'Content-Type': 'application/json'}
     key = cfg.require("FIRECRAWL_API_KEY", _HINT)
     return {"Content-Type": "application/json", "Authorization": f"Bearer {key}"}
 
@@ -29,7 +31,7 @@ def scrape(cfg: Config, url: str, formats: Optional[list[str]] = None) -> dict[s
     screenshot, links (default: markdown + rawHtml, so callers can diff
     rendered vs. raw content directly)."""
     resp = http_util.post(
-        f"{BASE_URL}/scrape", headers=_headers(cfg),
+        f"{BASE_URL}/scrape", headers=_headers(cfg, anonymous_allowed=True),
         json_body={"url": url, "formats": formats or ["markdown", "rawHtml"]},
         min_interval=0.5, timeout=120.0, check=True,
     )
@@ -55,17 +57,27 @@ def map_urls(cfg: Config, url: str, limit: int = 5000) -> list[str]:
     return urls
 
 
-def search(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = None) -> list[dict[str, Any]]:
-    """Web search (v2 /search). `tbs` is Google's time filter ("qdr:d" day,
-    "qdr:w" week, "qdr:m" month). Returns [{url, title, description}]."""
+def search_raw(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = None,
+               country: Optional[str] = None, location: Optional[str] = None) -> dict[str, Any]:
+    """Retain the full provider envelope for provenance and failure handling."""
     body: dict[str, Any] = {"query": query, "limit": limit}
+    if country: body['country'] = country
+    if location: body['location'] = location
     if tbs:
         body["tbs"] = tbs
     resp = http_util.post(
-        f"{BASE_URL}/search", headers=_headers(cfg), json_body=body,
+        f"{BASE_URL}/search", headers=_headers(cfg, anonymous_allowed=True), json_body=body,
         min_interval=0.5, timeout=120.0, check=True,
     )
-    data = resp.json().get("data", [])
+    raw = resp.json()
+    if not isinstance(raw, dict) or raw.get('success') is False or 'data' not in raw:
+        raise ValueError('Firecrawl search returned an error or unrecognized response')
+    return raw
+
+
+def search(cfg: Config, query: str, limit: int = 10, tbs: Optional[str] = None) -> list[dict[str, Any]]:
+    """Normalized web results; use search_raw for complete collection receipts."""
+    data = search_raw(cfg, query, limit, tbs)['data']
     if isinstance(data, dict):  # v2 may group results by type
         data = data.get("web", []) or []
     return [{"url": d.get("url"), "title": d.get("title"), "description": d.get("description")}

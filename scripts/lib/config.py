@@ -35,10 +35,13 @@ except ImportError:  # pragma: no cover
 #: `available_integrations()` and ai_visibility's provider map derive from it.
 INTEGRATION_ENV_VARS: dict[str, dict[str, list[str]]] = {
     "google_search_console": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"]},
+    "google_analytics": {"any": ["GOOGLE_APPLICATION_CREDENTIALS", "GSC_SERVICE_ACCOUNT_JSON"], "all": ["GA4_PROPERTY_ID"]},
     "pagespeed_insights": {"all": ["GOOGLE_PSI_API_KEY"]},
     "ahrefs": {"all": ["AHREFS_API_KEY"]},
     "dataforseo": {"all": ["DATAFORSEO_LOGIN", "DATAFORSEO_PASSWORD"]},
     "firecrawl": {"all": ["FIRECRAWL_API_KEY"]},
+    "brave_search": {"all": ["BRAVE_SEARCH_API_KEY"]},
+    "languagetool": {"all": ["LANGUAGETOOL_URL"]},
     "indexnow": {"all": ["INDEXNOW_API_KEY"]},
     "semrush": {"all": ["SEMRUSH_API_KEY"]},
     "bing_webmaster": {"all": ["BING_WEBMASTER_API_KEY"]},
@@ -200,9 +203,7 @@ class Config:
 
     def integration_available(self, name: str) -> bool:
         spec = INTEGRATION_ENV_VARS[name]
-        if "any" in spec:
-            return any(self.has(var) for var in spec["any"])
-        return all(self.has(var) for var in spec["all"])
+        return (not spec.get("any") or any(self.has(var) for var in spec["any"])) and all(self.has(var) for var in spec.get("all", []))
 
     def available_integrations(self) -> dict[str, bool]:
         """Which optional integrations are configured. Skills use this to

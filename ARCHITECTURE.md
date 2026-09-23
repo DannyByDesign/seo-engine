@@ -3,7 +3,7 @@
 > This document is part of the deliverable: agents working in a target repo
 > read it to understand how the system fits together. The agent-operational
 > contracts (paths, config, snapshot store) live in
-> [skills/seo-references/common-setup.md](skills/seo-references/common-setup.md);
+> [shared/seo-references/common-setup.md](shared/seo-references/common-setup.md);
 > this file is the human-facing overview.
 
 ## What this is
@@ -16,10 +16,10 @@ search and AI-search visibility — using only long-term, sustainable,
 policy-compliant strategies.
 
 It also runs the operator's own **publications** (the `pub-*` skills): a
-Next.js-free static site per publication, personas, a topic map, an evidence
+Next.js-free static site per publication, accurate contributor or organization attribution, a topic map, an evidence
 pipeline (research → write → enhance → visuals → publish), a planner, and
 monitoring — the model documented in
-[publication-playbook.md](skills/seo-references/publication-playbook.md).
+[publication-playbook.md](shared/seo-references/publication-playbook.md).
 
 ## Design principles
 
@@ -53,97 +53,44 @@ monitoring — the model documented in
    APIs (Ahrefs, DataForSEO, Firecrawl, LLM APIs) extend it.
 6. **No secret can leak.** All HTTP flows through `scripts/lib/http_util.py`,
    which sanitizes credentials out of every surfaced URL and error message —
-   reports are safe to commit by construction. Retries are idempotency-aware
+   reports may contain draft prose or private analytics and stay gitignored. Retries are idempotency-aware
    (a pay-per-call POST is never blindly re-sent after an ambiguous failure).
 
 ## Layout
 
-```
+The implementation lives in six physical phase directories, from `01-understand/` through
+`06-learn/`. Each owns its skills, scripts and phase README. Cross-phase reference material
+lives in `shared/seo-references/`; shared Python mechanics remain in `scripts/lib/`.
+`skills/*` and the old workflow filenames are compatibility symlinks. Installers and internal
+skill dispatch use the canonical phase locations, not those aliases.
+
+`scripts/lib/strategy.py` validates and versions agent-authored business/research/positioning
+records with parent and evidence hashes. `scripts/lib/research.py` collects real vendor API
+responses under durable call allowances. `run_cycle.py` routes the host agent using current
+strategy status and actual intervention learning. The host agent supplies reasoning and source
+edits, using the scripts to check handoffs; no human-authored seed list or brief is required.
+
+```text
 seo-engine/
-├── README.md                  # install + quickstart + testing
-├── ARCHITECTURE.md            # this file
-├── install.sh                 # symlinks skills/* into <target-repo>/.claude/skills/,
-│                              #   writes stub .env, ensures target .gitignore
-├── .claude-plugin/
-│   └── plugin.json            # Claude Code plugin manifest (alt. install path)
-├── .env.example               # every supported key, documented (all optional)
-├── requirements.txt           # runtime Python deps (kept minimal)
-├── requirements-dev.txt       # pytest
-├── skills/
-│   ├── seo-references/        # ← the knowledge base, installed like any skill
-│   │   ├── SKILL.md           #   index + evidence-grade legend
-│   │   ├── seo-playbook.md    #   sustainable classic-SEO strategy
-│   │   ├── geo-playbook.md    #   AI-search evidence (incl. §10 Bing→ChatGPT,
-│   │   │                      #   §11 AI crawlers don't render JS)
-│   │   ├── publication-playbook.md # the measured publication model (pub-* skills)
-│   │   ├── red-flags.md       #   spam policies, penalties — the veto layer (§7: publications)
-│   │   ├── api-reference.md   #   endpoints, auth, quotas per integration
-│   │   └── common-setup.md    #   paths/config/snapshot contracts (agent-operational)
-│   ├── seo-setup/             # onboarding: detect stack, write config, key status
-│   ├── seo-maintain/          # orchestrator: regression-first maintenance loop
-│   ├── seo-technical-audit/   # crawl audit: status, canonicals, noindex, sitemaps
-│   ├── seo-metadata/          # titles, descriptions, OG/Twitter cards
-│   ├── seo-structured-data/   # JSON-LD generation + tiered validation
-│   │   └── references/        #   jsonld-library.md (examples + insertion guide)
-│   ├── seo-performance/       # Core Web Vitals via PSI/CrUX → code-level fixes
-│   ├── seo-indexing/          # GSC coverage, sitemap discovery/submit, IndexNow
-│   ├── seo-keyword-research/  # GSC + Ahrefs/DataForSEO opportunity mining
-│   ├── seo-content-optimize/  # staleness signals with anti-spam guardrails
-│   ├── seo-internal-linking/  # link graph, sitemap/GSC-grounded orphans
-│   ├── seo-backlinks/         # profile monitoring only — never acquisition
-│   ├── seo-redirects/         # config-level redirect audit, migration safety
-│   ├── seo-rank-tracking/     # GSC positions, stdev-gated drop alerts
-│   ├── geo-optimize/          # AI-crawler access, cloaking check, JS-visibility
-│   │                          #   check, narrowly-scoped llms.txt
-│   ├── geo-monitor/           # AI-citation probing (multi-sample), brand-mention
-│   │                          #   tracking (Wilson intervals), log/GA4 signals
-│   ├── pub-site/              # publication scaffold, static build, anatomy validator
-│   ├── pub-strategy/          # positioning + competitor catalogue scraping
-│   ├── pub-curate/            # topic map, scored suggestions, seers
-│   ├── pub-research/          # plan → search → read → synthesize → verify outline
-│   ├── pub-write/             # kernels/, templates/, write_article.py, shred.py
-│   ├── pub-enhance/           # links, sources, anchors, diagrams, verify, meta, relink
-│   ├── pub-visuals/           # SVG diagrams, covers (OpenAI / Gemini / SVG fallback)
-│   ├── pub-publish/           # planner, gate + approval, run_pipeline
-│   └── pub-monitor/           # per-publication GSC rollups, refresh triggers, GEO sync
-├── research/                  # the vendor teardown the pub-* skills were built from
-├── scripts/
-│   ├── lib/                   # shared library (imported by every skill script)
-│   │   ├── config.py          # env + .seo-engine/config resolution; INTEGRATION_ENV_VARS
-│   │   ├── http_util.py       # sanitizing, idempotency-aware HTTP (the ONLY egress)
-│   │   ├── urlnorm.py         # canonical URL identity (the one folding used everywhere)
-│   │   ├── pagerules.py       # shared noindex/indexability predicates
-│   │   ├── robots.py          # RFC 9309 parse/evaluate/fetch (crawler + geo audit)
-│   │   ├── sitemaps.py        # sitemap discovery + URL extraction
-│   │   ├── snapshots.py       # the crawl snapshot store (provenance, baselines, retention)
-│   │   ├── crawler.py         # polite BFS crawler (schema v2 records)
-│   │   ├── linkgraph.py       # alias-folded graph + honest orphan analysis
-│   │   ├── redirect_analysis.py # shared redirect taxonomy (loops vs normalization)
-│   │   ├── gsc_trends.py      # stdev-gated weekly drop detection
-│   │   ├── gsc.py             # Search Console (property auto-resolution, pagination)
-│   │   ├── psi.py             # PageSpeed Insights + CrUX (header auth)
-│   │   ├── ahrefs.py          # Ahrefs v3
-│   │   ├── dataforseo.py      # DataForSEO (task-status-checked)
-│   │   ├── semrush.py         # Semrush domain reports
-│   │   ├── bing_webmaster.py  # Bing WMT ({"d"} unwrapped, SubmitFeed)
-│   │   ├── indexnow.py        # IndexNow (host-validated)
-│   │   ├── firecrawl.py       # Firecrawl v2 (rendered-diff)
-│   │   ├── schema_validate.py # tiered JSON-LD validation (required/recommended/info)
-│   │   ├── ai_visibility.py   # LLM citation probing (error-state aware)
-│   │   ├── llm.py             # BYOK text generation: Anthropic / OpenAI / Gemini
-│   │   ├── images.py          # cover generation: OpenAI gpt-image / Gemini image
-│   │   ├── sociavault.py      # SociaVault social-conversation search
-│   │   ├── mentions.py        # deterministic brand-mention detection
-│   │   ├── stats.py           # Wilson intervals for small-sample rates
-│   │   ├── publication.py     # publication model, markdown → HTML, static renderer
-│   │   ├── pubstate.py        # strategy / topic-map / pub-* state helpers
-│   │   └── article.py         # markdown article ops: anchors, links, nothing-lost guard
-│   └── dev/
-│       ├── smoke.py           # opt-in LIVE per-integration harness (never in CI)
-│       └── check_docs.py      # docs-vs-code contract linter (runs in CI)
-├── tests/                     # offline pytest suite (fake transport, no network)
-│   └── fixtures/              #   incl. a real measured publication article
-└── .github/workflows/ci.yml   # pytest + check_docs on 3.9/3.12
+├── 01-understand/       # setup, audit, scripts/run_strategy.py
+├── 02-research/         # keywords, source research, scripts/research_market.py
+├── 03-position/         # positioning
+├── 04-choose/           # growth coordinator and topic selection
+├── 05-execute/          # copy, website code, visuals and publishing
+│   └── seo-copywriting/
+│       ├── SKILL.md     # actual inline human writing and editing workflow
+│       ├── corpus/     # local Markdown source writing and passages
+│       └── scripts/    # local sampling and LanguageTool checker
+├── 06-learn/            # monitoring, analytics, cycle runner and instructions
+├── shared/seo-references/
+├── scripts/lib/         # common clients, state, rendering and contracts
+├── scripts/dev/         # documentation checks and opt-in API smoke checks
+├── tests/               # regression and integration tests
+├── workflow/            # workflow index/contract and old-guide aliases
+├── skills/              # compatibility symlinks only
+├── research/            # research, evaluations and preserved evidence
+├── install.sh           # installs phase-owned skills into host discovery paths
+└── .env.example         # integration configuration
 ```
 
 ## State kept in the target repo
@@ -184,7 +131,7 @@ publications/         # one folder per owned publication (committed)
 ## The publication loop (`pub-*`)
 
 1. `pub-site` scaffolds a publication (name never contains the client's name,
-   generated personas, theme) and `pub-strategy` records positioning.
+   publisher-supplied accurate contributor or organization attribution, theme) and `pub-strategy` records positioning.
 2. `pub-curate` builds the topic map from positioning and competitor
    catalogues, scores suggestions (competitor coverage, GEO gaps from
    `geo-monitor`, search volume, cluster fit, authority, social conversations),
@@ -211,3 +158,16 @@ publications/         # one folder per owned publication (committed)
   which model ids they use (defaults in `scripts/lib/llm.py`).
 - `IMAGE_PROVIDER`, `IMAGE_MODEL_OPENAI`, `IMAGE_MODEL_GEMINI` — cover
   generation provider and model ids (defaults in `scripts/lib/images.py`).
+
+## First-party growth experiments
+
+`seo-growth` composes the existing diagnosis/editing skills with an executable intervention
+ledger in `.seo-engine/state/growth/`. Demand alternatives or diagnostic evidence precede
+source edits. Repo-owned commands validate and deploy; change assertions compare a captured
+baseline with production. Durable deployment intent, reconciliation and linked follow-ups
+support interruption recovery. Outcome comparisons use actual analytics exports, conservative
+rollout intervals and explicit decisions/costs. Inconclusive experiments remain observing.
+
+`run_cycle.py` gives a configured agent a durable work packet. The external host scheduler
+must be activated explicitly. GA4 and other normalized exports are distinct from API visibility
+probes. The capability ledger records tested interfaces and missing effectiveness evidence.
